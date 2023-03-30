@@ -1,9 +1,9 @@
 import Layout from "../../components/layout"
 
-const Index = () => (
+const Blog = () => (
   <Layout>
-    <h1>Hello World</h1>
+    <h1>Blog</h1>
   </Layout>
 )
 
-export default Index
+export default Blog
