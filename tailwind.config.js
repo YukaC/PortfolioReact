@@ -10,8 +10,9 @@ module.exports = {
   ],
   theme: {
     extend: {
-      backgroundImage: {
-        'main': "url('/bg-night.jpg')",
+      colors: {
+        "main-color": "#4338ca",
+        "shadow-main-color": "#312e81",
       }
     },
   },

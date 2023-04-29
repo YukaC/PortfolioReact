@@ -1,15 +1,15 @@
 import Image from "next/image";
 
 const Navbar = () => (
-  <header className="container">
-    <div className="container flex items-center justify-between">
+  <header className="mt-9">
+    <div className="relative flex items-center justify-between ">
       <div>
         <Image
           className="logoWeb"
           id="logo"
           src="/logo-white.png"
           alt="Logo"
-          width={120}
+          width={110}
           height={50}
         />
       </div>

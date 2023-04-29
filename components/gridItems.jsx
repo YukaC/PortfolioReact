@@ -10,7 +10,7 @@ const GridItems = () => (
             width={300}
             height={50}
           />
-              <div class="grid-item-description">
+              <div class="grid-item-description text-center">
                   <h1 class="webname" data-text="project1Title">FastFood Website</h1>
                       <h4 class="webdesc">Html,Css</h4>
                       <div class="bt-cont">
@@ -31,7 +31,7 @@ const GridItems = () => (
             width={300}
             height={50}
           />
-              <div class="grid-item-description">
+              <div class="grid-item-description text-center">
                   <h1 class="webname" data-text="project1Title">Movie Review Website</h1>
                       <h4 class="webdesc">Css,Javascript,Python,Flask</h4>
                       <div class="bt-cont">
@@ -52,7 +52,7 @@ const GridItems = () => (
             width={300}
             height={50}
           />
-              <div class="grid-item-description">
+              <div class="grid-item-description text-center">
                   <h1 class="webname" data-text="project1Title">Portfolio</h1>
                       <h4 class="webdesc">React,TailwindCss,NextJs</h4>
                       <div class="bt-cont">

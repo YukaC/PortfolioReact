@@ -7,12 +7,15 @@ const Layout = ({ children, title, description }) => (
       <title>{title}</title>
       <meta name="description" content={description} />
     </Head>
-      <div className="absolute inset-0 scale-105 bg-center bg-cover filter blur-sm bg-main"></div>
-      <div className="absolute flex flex-col items-center my-1 inset-10">
-        <Navbar />
+      <div className="bg-[url(https://unsplash.it/1800/800?image=893)] bg-black/90 bg-center bg-cover bg-main bg-scroll">
+      <div className="w-11/12 mx-auto">
+        <div className="flex flex-col">
+          <Navbar />
 
-        <main className="container py-4">{children}</main>
+          <main className="px-10 py-0">{children}</main>
+        </div>
       </div>
+    </div>
   </>
 );
 
