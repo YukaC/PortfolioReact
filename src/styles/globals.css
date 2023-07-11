@@ -10,9 +10,14 @@
 }
 
 h1 {
-    font-size: 1.875rem;
-    line-height: 2.25rem;
-    font-weight: 900;
+  font-size: 1.875rem;
+  line-height: 2.25rem;
+  font-weight: 900;
+}
+
+h2 {
+  font-size: 1.275rem;
+  font-weight: 600;
 }
 
 * {
@@ -24,26 +29,13 @@ h1 {
 }
 
 body {
-  background: #16222A;  /* fallback for old browsers */
-  background: -webkit-linear-gradient(to top, #3A6073, #16222A);  /* Chrome 10-25, Safari 5.1-6 */
-  background: linear-gradient(to bottom, #3A6073, #16222A); /* W3C, IE 10+/ Edge, Firefox 16+, Chrome 26+, Opera 12+, Safari 7+ */
+  background: rgb(30, 32, 64);
+  background: -moz-radial-gradient(circle, rgba(30, 32, 64, 1) 15%, rgba(0, 0, 0, 1) 85%);
+  background: -webkit-radial-gradient(circle, rgba(30, 32, 64, 1) 15%, rgba(0, 0, 0, 1) 85%);
+  background: radial-gradient(circle, rgba(30, 32, 64, 1) 15%, rgba(0, 0, 0, 1) 85%);
+  filter: progid:DXImageTransform.Microsoft.gradient(startColorstr="#1e2040", endColorstr="#000000", GradientType=1);
   max-width: 100vw;
   overflow-x: hidden;
-}
-
-.bg-main {
-  transform: perspective(1px);
-}
-
-.bg-main::after {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(17, 17, 17, 0.9);
-  z-index: -1;
 }
 
 a {
@@ -51,8 +43,51 @@ a {
   text-decoration: none;
 }
 
+.line {
+  display: inline-flex;
+  position: relative;
+  width: 30%;
+  max-width: 300px;
+  min-width: 60px;
+  height: 1px;
+  background-color: rgba(255, 255, 255, 0.5);
+  vertical-align: middle;
+  margin-left: 8px;
+}
+
+.skills-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(140px, 200px));
+  list-style: none;
+}
+
+ul.skills-list {
+  list-style: none;
+  padding: 0;
+}
+
+ul.skills-list li {
+  position: relative;
+  padding-left: 20px;
+  margin-bottom: 10px;
+}
+
+ul.skills-list li::before {
+  content: "▹";
+  position: absolute;
+  left: 0;
+  color: #4c4f8c;
+  font-size: 25px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
 @media (prefers-color-scheme: dark) {
   html {
     color-scheme: dark;
   }
+}
+
+#home {
+  width: 100%;
 }
