@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import Image from 'next/image';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faBars } from '@fortawesome/free-solid-svg-icons';
 
@@ -27,12 +28,12 @@ const Navbar = () => {
     <header className="mt-9">
       <div className="relative flex items-center justify-between">
         <div>
-          <img
+          <Image
             className="logoWeb"
             id="logo"
             src="/logo-white.png"
             alt="Logo"
-            width={110}
+            width={100}
             height={50}
           />
         </div>

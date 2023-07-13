@@ -90,7 +90,7 @@ const Index = () => (
     <section id="contact" className="flex flex-col items-center justify-center min-h-screen py-10 space-y-6 text-center md:py-0">
       <h1 className="text-3xl">Contact</h1>
       <p className="max-w-3xl text-center">
-        Currently I'm looking for any new opportunities. My inbox is always
+        Currently I&apos;m looking for any new opportunities. My inbox is always
         open. Feel free to contact me to discuss a freelance job, employment at
         a company, or just to chat 😅
       </p>
