@@ -3,15 +3,17 @@ import GridPortfolio from "../../components/gridPortfolio";
 import LinksSocial from "../../components/socialLinks";
 import Image from "next/image";
 import ScrollToTopButton from "../../components/buttonUp";
+import DownloadButton from "../../components/downloadButton";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faEnvelope } from "@fortawesome/free-solid-svg-icons";
 
 const Index = () => (
   <Layout title="Agustin Ciucani | Portfolio">
     <section
-      className="flex flex-col justify-center min-h-screen py-8 space-y-6 text-start"
+      className="flex flex-col justify-center min-h-screen py-10 space-y-6 md:py-0 text-start"
       id="home"
     >
+      <div className="flex flex-col items-center mt-10 space-y-4 text-center md:justify-center">
       <h1>Hi, I&apos;m Agustin Ciucani</h1>
       <h3>FrontEnd Developer</h3>
       <h4 className="my-8 text-base">
@@ -20,26 +22,22 @@ const Index = () => (
       </h4>
 
       <h4>Download my Resume here:</h4>
-      <button
-        id="btn-dw"
-        className="w-32 px-4 py-2 text-white transition-all duration-200 rounded-md cursor-pointer bg-main-color hover:bg-shadow-main-color"
-      >
-        Download
-      </button>
+      <DownloadButton/>
+      </div>
     </section>
 
     <section
-      className="flex flex-col justify-center min-h-screen py-8 space-y-6 text-start"
+      className="flex flex-col justify-center min-h-screen py-10 space-y-6 md:py-0 text-start"
       id="about"
     >
-      <div className="flex flex-wrap items-center">
+      <div className="items-center mt-10 md:inline-flex md:justify-center">
         <div className="w-full md:w-1/2 md:text-lg">
           <h1>
             About Me
             <span className="line"></span>
           </h1>
           <div>
-            <p className="my-8">
+            <p className="max-w-5xl my-8">
               Hello! My name is Agustin, a 20 years old programmer who currently
               lives in Buenos Aires, Argentina and enjoys creating things on the
               internet... I&apos;m interested on learning and getting into the
@@ -63,9 +61,9 @@ const Index = () => (
             </ul>
           </div>
         </div>
-        <div className="flex justify-center w-full md:w-1/3">
+        <div className="flex justify-center md:ml-14">
           <Image
-            className="flex-none mt-12 rounded-xl md:mt-0"
+            className="mt-12 rounded-xl md:mt-0 "
             src="/profilePic.png"
             alt="ImgProfile"
             width={300}
@@ -76,7 +74,7 @@ const Index = () => (
     </section>
 
     <section
-      className="flex flex-col justify-center min-h-screen py-8 space-y-6 text-start"
+      className="flex flex-col justify-center min-h-screen py-10 md:py-0 text-start"
       id="portfolio"
     >
       <h1>
@@ -84,14 +82,14 @@ const Index = () => (
         <span className="line"></span>
       </h1>
 
-      <div className="my-8 space-y-16 " id="gridCont">
-        <GridPortfolio />
+      <div className="items-center mt-10 md:inline-flex md:justify-center" id="gridCont">
+        <GridPortfolio/>
       </div>
     </section>
 
-    <section className="flex flex-col items-center justify-center min-h-screen py-8 space-y-6 text-center">
+    <section id="contact" className="flex flex-col items-center justify-center min-h-screen py-10 space-y-6 text-center md:py-0">
       <h1 className="text-3xl">Contact</h1>
-      <p className="text-center">
+      <p className="max-w-3xl text-center">
         Currently I'm looking for any new opportunities. My inbox is always
         open. Feel free to contact me to discuss a freelance job, employment at
         a company, or just to chat 😅
@@ -108,9 +106,8 @@ const Index = () => (
         </div>
       </button>
 
-      <div className="flex items-center space-x-4">
+      <div>
         <Image
-          className="rounded-xl"
           src="/logo-white.png"
           alt="Logo de Agustin Ciucani"
           width={140}
