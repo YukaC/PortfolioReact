@@ -24,8 +24,10 @@ h2 {
   box-sizing: border-box;
   padding: 0;
   margin: 0;
+  color: #ffff;
   text-shadow: 2px 2px 4px rgb(0, 0, 0);
   scroll-behavior: smooth;
+  transition: all ease-in-out .5s;
 }
 
 body {
@@ -90,4 +92,47 @@ ul.skills-list li::before {
 
 #home {
   width: 100%;
+}
+
+body::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+  background-color: #1E2040;
+  border-radius: 5px;
+}
+
+body::-webkit-scrollbar-thumb {
+  width: 10px;
+  height: 8px;
+  background-color: #4c4f8c;
+  border-radius: 5px;
+}
+
+#menuToggle{
+  display: block;
+  width: 2rem;
+  height: 3rem;
+  border: 0;
+  background: transparent;
+}
+
+#menuToggle span {
+  display: flex;
+  margin-bottom: 6px;
+  background: white;
+  height: 2px;
+  width: 100%;
+  border-radius: 5px;
+  transition: all .5s;
+  transform-origin: left ;
+}
+
+.menu-hidden {
+  visibility: hidden;
+  height: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+  margin: 0;
+  color: rgba(25, 25, 25, 0);
+  z-index: 99;
 }
