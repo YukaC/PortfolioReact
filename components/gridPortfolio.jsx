@@ -3,24 +3,12 @@ import Image from "next/image";
 import projectData from "../components/gridItems";
 
 const GridItem = ({ imgSrc, alt, title, description, repoLink }) => {
-  const [isHovered, setIsHovered] = useState(false);
-
-  const handleHover = () => {
-    setIsHovered(true);
-  };
-
-  const handleLeave = () => {
-    setIsHovered(false);
-  };
-
   return (
-    <div
-      id="grid-item"
-      className="relative mb-10 md:ml-8"
-      onMouseEnter={handleHover}
-      onMouseLeave={handleLeave}
-    >
-      <div className="grid-item-img">
+    <div id="grid-item" className="grid relative mb-10 md:ml-8 min-h-[32rem]">
+      <a
+        href={repoLink}
+        className="flex p-2 flex-col items-stretch border border-gray-200 rounded-lg shadow md:max-w-2xl bg-opacity-40 hover:bg-white hover:backdrop-blur-3xl hover:bg-opacity-10 dark:border-gray-700 bg-[#1E2040]"
+      >
         <Image
           className="rounded-xl min-w-[16rem] md:max-w-full"
           src={imgSrc}
@@ -28,37 +16,30 @@ const GridItem = ({ imgSrc, alt, title, description, repoLink }) => {
           width={480}
           height={70}
         />
-        <div
-          id="grid-item-description"
-          className={`text-center rounded-xl space-y-2 text-sm absolute top-0 left-0 w-full h-full bg-gray-900 bg-opacity-80 text-white p-4 opacity-0 transition-opacity duration-700 ${
-            isHovered ? "opacity-100" : ""
-          } flex flex-col justify-center items-center`}
-        >
-          <h2 className="webname" data-text="project1Title">
+        <div className="flex flex-col justify-between p-4 leading-normal max-w-lg">
+          <h5 className="mb-2 text-2xl font-bold tracking-tight text-gray-900 dark:text-white">
             {title}
-          </h2>
-          <h4 className="webdesc">{description}</h4>
-          <div className="flex justify-center bt-cont">
-            <a className="bt-repo" target="_blank" href={repoLink}>
-              <button
-                className="flex px-4 py-1.5 text-white transition-all duration-200 rounded-md cursor-pointer center bg-main-color hover:bg-shadow-main-color"
-              >
-                <span data-text="nameRepo">Repository</span>
-              </button>
-            </a>
-          </div>
+          </h5>
+          <p className="mb-3 font-normal text-gray-700 dark:text-gray-400">
+            {description}
+          </p>
         </div>
-      </div>
+      </a>
     </div>
   );
 };
 
 const GridItems = () => (
-  <>
+  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
     {projectData.map((project) => (
-      <GridItem key={project.title} {...project} />
+      <div
+        key={project.title}
+        className="col-span-1 md:col-span-2 lg:col-span-1"
+      >
+        <GridItem {...project} />
+      </div>
     ))}
-  </>
+  </div>
 );
 
 export default GridItems;

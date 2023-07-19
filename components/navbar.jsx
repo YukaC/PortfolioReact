@@ -1,16 +1,13 @@
-import { useState } from 'react';
-import Image from 'next/image';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faBars } from '@fortawesome/free-solid-svg-icons';
-
+import { useState } from "react";
+import Image from "next/image";
 const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
-  let Tags = [
-    { name: 'HOME' },
-    { name: 'ABOUT' },
-    { name: 'PORTFOLIO' },
-    { name: 'CONTACT' },
+  const Tags = [
+    { name: "HOME" },
+    { name: "ABOUT" },
+    { name: "PORTFOLIO" },
+    { name: "CONTACT" },
   ];
 
   const scrollToSection = (sectionName) => {
@@ -18,15 +15,21 @@ const Navbar = () => {
     if (section) {
       window.scrollTo({
         top: section.offsetTop,
-        behavior: 'smooth',
+        behavior: "smooth",
       });
     }
-    setIsMenuOpen(false); // Cerrar el menú después de hacer clic en un enlace
+    setIsMenuOpen(false); // Close the menu after clicking a link
   };
+
+  const spanElements = [
+    <span key="1" style={{ transform: isMenuOpen ? "rotate(45deg)" : "none" }} />,
+    <span key="2" style={{ opacity: isMenuOpen ? "0" : "1" }} />,
+    <span key="3" style={{ transform: isMenuOpen ? "rotate(-45deg)" : "none" }} />,
+  ];
 
   return (
     <header className="mt-9">
-      <div className="relative flex items-center justify-between">
+      <div className="relative z-50 flex items-center justify-between">
         <div>
           <Image
             className="logoWeb"
@@ -38,22 +41,30 @@ const Navbar = () => {
           />
         </div>
         <button
-          className="md:hidden"
+          className="md:hidden z-50"
+          id="menuToggle"
           onClick={() => setIsMenuOpen(!isMenuOpen)}
         >
-          <FontAwesomeIcon icon={faBars} size="2x" />
+          {spanElements}
         </button>
 
         <ul
-          className={`z-50 text-center md:bg-transparent md:flex md:items-center absolute md:static bg-main-color md:z-auto left-0 w-full md:w-auto md:pl-0 pl-9 transition-all duration-500 ease-in ${
-            isMenuOpen ? 'top-28' : 'top-[-490px]'
+          className={`text-center top-20 h-64 w-full absolute bg-main-color transition-all duration-[600ms] ease-in ${
+            isMenuOpen ? "" : "menu-hidden"
           }`}
         >
-          {Tags.map((tag) => (
-            <li key={tag.name} className="text-xl md:ml-8 md:my-0 my-7">
+          {Tags.map((tag, index) => (
+            <li
+              key={tag.name}
+              style={{
+                transitionDelay: isMenuOpen ? `${index * .2}s` : `${(Tags.length - index - 1) * .2}s`,
+                opacity: isMenuOpen ? "1" : "0",
+              }}
+              className={`text-xl md:ml-8 md:my-0 my-7 transition-all duration-[250ms] ease-out `}
+            >
               <button
                 onClick={() => scrollToSection(tag.name)}
-                className="text-gray-200 duration-500 hover:text-gray-500"
+                className="text-gray-200 duration-300 hover:text-gray-500"
               >
                 {tag.name}
               </button>

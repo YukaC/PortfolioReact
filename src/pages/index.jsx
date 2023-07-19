@@ -14,15 +14,20 @@ const Index = () => (
       id="home"
     >
       <div className="flex flex-col items-center mt-10 space-y-4 text-center md:justify-center">
-      <h1>Hi, I&apos;m Agustin Ciucani</h1>
-      <h3>FrontEnd Developer</h3>
-      <h4 className="my-8 text-base">
-        This is my official portfolio website to showcase all my works related
-        to web development
-      </h4>
+        <h1>Hi, I&apos;m Agustin Ciucani</h1>
+        <h3>FrontEnd Developer</h3>
+        <h4 className="my-8 text-base">
+          Welcome to my official portfolio website where I showcase all of my
+          web development projects.
+          <br />
+          This platform serves as a hub for displaying my skills and expertise
+          in the field.
+          <br />
+          Feel free to explore my works and get a glimpse of my capabilities
+        </h4>
 
-      <h4>Download my Resume here:</h4>
-      <DownloadButton/>
+        <h4>Download my Resume here:</h4>
+        <DownloadButton />
       </div>
     </section>
 
@@ -37,27 +42,33 @@ const Index = () => (
             <span className="line"></span>
           </h1>
           <div>
-            <p className="max-w-5xl my-8">
-              Hello! My name is Agustin, a 20 years old programmer who currently
-              lives in Buenos Aires, Argentina and enjoys creating things on the
-              internet... I&apos;m interested on learning and getting into the
-              world of programming. Besides music, coding is my passion and
-              hobby. Is because of that, that I&apos;m always interested on
-              learning and getting into the coding world. I&apos;m always
-              looking for learn and incorporate new technologies to my projects.
-              My interest in web development started in 2020 when I get
-              graduated from high school where I learned programming and since
-              then, I have learned a lot about HTML and CSS!
+            <p className="max-w-4xl my-8">
+              Hello! My name is Agustin, a 21-year-old programmer currently
+              residing in Buenos Aires, Argentina.
+              <br />
+              I have a deep passion for creating things on the internet and
+              I&apos;m actively pursuing my interest in programming.
+              <br />
+              Alongside music, coding has become my main hobby and my dedication
+              to it drives me to constantly learn and explore the world of
+              programming.
+              <br />
+              I am always eager to acquire new skills and incorporate the latest
+              technologies into my projects.
+              <br />
+              My journey into web development began in 2020 after graduating
+              from high school, where I was introduced to programming. Since
+              then, I have gained extensive knowledge in HTML and CSS.
             </p>
             <p className="my-5">
               Here are a few technologies I&apos;ve been working with recently:
             </p>
 
             <ul className="inline-flex skills-list">
-              <li>JavaScript</li>
-              <li>React</li>
               <li>Html</li>
               <li>Css</li>
+              <li>Javascript</li>
+              <li>React</li>
             </ul>
           </div>
         </div>
@@ -82,12 +93,18 @@ const Index = () => (
         <span className="line"></span>
       </h1>
 
-      <div className="items-center mt-10 md:inline-flex md:justify-center" id="gridCont">
-        <GridPortfolio/>
+      <div
+        className="items-center mt-10 md:inline-flex md:justify-center"
+        id="gridCont"
+      >
+        <GridPortfolio />
       </div>
     </section>
 
-    <section id="contact" className="flex flex-col items-center justify-center min-h-screen py-10 space-y-6 text-center md:py-0">
+    <section
+      id="contact"
+      className="flex flex-col items-center justify-center min-h-screen py-10 space-y-6 text-center md:py-0"
+    >
       <h1 className="text-3xl">Contact</h1>
       <p className="max-w-3xl text-center">
         Currently I&apos;m looking for any new opportunities. My inbox is always
