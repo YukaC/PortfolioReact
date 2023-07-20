@@ -1,5 +1,6 @@
 import { useState } from "react";
 import Image from "next/image";
+
 const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
@@ -18,7 +19,7 @@ const Navbar = () => {
         behavior: "smooth",
       });
     }
-    setIsMenuOpen(false); // Close the menu after clicking a link
+    setIsMenuOpen(false)
   };
 
   const spanElements = [
@@ -41,7 +42,7 @@ const Navbar = () => {
           />
         </div>
         <button
-          className="md:hidden z-50"
+          className="md:hidden z-50 block w-8 h-12"
           id="menuToggle"
           onClick={() => setIsMenuOpen(!isMenuOpen)}
         >
@@ -49,7 +50,7 @@ const Navbar = () => {
         </button>
 
         <ul
-          className={`text-center top-20 h-64 w-full absolute bg-main-color transition-all duration-[600ms] ease-in ${
+          className={`text-center top-20 h-64 w-full absolute md:h-auto md:bg-transparent md:w-auto md:flex md:items-center md:static bg-main-color transition-all duration-[600ms] ease-in ${
             isMenuOpen ? "" : "menu-hidden"
           }`}
         >
@@ -57,10 +58,12 @@ const Navbar = () => {
             <li
               key={tag.name}
               style={{
-                transitionDelay: isMenuOpen ? `${index * .2}s` : `${(Tags.length - index - 1) * .2}s`,
-                opacity: isMenuOpen ? "1" : "0",
+                transitionDelay: isMenuOpen ? `${index * .2}s` : `${(Tags.length - index - 1) * .2}s`
               }}
-              className={`text-xl md:ml-8 md:my-0 my-7 transition-all duration-[250ms] ease-out `}
+              className={`text-xl navbar-opt md:ml-8 md:my-0 my-7 transition-all duration-[250ms] ease-out ${
+                isMenuOpen ? "opacity-1" : "opacity-0"
+              }`}
+              
             >
               <button
                 onClick={() => scrollToSection(tag.name)}

@@ -108,14 +108,6 @@ body::-webkit-scrollbar-thumb {
   border-radius: 5px;
 }
 
-#menuToggle{
-  display: block;
-  width: 2rem;
-  height: 3rem;
-  border: 0;
-  background: transparent;
-}
-
 #menuToggle span {
   display: flex;
   margin-bottom: 6px;
@@ -135,4 +127,11 @@ body::-webkit-scrollbar-thumb {
   margin: 0;
   color: rgba(25, 25, 25, 0);
   z-index: 99;
+}
+
+@media screen and (min-width: 768px){
+   .navbar-opt {
+  opacity: 1;
+  visibility: visible;
+}
 }

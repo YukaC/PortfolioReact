@@ -10,10 +10,10 @@ import { faEnvelope } from "@fortawesome/free-solid-svg-icons";
 const Index = () => (
   <Layout title="Agustin Ciucani | Portfolio">
     <section
-      className="flex flex-col justify-center min-h-screen py-10 space-y-6 md:py-0 text-start"
+      className="flex flex-col justify-center min-h-screen py-10 space-y-6 lg:py-0 text-start"
       id="home"
     >
-      <div className="flex flex-col items-center mt-10 space-y-4 text-center md:justify-center">
+      <div className="flex flex-col items-center mt-10 space-y-4 text-center lg:justify-center">
         <h1>Hi, I&apos;m Agustin Ciucani</h1>
         <h3>FrontEnd Developer</h3>
         <h4 className="my-8 text-base">
@@ -32,11 +32,11 @@ const Index = () => (
     </section>
 
     <section
-      className="flex flex-col justify-center min-h-screen py-10 space-y-6 md:py-0 text-start"
+      className="flex flex-col justify-center min-h-screen py-10 space-y-6 lg:py-0 text-start"
       id="about"
     >
-      <div className="items-center mt-10 md:inline-flex md:justify-center">
-        <div className="w-full md:w-1/2 md:text-lg">
+      <div className="items-center mt-10 lg:inline-flex lg:justify-center">
+        <div className="w-full lg:w-1/2 lg:text-lg">
           <h1>
             About Me
             <span className="line"></span>
@@ -72,9 +72,9 @@ const Index = () => (
             </ul>
           </div>
         </div>
-        <div className="flex justify-center md:ml-14">
+        <div className="flex justify-center lg:ml-14">
           <Image
-            className="mt-12 rounded-xl md:mt-0 "
+            className="mt-12 rounded-xl lg:mt-0 "
             src="/profilePic.png"
             alt="ImgProfile"
             width={300}
@@ -85,7 +85,7 @@ const Index = () => (
     </section>
 
     <section
-      className="flex flex-col justify-center min-h-screen py-10 md:py-0 text-start"
+      className="flex flex-col justify-center min-h-screen py-10 lg:py-0 text-start"
       id="portfolio"
     >
       <h1>
@@ -94,7 +94,7 @@ const Index = () => (
       </h1>
 
       <div
-        className="items-center mt-10 md:inline-flex md:justify-center"
+        className="items-center mt-10 lg:inline-flex lg:justify-center"
         id="gridCont"
       >
         <GridPortfolio />
@@ -103,7 +103,7 @@ const Index = () => (
 
     <section
       id="contact"
-      className="flex flex-col items-center justify-center min-h-screen py-10 space-y-6 text-center md:py-0"
+      className="flex flex-col items-center justify-center min-h-screen py-10 space-y-6 text-center lg:py-0"
     >
       <h1 className="text-3xl">Contact</h1>
       <p className="max-w-3xl text-center">
