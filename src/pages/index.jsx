@@ -119,7 +119,7 @@ const Index = () => (
       <button className="flex items-center justify-center px-4 py-2 text-white transition-all duration-200 rounded-md cursor-pointer bg-main-color hover:bg-shadow-main-color">
         <div className="flex items-center space-x-1">
           <FontAwesomeIcon icon={faEnvelope} style={{ color: "#ffffff" }} />
-          <span>Contact</span>
+          <a href="mailto:agusyuk25@gmail.com">Contact</a>
         </div>
       </button>
 
