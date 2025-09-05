@@ -21,10 +21,13 @@
     "postcss": "^8.5.6",
     "react": "19.1.1",
     "react-dom": "19.1.1",
-    "tailwind": "^4.0.0",
+    "tailwind": "^2.3.1",
     "tailwindcss": "^4.1.13"
   },
   "engines": {
-    "node": "22.x"
+    "node": "24.x"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.1.13"
   }
 }
