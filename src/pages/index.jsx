@@ -16,7 +16,7 @@ const Index = () => (
       <div className="flex flex-col items-center mt-10 space-y-4 text-center lg:justify-center">
         <h1>Hi, I&apos;m Agustin Ciucani</h1>
         <h3>FrontEnd Developer</h3>
-        <h4 className="my-8 text-base">
+        <h4>
           Welcome to my official portfolio website where I showcase all of my
           web development projects.
           <br />
@@ -43,30 +43,31 @@ const Index = () => (
           </h1>
           <div>
             <p className="max-w-4xl my-8">
-              Hello! My name is Agustin, a 21-year-old programmer currently
-              residing in Buenos Aires, Argentina.
+              Hey! I'm Agustin, a 23-year-old web developer from Buenos Aires,
+              Argentina.
               <br />
-              I have a deep passion for creating things on the internet and
-              I&apos;m actively pursuing my interest in programming.
+              I started programming in 2020 and quickly realized it was
+              something I wanted to dive deeper into.
               <br />
-              Alongside music, coding has become my main hobby and my dedication
-              to it drives me to constantly learn and explore the world of
-              programming.
+              Since then, I’ve been building, learning, and experimenting —
+              always looking for new ways to improve and create cool stuff
+              online.
               <br />
-              I am always eager to acquire new skills and incorporate the latest
-              technologies into my projects.
+              Web development combines two things I love: creativity and
+              problem-solving.
               <br />
-              My journey into web development began in 2020 after graduating
-              from high school, where I was introduced to programming. Since
-              then, I have gained extensive knowledge in HTML and CSS.
+              I’m especially into front-end work with HTML and CSS, but I’m
+              always exploring new tools and technologies to level up my skills.
+              <br />
+              When I’m not coding, you’ll probably find me listening to music or
+              thinking about my next side project.
             </p>
             <p className="my-5">
               Here are a few technologies I&apos;ve been working with recently:
             </p>
-
             <ul className="inline-flex skills-list">
               <li>Html</li>
-              <li>Css</li>
+              <li>Tailwind CSS</li>
               <li>Javascript</li>
               <li>React</li>
             </ul>
@@ -75,7 +76,7 @@ const Index = () => (
         <div className="flex justify-center lg:ml-14">
           <Image
             className="mt-12 rounded-xl lg:mt-0 "
-            src="/profilePic.png"
+            src="/profilePic.jpg"
             alt="ImgProfile"
             width={300}
             height={50}

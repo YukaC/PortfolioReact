@@ -22,7 +22,7 @@ const projectData = [
     title: "Portfolio",
     description:
       "I'm currently focused on learning React with Next.js and Node.js for server-side rendering. This project is a reinterpretation of my previous portfolio, featuring new components, an updated design, and my first experience working with React Hooks and Tailwind CSS.",
-    repoLink: "https://github.com/YukaC/yukac.github.io",
+    repoLink: "https://github.com/YukaC/PortfolioReact",
   },
 ];
 

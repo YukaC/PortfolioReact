@@ -1,17 +1,17 @@
-import React from 'react';
+import React from "react";
 
 const DownloadButton = () => {
   const handleDownload = () => {
     // Nombre del archivo que quieres descargar
-    const fileName = 'Agustin-Ciucani-Resume.pdf';
+    const fileName = "Agustin-Ciucani-Resume.pdf";
 
     // URL del archivo (sin incluir "public")
-    const fileUrl = '/' + fileName;
+    const fileUrl = "/" + fileName;
 
     // Crea un elemento <a> invisible
-    const link = document.createElement('a');
+    const link = document.createElement("a");
     link.href = fileUrl;
-    link.target = '_blank';
+    link.target = "_blank";
     link.download = fileName; // Nombre del archivo que se descargará
 
     // Agrega el elemento <a> al DOM y haz clic en él
