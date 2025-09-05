@@ -1,5 +1,9 @@
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faGithub, faLinkedin, faInstagram } from '@fortawesome/free-brands-svg-icons';
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import {
+  faGithub,
+  faLinkedin,
+  faInstagram,
+} from "@fortawesome/free-brands-svg-icons";
 
 function SocialLinks() {
   return (
@@ -20,7 +24,7 @@ function SocialLinks() {
       </a>
       <a
         target="_blank"
-        href="https://www.instagram.com/yuka.mol/"
+        href="https://www.instagram.com/agus.yuk/"
         className="flex items-center justify-center w-12 h-12 transition-all duration-200 rounded-full bg-main-color hover:bg-shadow-main-color"
       >
         <FontAwesomeIcon icon={faInstagram} />
