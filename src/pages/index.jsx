@@ -43,23 +43,23 @@ const Index = () => (
           </h1>
           <div>
             <p className="max-w-4xl my-8">
-              Hey! I'm Agustin, a 23-year-old web developer from Buenos Aires,
+              Hey! I&apos;m Agustin, a 23-year-old web developer from Buenos Aires,
               Argentina.
               <br />
               I started programming in 2020 and quickly realized it was
               something I wanted to dive deeper into.
               <br />
-              Since then, I’ve been building, learning, and experimenting —
+              Since then, I&apos;ve been building, learning, and experimenting —
               always looking for new ways to improve and create cool stuff
               online.
               <br />
               Web development combines two things I love: creativity and
               problem-solving.
               <br />
-              I’m especially into front-end work with HTML and CSS, but I’m
+              I&apos;m especially into front-end work with HTML and CSS, but I&apos;m
               always exploring new tools and technologies to level up my skills.
               <br />
-              When I’m not coding, you’ll probably find me listening to music or
+              When I&apos;m not coding, you&apos;ll probably find me listening to music or
               thinking about my next side project.
             </p>
             <p className="my-5">
