@@ -15,9 +15,9 @@ const Layout = ({ children, title, description }) => (
       <link rel="icon" href="/favicon.ico" />
     </Head>
 
-    <div role="document" className="container">
+    <div role="document" className="w-full max-w-6xl mx-auto px-4">
       <Navbar />
-      <main className="flex flex-col items-center py-0 text-start">
+      <main className="flex flex-col items-center py-0 text-start w-full">
         {children}
       </main>
     </div>
