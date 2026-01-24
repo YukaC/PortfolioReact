@@ -26,7 +26,7 @@
     "eslint-config-next": "15.5.2"
   },
   "pnpm": {
-    "allowedBuildScripts": [
+    "onlyBuiltDependencies": [
       "sharp",
       "unrs-resolver"
     ]
