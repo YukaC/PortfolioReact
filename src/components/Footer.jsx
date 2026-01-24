@@ -4,7 +4,7 @@ import {
   SOCIAL_LINKS,
   ANIMATION_PHASES,
   PHASE_TIMINGS,
-} from "../src/data/constants";
+} from "@/data/constants";
 
 /**
  * Footer - Site footer with social links and easter egg

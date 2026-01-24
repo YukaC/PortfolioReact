@@ -1,4 +1,4 @@
-import { EDUCATION } from "../src/data/constants";
+import { EDUCATION } from "@/data/constants";
 
 /**
  * Experience - About section with timeline
