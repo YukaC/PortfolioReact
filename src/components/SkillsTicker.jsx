@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { SKILLS } from "../src/data/constants";
+import { SKILLS } from "@/data/constants";
 
 /**
  * SkillsTicker - Infinite horizontal scrolling skills section

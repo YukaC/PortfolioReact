@@ -1,5 +1,5 @@
 import Image from "next/image";
-import { ANIMATION_PHASES } from "../src/data/constants";
+import { ANIMATION_PHASES } from "@/data/constants";
 
 /**
  * BebopAnimation - Encapsulates the Easter Egg animation UI
