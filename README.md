@@ -1,38 +1,129 @@
-This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# 🎷 Portfolio - Agustin Ciucani
 
-## Getting Started
+> Full-Stack Developer portfolio.
 
-First, run the development server:
+![Next.js](https://img.shields.io/badge/Next.js-15.5-black?logo=next.js)
+![React](https://img.shields.io/badge/React-19-61DAFB?logo=react)
+![Tailwind CSS](https://img.shields.io/badge/Tailwind-4.1-38B2AC?logo=tailwindcss)
+![License](https://img.shields.io/badge/License-MIT-green)
+
+## 📚 Descripción
+
+Portfolio personal construido con **Next.js 15** y **React 19**, presentando mis proyectos y habilidades como desarrollador Full-Stack. Incluye un diseño moderno con animaciones fluidas y un Easter Egg temático de Cowboy Bebop.
+
+### ✨ Características
+
+- **🚀 Performance optimizada** - First Load JS ~95 kB, imágenes optimizadas con `next/image`
+- **♿ Accesibilidad** - ARIA labels, roles semánticos, focus management
+- **🎨 Diseño responsivo** - Mobile-first con soporte para dark/light mode
+- **🔤 Tipografía profesional** - Manrope + Space Grotesk via `next/font`
+- **🎬 Animaciones** - Easter egg con animación CRT estilo Cowboy Bebop
+
+## 🛠️ Tech Stack
+
+| Categoría  | Tecnología                     |
+| ---------- | ------------------------------ |
+| Framework  | Next.js 15 (Pages Router)      |
+| UI Library | React 19                       |
+| Styling    | Tailwind CSS 4 + CSS Variables |
+| Fonts      | Google Fonts (optimizadas)     |
+| Icons      | Material Symbols               |
+| Linting    | ESLint 9 + eslint-config-next  |
+
+## 🚀 Instalación
 
 ```bash
+# Clonar repositorio
+git clone https://github.com/YukaC/PortfolioReact.git
+cd PortfolioReact
+
+# Instalar dependencias
+npm install
+
+# Iniciar servidor de desarrollo
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Abre [http://localhost:3000](http://localhost:3000) en tu navegador.
 
-You can start editing the page by modifying `pages/index.js`. The page auto-updates as you edit the file.
+## 📦 Scripts Disponibles
 
-[API routes](https://nextjs.org/docs/api-routes/introduction) can be accessed on [http://localhost:3000/api/hello](http://localhost:3000/api/hello). This endpoint can be edited in `pages/api/hello.js`.
+| Comando         | Descripción                   |
+| --------------- | ----------------------------- |
+| `npm run dev`   | Inicia servidor de desarrollo |
+| `npm run build` | Genera build de producción    |
+| `npm run start` | Ejecuta build de producción   |
+| `npm run lint`  | Ejecuta ESLint                |
 
-The `pages/api` directory is mapped to `/api/*`. Files in this directory are treated as [API routes](https://nextjs.org/docs/api-routes/introduction) instead of React pages.
+## 📁 Estructura del Proyecto
 
-This project uses [`next/font`](https://nextjs.org/docs/basic-features/font-optimization) to automatically optimize and load Inter, a custom Google Font.
+```
+PortfolioReact/
+├── components/          # Componentes React reutilizables
+│   ├── Layout.jsx       # Layout principal con SEO
+│   ├── Navbar.jsx       # Navegación con scroll smooth
+│   ├── HeroSection.jsx  # Sección hero con imagen y terminal
+│   ├── SkillsTicker.jsx # Ticker animado de tecnologías
+│   ├── ProjectsGrid.jsx # Grid de proyectos
+│   ├── Experience.jsx   # Timeline de experiencia
+│   ├── Footer.jsx       # Footer con Easter egg
+│   └── BebopAnimation.jsx # Animación Cowboy Bebop
+├── src/
+│   ├── pages/           # Páginas Next.js
+│   ├── styles/          # CSS global con Tailwind
+│   └── data/            # Datos estáticos (constants.js)
+├── public/              # Assets estáticos
+└── package.json         # Dependencias y scripts
+```
 
-## Learn More
+## 🌐 Deploy
 
-To learn more about Next.js, take a look at the following resources:
+### Vercel (Recomendado)
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```bash
+# Instalar Vercel CLI
+npm i -g vercel
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js/) - your feedback and contributions are welcome!
+# Deploy
+vercel
+```
 
-## Deploy on Vercel
+### Otras plataformas
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+El proyecto genera páginas estáticas, compatible con:
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/deployment) for more details.
+- **Netlify** - Detecta Next.js automáticamente
+- **Railway** - Usando el preset de Next.js
+- **Docker** - Ver [Next.js Docker docs](https://nextjs.org/docs/deployment#docker-image)
+
+## 🔧 Requisitos
+
+- **Node.js** 22.x (especificado en `engines`)
+- **npm** 9+
+
+## 🎨 Variables CSS
+
+El proyecto usa CSS Custom Properties para theming:
+
+```css
+:root {
+  --color-primary: #825ca3;
+  --color-secondary: #5e3b5a;
+  --color-amber-glow: #ffbf00;
+  --color-bg: #f7f6f7;
+  --color-text: #1e293b;
+}
+
+.dark {
+  --color-bg: #19161c;
+  --color-text: #e5e5e5;
+}
+```
+
+## 📄 Licencia
+
+Este proyecto está bajo la Licencia MIT.
+
+---
+
+**Creado por [Agustin Ciucani](https://github.com/YukaC)** 🚀
