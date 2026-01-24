@@ -24,5 +24,11 @@
     "@tailwindcss/postcss": "^4.1.13",
     "eslint": "9.35.0",
     "eslint-config-next": "15.5.2"
+  },
+  "pnpm": {
+    "allowedBuildScripts": [
+      "sharp",
+      "unrs-resolver"
+    ]
   }
 }
