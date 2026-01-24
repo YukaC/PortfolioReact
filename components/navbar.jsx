@@ -1,81 +1,116 @@
-import { useState } from "react";
-import Image from "next/image";
+import { useState, useEffect } from "react";
+import Link from "next/link";
+import { NAV_LINKS } from "../src/data/constants";
 
 const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
 
-  const Tags = [
-    { name: "HOME" },
-    { name: "ABOUT" },
-    { name: "PORTFOLIO" },
-    { name: "CONTACT" },
-  ];
+  // Detect scroll for navbar background
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 20);
+    };
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
-  const scrollToSection = (sectionName) => {
-    const section = document.getElementById(sectionName.toLowerCase());
+  const scrollToSection = (e, href) => {
+    e.preventDefault();
+    const section = document.querySelector(href);
     if (section) {
-      window.scrollTo({
-        top: section.offsetTop,
-        behavior: "smooth",
-      });
+      section.scrollIntoView({ behavior: "smooth" });
     }
-    setIsMenuOpen(false)
+    setIsMenuOpen(false);
   };
 
-  const spanElements = [
-    <span key="1" style={{ transform: isMenuOpen ? "rotate(45deg)" : "none" }} />,
-    <span key="2" style={{ opacity: isMenuOpen ? "0" : "1" }} />,
-    <span key="3" style={{ transform: isMenuOpen ? "rotate(-45deg)" : "none" }} />,
-  ];
-
   return (
-    <header className="mt-9">
-      <div className="relative z-50 flex items-center justify-between">
-        <div>
-          <Image
-            className="logoWeb"
-            id="logo"
-            src="/logo-white.png"
-            alt="Logo"
-            width={100}
-            height={50}
-          />
-        </div>
-        <button
-          className="md:hidden z-50 block w-8 h-12"
-          id="menuToggle"
-          onClick={() => setIsMenuOpen(!isMenuOpen)}
+    <nav
+      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+        isScrolled
+          ? "backdrop-blur-md bg-bg-main/80 border-b border-[var(--color-border)]"
+          : "bg-transparent"
+      }`}
+      role="navigation"
+      aria-label="Main navigation"
+    >
+      <div className="max-w-container mx-auto px-6 h-20 flex items-center justify-between">
+        {/* Logo */}
+        <Link
+          href="#home"
+          className="group flex items-center gap-2 font-heading font-bold text-xl hover:text-amber-glow transition-colors"
+          onClick={(e) => scrollToSection(e, "#home")}
+          aria-label="Go to home section"
         >
-          {spanElements}
-        </button>
-
-        <ul
-          className={`text-center top-20 h-64 w-full absolute md:h-auto md:bg-transparent md:w-auto md:flex md:items-center md:static bg-main-color transition-all duration-[600ms] ease-in ${
-            isMenuOpen ? "" : "menu-hidden"
-          }`}
-        >
-          {Tags.map((tag, index) => (
-            <li
-              key={tag.name}
-              style={{
-                transitionDelay: isMenuOpen ? `${index * .2}s` : `${(Tags.length - index - 1) * .2}s`
-              }}
-              className={`text-xl navbar-opt md:ml-8 md:my-0 my-7 transition-all duration-[250ms] ease-out ${
-                isMenuOpen ? "opacity-1" : "opacity-0"
-              }`}
-              
+          Agustin Ciucani
+        </Link>
+        <div className="hidden md:flex items-center gap-8">
+          {NAV_LINKS.map((link) => (
+            <a
+              key={link.name}
+              href={link.href}
+              onClick={(e) => scrollToSection(e, link.href)}
+              className="navLink"
             >
-              <button
-                onClick={() => scrollToSection(tag.name)}
-                className="text-gray-200 duration-300 hover:text-gray-500"
-              >
-                {tag.name}
-              </button>
-            </li>
+              {link.name}
+            </a>
           ))}
-        </ul>
+          <a
+            href="#contact"
+            onClick={(e) => scrollToSection(e, "#contact")}
+            className="btnPrimary px-6 py-2 text-sm"
+          >
+            Get in Touch
+          </a>
+        </div>
+
+        {/* Mobile Menu Button */}
+        <button
+          className="md:hidden p-2 text-text-muted hover:text-amber-glow transition-colors"
+          onClick={() => setIsMenuOpen(!isMenuOpen)}
+          aria-expanded={isMenuOpen}
+          aria-controls="mobile-menu"
+          aria-label={isMenuOpen ? "Close menu" : "Open menu"}
+        >
+          <span className="material-symbols-outlined" aria-hidden="true">
+            {isMenuOpen ? "close" : "menu"}
+          </span>
+        </button>
       </div>
-    </header>
+
+      {/* Mobile Menu */}
+      <div
+        id="mobile-menu"
+        className={`md:hidden absolute top-20 left-0 right-0 bg-bg-main/95 backdrop-blur-lg border-b border-[var(--color-border)] transition-all duration-300 ${
+          isMenuOpen
+            ? "opacity-100 visible translate-y-0"
+            : "opacity-0 invisible -translate-y-4"
+        }`}
+        role="menu"
+      >
+        <div className="px-6 py-6 flex flex-col gap-4">
+          {NAV_LINKS.map((link) => (
+            <a
+              key={link.name}
+              href={link.href}
+              onClick={(e) => scrollToSection(e, link.href)}
+              className="navLink text-lg py-2"
+              role="menuitem"
+            >
+              {link.name}
+            </a>
+          ))}
+          <a
+            href="#contact"
+            onClick={(e) => scrollToSection(e, "#contact")}
+            className="btnPrimary text-center mt-2"
+            role="menuitem"
+          >
+            Get in Touch
+          </a>
+        </div>
+      </div>
+    </nav>
   );
 };
 
