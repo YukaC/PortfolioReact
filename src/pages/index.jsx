@@ -1,9 +1,9 @@
-import Layout from "../../components/Layout";
-import HeroSection from "../../components/HeroSection";
-import SkillsTicker from "../../components/SkillsTicker";
-import ProjectsGrid from "../../components/ProjectsGrid";
-import Experience from "../../components/Experience";
-import Footer from "../../components/Footer";
+import Layout from "@components/Layout";
+import HeroSection from "@components/HeroSection";
+import SkillsTicker from "@components/SkillsTicker";
+import ProjectsGrid from "@components/ProjectsGrid";
+import Experience from "@components/Experience";
+import Footer from "@components/Footer";
 
 const Index = () => (
   <Layout title="Agustin Ciucani | Fullstack Developer">
