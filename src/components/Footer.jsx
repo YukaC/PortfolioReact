@@ -151,7 +151,7 @@ const Footer = () => {
 
       <div className="w-full flex justify-center mt-12 mb-4">
         <p
-          className="easterEgg select-none cursor-help relative hover:text-amber-glow transition-all duration-300"
+          className="opacity-15 hover:opacity-100 hover:text-amber-glow hover:scale-105 hover:drop-shadow-[0_0_15px_rgba(212,175,55,0.6)] transition-all duration-500 select-none cursor-help font-mono text-xs italic"
           title="Hold for 3 seconds..."
           onMouseEnter={handleMouseEnter}
           onMouseLeave={handleMouseLeave}

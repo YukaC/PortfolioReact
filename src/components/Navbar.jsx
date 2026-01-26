@@ -40,7 +40,7 @@ const Navbar = () => {
         {/* Logo */}
         <Link
           href="#home"
-          className="group flex items-center gap-2 font-heading font-bold text-xl hover:text-amber-glow transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-bg-main rounded"
+          className="group flex items-center gap-2 font-heading font-bold text-xl hover:text-amber-glow transition-colors duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-bg-main rounded"
           onClick={(e) => scrollToSection(e, "#home")}
           aria-label="Go to home section"
         >
@@ -52,7 +52,7 @@ const Navbar = () => {
               key={link.name}
               href={link.href}
               onClick={(e) => scrollToSection(e, link.href)}
-              className="navLink focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-bg-main rounded"
+              className="text-sm font-medium text-text-muted hover:text-amber-glow transition-colors duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-bg-main rounded"
             >
               {link.name}
             </a>
@@ -60,7 +60,7 @@ const Navbar = () => {
           <a
             href="#contact"
             onClick={(e) => scrollToSection(e, "#contact")}
-            className="btnPrimary px-6 py-2 text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-bg-main"
+            className="inline-flex items-center justify-center gap-2 px-6 py-2 text-sm bg-primary text-bg-main font-bold rounded transition-all duration-300 hover:bg-amber-glow hover:text-[#19161c] hover:-translate-y-0.5 shadow-md shadow-primary/20 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-bg-main"
           >
             Get in Touch
           </a>
@@ -68,7 +68,7 @@ const Navbar = () => {
 
         {/* Mobile Menu Button */}
         <button
-          className="md:hidden p-2 text-text-muted hover:text-amber-glow transition-colors"
+          className="md:hidden p-2 text-text-muted hover:text-amber-glow transition-colors duration-300"
           onClick={() => setIsMenuOpen(!isMenuOpen)}
           aria-expanded={isMenuOpen}
           aria-controls="mobile-menu"
@@ -96,7 +96,7 @@ const Navbar = () => {
               key={link.name}
               href={link.href}
               onClick={(e) => scrollToSection(e, link.href)}
-              className="navLink text-lg py-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-bg-main rounded"
+              className="text-lg py-2 font-medium text-text-muted hover:text-amber-glow transition-colors duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-bg-main rounded"
               role="menuitem"
             >
               {link.name}
@@ -105,7 +105,7 @@ const Navbar = () => {
           <a
             href="#contact"
             onClick={(e) => scrollToSection(e, "#contact")}
-            className="btnPrimary text-center mt-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-bg-main"
+            className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-primary text-bg-main font-bold rounded text-center mt-2 transition-all duration-300 hover:bg-amber-glow hover:text-[#19161c] shadow-md shadow-primary/20 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-bg-main"
             role="menuitem"
           >
             Get in Touch

@@ -27,7 +27,7 @@ const SkillsTicker = () => {
           {DUPLICATED_SKILLS.map((skill, index) => (
             <div
               key={`${skill.name}-${index}`}
-              className="skillsTickerItem group/skill cursor-default hover:text-amber-glow transition-colors"
+              className="flex items-center gap-3 font-heading font-medium text-2xl text-text-muted whitespace-nowrap min-w-max group/skill cursor-default hover:text-amber-glow transition-colors"
             >
               <span
                 className="material-symbols-outlined text-primary group-hover/skill:text-amber-glow transition-colors"
