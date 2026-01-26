@@ -29,11 +29,11 @@ const BebopAnimation = memo(({ phase }) => {
     // Focus trap: keep focus within the modal
     const handleTabKey = (e) => {
       if (e.key !== "Tab") return;
-      
+
       const focusableElements = overlayRef.current?.querySelectorAll(
-        'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])'
+        'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])',
       );
-      
+
       if (!focusableElements || focusableElements.length === 0) {
         e.preventDefault();
         return;
@@ -69,7 +69,7 @@ const BebopAnimation = memo(({ phase }) => {
     if (overlay) {
       overlay.addEventListener("keydown", handleTabKey);
       overlay.addEventListener("keydown", handleEscape);
-      
+
       // Focus the overlay container
       overlay.focus();
     }
@@ -101,9 +101,9 @@ const BebopAnimation = memo(({ phase }) => {
       <div className="bebopCrtGlow" aria-hidden="true" />
 
       {/* Countdown Phase */}
-      {(phase === ANIMATION_PHASES.COUNTDOWN_3 ||
-        phase === ANIMATION_PHASES.COUNTDOWN_2 ||
-        phase === ANIMATION_PHASES.COUNTDOWN_1) ? (
+      {phase === ANIMATION_PHASES.COUNTDOWN_3 ||
+      phase === ANIMATION_PHASES.COUNTDOWN_2 ||
+      phase === ANIMATION_PHASES.COUNTDOWN_1 ? (
         <div className="bebopCountdown">
           <span className="bebopCountdownNumber" key={phase}>
             {phase.split("_")[1]}
@@ -112,8 +112,8 @@ const BebopAnimation = memo(({ phase }) => {
       ) : null}
 
       {/* Let's Jam Phase - Persist during FADE_TO_BLACK */}
-      {(phase === ANIMATION_PHASES.JAM ||
-        phase === ANIMATION_PHASES.FADE_TO_BLACK) ? (
+      {phase === ANIMATION_PHASES.JAM ||
+      phase === ANIMATION_PHASES.FADE_TO_BLACK ? (
         <div className="bebopJamContainer">
           <div className="relative">
             <span className="bebopJamText opacity-0 pointer-events-none select-none animate-none!">
@@ -127,9 +127,9 @@ const BebopAnimation = memo(({ phase }) => {
       ) : null}
 
       {/* Ship flying across + End Card Phase */}
-      {(phase === ANIMATION_PHASES.SHIP ||
-        phase === ANIMATION_PHASES.ENDCARD ||
-        phase === ANIMATION_PHASES.CRT_OFF) ? (
+      {phase === ANIMATION_PHASES.SHIP ||
+      phase === ANIMATION_PHASES.ENDCARD ||
+      phase === ANIMATION_PHASES.CRT_OFF ? (
         <div className="bebopEndcardContainer">
           <span className="bebopEndcardText">SEE YOU SPACE COWBOY...</span>
 

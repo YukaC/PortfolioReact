@@ -18,7 +18,13 @@ const HeroSection = () => {
         {/* Text Content */}
         <div className="flex flex-col gap-6 order-2 lg:order-1">
           {/* Status Badge */}
-          <div className="statusBadge w-fit">Available for new projects</div>
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-bold uppercase tracking-wide">
+            <span
+              className="w-2 h-2 rounded-full bg-primary animate-pulse-slow"
+              aria-hidden="true"
+            ></span>
+            Available for new projects
+          </div>
 
           {/* Headline */}
           <h1>
@@ -35,10 +41,16 @@ const HeroSection = () => {
 
           {/* CTA Buttons */}
           <div className="flex flex-col sm:flex-row gap-4 mt-4">
-            <a href="#portfolio" className="btnPrimary focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-bg-main">
+            <a
+              href="#portfolio"
+              className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-primary text-bg-main font-bold rounded transition-all duration-300 hover:bg-amber-glow hover:text-[#19161c] hover:-translate-y-0.5 shadow-lg shadow-primary/20 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-bg-main"
+            >
               See Projects
             </a>
-            <a href="#contact" className="btnSecondary focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-bg-main">
+            <a
+              href="#contact"
+              className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-secondary/10 text-primary font-bold rounded border border-secondary/20 transition-all duration-300 hover:bg-amber-glow hover:text-[#19161c] hover:border-amber-glow hover:-translate-y-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-bg-main"
+            >
               Let&apos;s Connect
             </a>
           </div>
@@ -82,12 +94,12 @@ const HeroSection = () => {
               className={`absolute bottom-4 sm:bottom-8 left-4 sm:left-8 right-4 sm:right-8 transition-opacity duration-500 
               ${isActive ? "opacity-80" : "group-hover:opacity-80"}`}
             >
-              <div className="codeTerminal">
+              <div className="bg-black/60 backdrop-blur-xl border border-white/10 p-5 sm:p-5 max-sm:p-3 rounded-xl font-mono text-sm max-sm:text-[0.7rem]">
                 {/* Terminal Dots */}
-                <div className="codeTerminalDots">
-                  <div className="codeTerminalDot bg-[#ff5f56]" />
-                  <div className="codeTerminalDot bg-[#ffbd2e]" />
-                  <div className="codeTerminalDot bg-[#27c93f]" />
+                <div className="flex gap-2 mb-3">
+                  <div className="w-3 h-3 rounded-full bg-[#ff5f56]" />
+                  <div className="w-3 h-3 rounded-full bg-[#ffbd2e]" />
+                  <div className="w-3 h-3 rounded-full bg-[#27c93f]" />
                 </div>
 
                 {/* Code Content */}
