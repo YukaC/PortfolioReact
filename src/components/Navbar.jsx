@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, startTransition } from "react";
 import Link from "next/link";
 import { NAV_LINKS } from "@/data/constants";
 
@@ -6,10 +6,12 @@ const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
 
-  // Detect scroll for navbar background
+  // Detect scroll for navbar background - using startTransition for non-urgent updates
   useEffect(() => {
     const handleScroll = () => {
-      setIsScrolled(window.scrollY > 20);
+      startTransition(() => {
+        setIsScrolled(window.scrollY > 20);
+      });
     };
     window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
@@ -28,7 +30,7 @@ const Navbar = () => {
     <nav
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
         isScrolled
-          ? "backdrop-blur-md bg-bg-main/80 border-b border-[var(--color-border)]"
+          ? "backdrop-blur-md bg-bg-main/80 border-b border-(--color-border)"
           : "bg-transparent"
       }`}
       role="navigation"
@@ -38,7 +40,7 @@ const Navbar = () => {
         {/* Logo */}
         <Link
           href="#home"
-          className="group flex items-center gap-2 font-heading font-bold text-xl hover:text-amber-glow transition-colors"
+          className="group flex items-center gap-2 font-heading font-bold text-xl hover:text-amber-glow transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-bg-main rounded"
           onClick={(e) => scrollToSection(e, "#home")}
           aria-label="Go to home section"
         >
@@ -50,7 +52,7 @@ const Navbar = () => {
               key={link.name}
               href={link.href}
               onClick={(e) => scrollToSection(e, link.href)}
-              className="navLink"
+              className="navLink focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-bg-main rounded"
             >
               {link.name}
             </a>
@@ -58,7 +60,7 @@ const Navbar = () => {
           <a
             href="#contact"
             onClick={(e) => scrollToSection(e, "#contact")}
-            className="btnPrimary px-6 py-2 text-sm"
+            className="btnPrimary px-6 py-2 text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-bg-main"
           >
             Get in Touch
           </a>
@@ -81,7 +83,7 @@ const Navbar = () => {
       {/* Mobile Menu */}
       <div
         id="mobile-menu"
-        className={`md:hidden absolute top-20 left-0 right-0 bg-bg-main/95 backdrop-blur-lg border-b border-[var(--color-border)] transition-all duration-300 ${
+        className={`md:hidden absolute top-20 left-0 right-0 bg-bg-main/95 backdrop-blur-lg border-b border-(--color-border) transition-all duration-300 ${
           isMenuOpen
             ? "opacity-100 visible translate-y-0"
             : "opacity-0 invisible -translate-y-4"
@@ -94,7 +96,7 @@ const Navbar = () => {
               key={link.name}
               href={link.href}
               onClick={(e) => scrollToSection(e, link.href)}
-              className="navLink text-lg py-2"
+              className="navLink text-lg py-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-bg-main rounded"
               role="menuitem"
             >
               {link.name}
@@ -103,7 +105,7 @@ const Navbar = () => {
           <a
             href="#contact"
             onClick={(e) => scrollToSection(e, "#contact")}
-            className="btnPrimary text-center mt-2"
+            className="btnPrimary text-center mt-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-bg-main"
             role="menuitem"
           >
             Get in Touch

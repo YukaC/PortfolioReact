@@ -36,7 +36,7 @@ const Index = () => (
 
       <a
         href="mailto:agusyuk25@gmail.com"
-        className="btnPrimary text-lg px-8 py-3 shadow-xl shadow-primary/10"
+        className="btnPrimary text-lg px-8 py-3 shadow-xl shadow-primary/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-bg-main"
       >
         <span className="material-symbols-outlined" aria-hidden="true">
           music_note

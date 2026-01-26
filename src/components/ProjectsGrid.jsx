@@ -1,10 +1,11 @@
+import { memo } from "react";
 import Image from "next/image";
 import projectData from "./projectData";
 
 /**
  * ProjectCard - Individual project card with hover effects
  */
-const ProjectCard = ({ imgSrc, alt, title, description, tags, repoLink }) => {
+const ProjectCard = memo(({ imgSrc, alt, title, description, tags, repoLink }) => {
   return (
     <article className="projectCard group h-full flex flex-col">
       {/* Image Container */}
@@ -26,15 +27,17 @@ const ProjectCard = ({ imgSrc, alt, title, description, tags, repoLink }) => {
           role="list"
           aria-label="Technologies used"
         >
-          {tags?.map((tag, index) => (
-            <span
-              key={tag}
-              role="listitem"
-              className={index === 0 ? "techTag" : "techTag techTagSecondary"}
-            >
-              {tag}
-            </span>
-          ))}
+          {tags && tags.length > 0 ? (
+            tags.map((tag, index) => (
+              <span
+                key={tag}
+                role="listitem"
+                className={index === 0 ? "techTag" : "techTag techTagSecondary"}
+              >
+                {tag}
+              </span>
+            ))
+          ) : null}
         </div>
 
         {/* Title */}
@@ -52,7 +55,7 @@ const ProjectCard = ({ imgSrc, alt, title, description, tags, repoLink }) => {
           href={repoLink}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex items-center text-sm font-bold text-primary/80 hover:text-[#ffbf00] transition-all group/link mt-auto"
+          className="inline-flex items-center text-sm font-bold text-primary/80 hover:text-[#ffbf00] transition-all group/link mt-auto focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-surface rounded"
           aria-label={`View ${title} project on GitHub`}
         >
           View Project
@@ -66,7 +69,9 @@ const ProjectCard = ({ imgSrc, alt, title, description, tags, repoLink }) => {
       </div>
     </article>
   );
-};
+});
+
+ProjectCard.displayName = "ProjectCard";
 
 /**
  * ProjectsGrid - Grid layout for all projects
@@ -88,7 +93,7 @@ const ProjectsGrid = () => {
           href="https://github.com/YukaC"
           target="_blank"
           rel="noopener noreferrer"
-          className="text-primary font-bold flex items-center gap-1 hover:gap-3 hover:text-[#ffbf00] transition-all underline decoration-secondary/30 underline-offset-4 hover:decoration-[#ffbf00]"
+          className="text-primary font-bold flex items-center gap-1 hover:gap-3 hover:text-[#ffbf00] transition-all underline decoration-secondary/30 underline-offset-4 hover:decoration-[#ffbf00] focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-bg-main rounded"
         >
           Explore GitHub
           <span
