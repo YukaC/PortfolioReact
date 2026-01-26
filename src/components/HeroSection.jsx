@@ -35,10 +35,10 @@ const HeroSection = () => {
 
           {/* CTA Buttons */}
           <div className="flex flex-col sm:flex-row gap-4 mt-4">
-            <a href="#portfolio" className="btnPrimary">
+            <a href="#portfolio" className="btnPrimary focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-bg-main">
               See Projects
             </a>
-            <a href="#contact" className="btnSecondary">
+            <a href="#contact" className="btnSecondary focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-bg-main">
               Let&apos;s Connect
             </a>
           </div>

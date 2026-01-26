@@ -1,17 +1,16 @@
-import { useMemo } from "react";
 import { SKILLS } from "@/data/constants";
+
+// Hoisted outside component - created once, reused on every render
+const DUPLICATED_SKILLS = [...SKILLS, ...SKILLS];
 
 /**
  * SkillsTicker - Infinite horizontal scrolling skills section
  * Uses CSS animation for smooth, performant animation
  */
 const SkillsTicker = () => {
-  // Duplicate skills for seamless loop - Memoized to prevent re-calculation
-  const duplicatedSkills = useMemo(() => [...SKILLS, ...SKILLS], []);
-
   return (
     <section
-      className="w-full py-12 border-y border-[var(--color-border)] bg-bg-light/50 dark:bg-white/[0.02] overflow-hidden"
+      className="w-full py-12 border-y border-(--color-border) bg-bg-light/50 dark:bg-white/2 overflow-hidden"
       aria-label="Technical skills"
     >
       <div className="max-w-container mx-auto mb-6 px-6">
@@ -25,7 +24,7 @@ const SkillsTicker = () => {
           className="flex animateTicker gap-12 sm:gap-24 items-center"
           aria-hidden="true"
         >
-          {duplicatedSkills.map((skill, index) => (
+          {DUPLICATED_SKILLS.map((skill, index) => (
             <div
               key={`${skill.name}-${index}`}
               className="skillsTickerItem group/skill cursor-default hover:text-amber-glow transition-colors"

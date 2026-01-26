@@ -1,3 +1,4 @@
+import { memo, useEffect, useRef } from "react";
 import Image from "next/image";
 import { ANIMATION_PHASES } from "@/data/constants";
 
@@ -5,17 +6,94 @@ import { ANIMATION_PHASES } from "@/data/constants";
  * BebopAnimation - Encapsulates the Easter Egg animation UI
  * @param {string} phase - The current phase of the animation
  */
-const BebopAnimation = ({ phase }) => {
+const BebopAnimation = memo(({ phase }) => {
+  const overlayRef = useRef(null);
+  const previousActiveElementRef = useRef(null);
+
+  // Focus management: trap focus when modal opens, restore when it closes
+  useEffect(() => {
+    if (phase === ANIMATION_PHASES.IDLE) {
+      // Restore focus when animation closes
+      if (previousActiveElementRef.current) {
+        previousActiveElementRef.current.focus();
+        previousActiveElementRef.current = null;
+      }
+      return;
+    }
+
+    // Store the previously focused element when animation starts
+    if (!previousActiveElementRef.current) {
+      previousActiveElementRef.current = document.activeElement;
+    }
+
+    // Focus trap: keep focus within the modal
+    const handleTabKey = (e) => {
+      if (e.key !== "Tab") return;
+      
+      const focusableElements = overlayRef.current?.querySelectorAll(
+        'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])'
+      );
+      
+      if (!focusableElements || focusableElements.length === 0) {
+        e.preventDefault();
+        return;
+      }
+
+      const firstElement = focusableElements[0];
+      const lastElement = focusableElements[focusableElements.length - 1];
+
+      if (e.shiftKey) {
+        // Shift + Tab
+        if (document.activeElement === firstElement) {
+          e.preventDefault();
+          lastElement.focus();
+        }
+      } else {
+        // Tab
+        if (document.activeElement === lastElement) {
+          e.preventDefault();
+          firstElement.focus();
+        }
+      }
+    };
+
+    // Escape key to close (handled by parent component)
+    const handleEscape = (e) => {
+      if (e.key === "Escape") {
+        // The parent component should handle closing
+        e.stopPropagation();
+      }
+    };
+
+    const overlay = overlayRef.current;
+    if (overlay) {
+      overlay.addEventListener("keydown", handleTabKey);
+      overlay.addEventListener("keydown", handleEscape);
+      
+      // Focus the overlay container
+      overlay.focus();
+    }
+
+    return () => {
+      if (overlay) {
+        overlay.removeEventListener("keydown", handleTabKey);
+        overlay.removeEventListener("keydown", handleEscape);
+      }
+    };
+  }, [phase]);
+
   if (phase === ANIMATION_PHASES.IDLE) return null;
 
   return (
     <div
+      ref={overlayRef}
       className={`bebopIntroOverlay ${
         phase === ANIMATION_PHASES.CRT_ON ? "crtOn" : ""
       } ${phase === ANIMATION_PHASES.CRT_OFF ? "crtOff" : ""}`}
       role="dialog"
       aria-modal="true"
       aria-label="Cowboy Bebop Easter Egg Animation"
+      tabIndex={-1}
     >
       {/* CRT Advanced Effects Layers */}
       <div className="bebopCrtNoise" aria-hidden="true" />
@@ -25,20 +103,20 @@ const BebopAnimation = ({ phase }) => {
       {/* Countdown Phase */}
       {(phase === ANIMATION_PHASES.COUNTDOWN_3 ||
         phase === ANIMATION_PHASES.COUNTDOWN_2 ||
-        phase === ANIMATION_PHASES.COUNTDOWN_1) && (
+        phase === ANIMATION_PHASES.COUNTDOWN_1) ? (
         <div className="bebopCountdown">
           <span className="bebopCountdownNumber" key={phase}>
             {phase.split("_")[1]}
           </span>
         </div>
-      )}
+      ) : null}
 
       {/* Let's Jam Phase - Persist during FADE_TO_BLACK */}
       {(phase === ANIMATION_PHASES.JAM ||
-        phase === ANIMATION_PHASES.FADE_TO_BLACK) && (
+        phase === ANIMATION_PHASES.FADE_TO_BLACK) ? (
         <div className="bebopJamContainer">
           <div className="relative">
-            <span className="bebopJamText opacity-0 pointer-events-none select-none !animate-none">
+            <span className="bebopJamText opacity-0 pointer-events-none select-none animate-none!">
               Let&apos;s Jam...
             </span>
             <span className="bebopJamText absolute top-0 left-0">
@@ -46,18 +124,18 @@ const BebopAnimation = ({ phase }) => {
             </span>
           </div>
         </div>
-      )}
+      ) : null}
 
       {/* Ship flying across + End Card Phase */}
       {(phase === ANIMATION_PHASES.SHIP ||
         phase === ANIMATION_PHASES.ENDCARD ||
-        phase === ANIMATION_PHASES.CRT_OFF) && (
+        phase === ANIMATION_PHASES.CRT_OFF) ? (
         <div className="bebopEndcardContainer">
           <span className="bebopEndcardText">SEE YOU SPACE COWBOY...</span>
 
           <div className="bebopShipSystem">
             <div className="bebopTrailLine" />
-            {phase === ANIMATION_PHASES.SHIP && (
+            {phase === ANIMATION_PHASES.SHIP ? (
               <Image
                 src="/swordfish.png"
                 alt="Swordfish II"
@@ -66,12 +144,14 @@ const BebopAnimation = ({ phase }) => {
                 className="bebopSwordfishFlying"
                 priority // Preload ship image
               />
-            )}
+            ) : null}
           </div>
         </div>
-      )}
+      ) : null}
     </div>
   );
-};
+});
+
+BebopAnimation.displayName = "BebopAnimation";
 
 export default BebopAnimation;

@@ -6,7 +6,7 @@ import { EDUCATION } from "@/data/constants";
 const Experience = () => {
   return (
     <section
-      className="w-full max-w-container px-6 py-24 border-t border-[var(--color-border)]"
+      className="w-full max-w-container px-6 py-24 border-t border-(--color-border)"
       id="experience"
     >
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-24">
