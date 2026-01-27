@@ -156,7 +156,7 @@ const Footer = () => {
           onMouseEnter={handleMouseEnter}
           onMouseLeave={handleMouseLeave}
         >
-          3, 2, 1, Let&apos;s Jam.
+          I think it&apos;s time to blow this scene.
         </p>
       </div>
     </footer>
