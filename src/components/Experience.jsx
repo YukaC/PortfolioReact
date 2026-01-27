@@ -34,11 +34,11 @@ const Experience = () => {
               <span className="material-symbols-outlined" aria-hidden="true">
                 auto_stories
               </span>
-              Learning Goal
+              Currently Learning
             </h4>
             <p className="text-sm text-text-muted italic">
-              &quot;Actualmente profundizando en React avanzado y mejorando mis
-              habilidades en diseño responsivo con Tailwind CSS.&quot;
+              &quot;Currently deepening my knowledge of advanced React patterns
+              and improving my responsive design skills with Tailwind CSS.&quot;
             </p>
           </div>
         </div>

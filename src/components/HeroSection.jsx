@@ -18,7 +18,7 @@ const HeroSection = () => {
         {/* Text Content */}
         <div className="flex flex-col gap-6 order-2 lg:order-1">
           {/* Status Badge */}
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-bold uppercase tracking-wide">
+          <div className="inline-flex w-fit items-center gap-2 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-bold uppercase tracking-wide">
             <span
               className="w-2 h-2 rounded-full bg-primary animate-pulse-slow"
               aria-hidden="true"
