@@ -16,6 +16,7 @@ const ProjectCard = memo(
             alt={alt}
             width={600}
             height={340}
+            quality={90}
             className="w-full aspect-video object-cover grayscale transition-all duration-700 group-hover:grayscale-0 group-hover:scale-105"
           />
         </div>
@@ -112,7 +113,7 @@ const ProjectsGrid = () => {
       </div>
 
       {/* Projects Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         {projectData.map((project) => (
           <div key={project.title} className="h-full">
             <ProjectCard {...project} />
