@@ -1,5 +1,6 @@
 import { useState, useEffect, startTransition } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { NAV_LINKS } from "@/data/constants";
 
 const Navbar = () => {
@@ -40,11 +41,18 @@ const Navbar = () => {
         {/* Logo */}
         <Link
           href="#home"
-          className="group flex items-center gap-2 font-heading font-bold text-xl hover:text-amber-glow transition-colors duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-bg-main rounded"
+          className="group flex items-center gap-2 hover:drop-shadow-[0_0_10px_var(--color-amber-glow)] transition-all duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-bg-main rounded"
           onClick={(e) => scrollToSection(e, "#home")}
           aria-label="Go to home section"
         >
-          Agustin Ciucani
+          <Image
+            src="/logo-white.png"
+            alt="Agustin Ciucani Logo"
+            width={200}
+            height={80}
+            className="h-16 w-auto"
+            priority
+          />
         </Link>
         <div className="hidden md:flex items-center gap-8">
           {NAV_LINKS.map((link) => (
@@ -80,10 +88,9 @@ const Navbar = () => {
         </button>
       </div>
 
-      {/* Mobile Menu */}
       <div
         id="mobile-menu"
-        className={`md:hidden absolute top-20 left-0 right-0 bg-bg-main/95 backdrop-blur-lg border-b border-(--color-border) transition-all duration-300 ${
+        className={`md:hidden absolute top-20 left-0 right-0 bg-[var(--color-bg)]/98 backdrop-blur-xl border-b border-(--color-border) transition-all duration-300 ${
           isMenuOpen
             ? "opacity-100 visible translate-y-0"
             : "opacity-0 invisible -translate-y-4"
