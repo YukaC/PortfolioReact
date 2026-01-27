@@ -24,7 +24,9 @@ const Layout = ({
       className="min-h-screen bg-bg-main jazz-gradient transition-colors duration-300"
     >
       <Navbar />
-      <main className="w-full flex flex-col items-center">{children}</main>
+      <main className="w-full flex flex-col items-center px-4 sm:px-6 lg:px-8">
+        {children}
+      </main>
     </div>
   </>
 );
