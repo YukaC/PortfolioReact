@@ -149,6 +149,15 @@
   .animateTicker {
     animation: ticker 25s linear infinite;
   }
+
+  /* Glassmorphism Panel */
+  .glass-panel {
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    background-color: rgba(25, 22, 28, 0.8);
+    border-bottom-width: 1px;
+    border-color: var(--color-border);
+  }
 }
 
 /* ============================================

@@ -7,7 +7,7 @@ const projectData = [
     description:
       "Multi-tenant appointment management app featuring real-time validation, an admin dashboard, and data visualization with ECharts.",
     tags: ["JavaScript", "Python", "Flask", "MySQL"],
-    repoLink: "https://github.com/YukaC/TurnosApp",
+    repoLink: "https://github.com/YukaC/MuniDgoSaaS",
   },
   {
     imgSrc: "/img2.png",
