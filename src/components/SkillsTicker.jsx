@@ -1,7 +1,8 @@
 import { SKILLS } from "@/data/constants";
 
 // Hoisted outside component - created once, reused on every render
-const DUPLICATED_SKILLS = [...SKILLS, ...SKILLS];
+// Using 4 copies ensures seamless infinite loop animation
+const DUPLICATED_SKILLS = [...SKILLS, ...SKILLS, ...SKILLS, ...SKILLS];
 
 /**
  * SkillsTicker - Infinite horizontal scrolling skills section
@@ -22,6 +23,7 @@ const SkillsTicker = () => {
       <div className="relative flex w-full overflow-hidden">
         <div
           className="flex animateTicker gap-12 sm:gap-24 items-center"
+          style={{ willChange: "transform" }}
           aria-hidden="true"
         >
           {DUPLICATED_SKILLS.map((skill, index) => (
