@@ -2,6 +2,7 @@
  * Static data for the portfolio.
  * Centralizing this data improves HMR performance and makes the site easier to maintain.
  */
+import { bebopShipPhaseMs } from "./bebopShip";
 
 export const SKILLS = [
   { name: "HTML5", icon: "html" },
@@ -46,14 +47,15 @@ export const ANIMATION_PHASES = {
   CRT_OFF: "CRT_OFF",
 };
 
+/** Durations in ms — ship timing from src/data/bebopShip.js */
 export const PHASE_TIMINGS = {
-  CRT_ON: 600,
-  COUNTDOWN: 500,
-  JAM: 800,
-  FADE: 500,
-  SHIP: 6000,
-  ENDCARD: 1800,
-  CRT_OFF: 700,
+  CRT_ON: 500, // crtPowerOn 0.5s
+  COUNTDOWN: 500, // countdownPulse 0.5s
+  JAM: 800, // typewriter 0.8s
+  FADE: 400, // fadeOut 0.4s
+  SHIP: bebopShipPhaseMs(),
+  ENDCARD: 350, // ship fadeOut 0.35s overlaps before CRT off (V33)
+  CRT_OFF: 600, // crtPowerOff 0.6s
 };
 
 export const SOCIAL_LINKS = [
