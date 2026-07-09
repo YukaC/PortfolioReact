@@ -71,7 +71,7 @@ const HeroSection = () => {
           >
             {/* Background Image - optimized and prioritized for LCP */}
             <Image
-              src="/profilePic.jpg"
+              src="/profilePic.webp"
               alt="Agustin Ciucani profile"
               fill
               priority

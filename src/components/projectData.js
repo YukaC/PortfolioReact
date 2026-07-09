@@ -1,7 +1,7 @@
 // projectData.js - Updated with CV projects and technology tags
 const projectData = [
   {
-    imgSrc: "/img1.png",
+    imgSrc: "/img1.webp",
     alt: "Turnos App Screenshot",
     title: "Turnos App",
     description:
@@ -10,7 +10,7 @@ const projectData = [
     repoLink: "https://github.com/YukaC/MuniDgoSaaS",
   },
   {
-    imgSrc: "/img2.png",
+    imgSrc: "/img2.webp",
     alt: "Movie Review App Screenshot",
     title: "Movie Review App",
     description:
@@ -19,7 +19,7 @@ const projectData = [
     repoLink: "https://github.com/YukaC/TrabajoFinal_Ciucani_Grecco",
   },
   {
-    imgSrc: "/img3.png",
+    imgSrc: "/img3.webp",
     alt: "Portfolio Screenshot",
     title: "Portfolio Profesional",
     description:
