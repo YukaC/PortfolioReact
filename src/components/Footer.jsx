@@ -1,10 +1,11 @@
-import { useState, useEffect, useRef } from "react";
-import BebopAnimation from "./BebopAnimation";
-import {
-  SOCIAL_LINKS,
-  ANIMATION_PHASES,
-  PHASE_TIMINGS,
-} from "@/data/constants";
+import { useState } from "react";
+import dynamic from "next/dynamic";
+import { SOCIAL_LINKS } from "@/data/constants";
+import { useBebopAnimation } from "@/hooks/useBebopAnimation";
+
+const BebopAnimation = dynamic(() => import("./BebopAnimation"), {
+  ssr: false,
+});
 
 // Icon Map for O(1) lookup - hoisted outside component
 const ICON_MAP = {
@@ -29,96 +30,25 @@ const ICON_MAP = {
  * Footer - Site footer with social links and easter egg
  */
 const Footer = () => {
-  const [phase, setPhase] = useState(ANIMATION_PHASES.IDLE);
-  // Lazy initialization: runs only once on mount, avoids re-render
   const [currentYear] = useState(() => new Date().getFullYear().toString());
-  const timerRef = useRef(null);
-  const phaseTimerRef = useRef(null);
-
-  const startAnimation = () => {
-    setPhase(ANIMATION_PHASES.CRT_ON);
-  };
-
-  // Handle phase transitions
-  useEffect(() => {
-    if (phase === ANIMATION_PHASES.IDLE) return;
-
-    const scheduleNextPhase = (nextPhase, delay) => {
-      phaseTimerRef.current = setTimeout(() => {
-        setPhase(nextPhase);
-      }, delay);
-    };
-
-    switch (phase) {
-      case ANIMATION_PHASES.CRT_ON:
-        scheduleNextPhase(ANIMATION_PHASES.COUNTDOWN_3, PHASE_TIMINGS.CRT_ON);
-        break;
-      case ANIMATION_PHASES.COUNTDOWN_3:
-        scheduleNextPhase(
-          ANIMATION_PHASES.COUNTDOWN_2,
-          PHASE_TIMINGS.COUNTDOWN,
-        );
-        break;
-      case ANIMATION_PHASES.COUNTDOWN_2:
-        scheduleNextPhase(
-          ANIMATION_PHASES.COUNTDOWN_1,
-          PHASE_TIMINGS.COUNTDOWN,
-        );
-        break;
-      case ANIMATION_PHASES.COUNTDOWN_1:
-        scheduleNextPhase(ANIMATION_PHASES.JAM, PHASE_TIMINGS.COUNTDOWN);
-        break;
-      case ANIMATION_PHASES.JAM:
-        scheduleNextPhase(ANIMATION_PHASES.FADE_TO_BLACK, PHASE_TIMINGS.JAM);
-        break;
-      case ANIMATION_PHASES.FADE_TO_BLACK:
-        scheduleNextPhase(ANIMATION_PHASES.SHIP, PHASE_TIMINGS.FADE);
-        break;
-      case ANIMATION_PHASES.SHIP:
-        scheduleNextPhase(ANIMATION_PHASES.ENDCARD, PHASE_TIMINGS.SHIP);
-        break;
-      case ANIMATION_PHASES.ENDCARD:
-        scheduleNextPhase(ANIMATION_PHASES.CRT_OFF, PHASE_TIMINGS.ENDCARD);
-        break;
-      case ANIMATION_PHASES.CRT_OFF:
-        phaseTimerRef.current = setTimeout(() => {
-          setPhase(ANIMATION_PHASES.IDLE);
-        }, PHASE_TIMINGS.CRT_OFF);
-        break;
-      default:
-        break;
-    }
-
-    return () => {
-      if (phaseTimerRef.current) {
-        clearTimeout(phaseTimerRef.current);
-      }
-    };
-  }, [phase]);
-
-  const handleMouseEnter = () => {
-    timerRef.current = setTimeout(() => {
-      startAnimation();
-    }, 1000);
-  };
-
-  const handleMouseLeave = () => {
-    if (timerRef.current) {
-      clearTimeout(timerRef.current);
-      timerRef.current = null;
-    }
-  };
-
-  useEffect(() => {
-    return () => {
-      if (timerRef.current) clearTimeout(timerRef.current);
-      if (phaseTimerRef.current) clearTimeout(phaseTimerRef.current);
-    };
-  }, []);
+  const {
+    phase,
+    isActive,
+    dismissAnimation,
+    handleTriggerEnter,
+    handleTriggerLeave,
+    handleShipReady,
+  } = useBebopAnimation();
 
   return (
     <footer className="w-full border-t border-(--color-border) bg-bg-light/50 dark:bg-white/1 pt-16 pb-8 relative overflow-hidden">
-      <BebopAnimation phase={phase} />
+      {isActive ? (
+        <BebopAnimation
+          phase={phase}
+          onDismiss={dismissAnimation}
+          onShipReady={handleShipReady}
+        />
+      ) : null}
 
       <div className="max-w-container mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-8">
         <div className="text-center md:text-left">
@@ -152,9 +82,9 @@ const Footer = () => {
       <div className="w-full flex justify-center mt-12 mb-4">
         <p
           className="opacity-15 hover:opacity-100 hover:text-amber-glow hover:scale-105 hover:drop-shadow-[0_0_15px_rgba(212,175,55,0.6)] transition-all duration-500 select-none cursor-help font-mono text-xs italic"
-          title="Hold for 3 seconds..."
-          onMouseEnter={handleMouseEnter}
-          onMouseLeave={handleMouseLeave}
+          title="Hold for 1.5 seconds..."
+          onMouseEnter={handleTriggerEnter}
+          onMouseLeave={handleTriggerLeave}
         >
           I think it&apos;s time to blow this scene.
         </p>
