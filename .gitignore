@@ -89,6 +89,18 @@ next-env.d.ts
 .turbo/
 
 # ============================================
-# AI/Agent Folders (keep dev tools out of repo)
+# AI / Agent docs & local scratch
 # ============================================
 .agent/
+.claude/
+.cursor/
+.codex/
+.windsurf/
+.gemini/
+AGENTS.md
+CLAUDE.md
+SPEC.md
+agent.md
+refBebop.md
+*.original.png
+scripts/bebop-source-frames/
