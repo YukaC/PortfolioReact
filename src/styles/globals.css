@@ -11,6 +11,7 @@
   --color-secondary: #5e3b5a;
   --color-amber-glow: #ffbf00;
   --color-bg: #f7f6f7;
+  --color-bg-main: #f7f6f7;
   --color-bg-light: #ffffff;
   --color-surface: #ffffff;
   --color-text: #1e293b;
@@ -29,6 +30,7 @@
 /* Dark mode overrides */
 .dark {
   --color-bg: #19161c;
+  --color-bg-main: #19161c;
   --color-bg-light: #1b1e23;
   --color-surface: #1b1e23;
   --color-text: #e5e5e5;
