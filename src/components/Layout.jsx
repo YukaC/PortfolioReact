@@ -16,7 +16,12 @@ const Layout = ({
       <meta property="og:type" content="website" />
       <meta property="og:url" content="https://agustinciucani.dev" />
       <meta property="og:image" content="/profilePic.jpg" />
-      <link rel="icon" href="/favicon.ico" />
+      <link rel="icon" href="/favicon.svg?v=2" type="image/svg+xml" />
+      <link rel="icon" href="/favicon.ico?v=2" sizes="any" />
+      <link rel="icon" type="image/png" sizes="96x96" href="/favicon-96x96.png?v=2" />
+      <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=2" />
+      <link rel="manifest" href="/site.webmanifest" />
+      <meta name="theme-color" content="#584668" />
     </Head>
 
     <div
