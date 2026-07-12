@@ -1,11 +1,14 @@
+import Reveal from "@/components/Reveal";
+
 /**
  * Contact - CTA section with mailto link
  * Bebop-style illustration kept inline (not a generic Icon glyph).
  */
 const Contact = () => (
-  <section
+  <Reveal
+    as="section"
     id="contact"
-    className="w-full max-w-[900px] px-6 py-24 lg:py-32 text-center [content-visibility:auto] [contain-intrinsic-size:auto_24rem]"
+    className="w-full max-w-[900px] px-6 py-24 lg:py-32 text-center"
   >
     <h2 className="font-heading font-bold text-4xl sm:text-5xl mb-6">
       Ready for a late-night session?
@@ -19,7 +22,7 @@ const Contact = () => (
 
     <a
       href="mailto:agusyuk25@gmail.com"
-      className="inline-flex items-center justify-center gap-2 text-lg px-8 py-4 bg-primary text-white font-bold rounded transition-all duration-300 hover:bg-amber-glow hover:text-[#19161c] hover:-translate-y-0.5 shadow-xl shadow-primary/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-bg-main"
+      className="btn-primary focus-ring text-lg px-8 py-4 shadow-xl shadow-primary/10"
     >
       <svg
         viewBox="0 0 100 100"
@@ -38,7 +41,7 @@ const Contact = () => (
       </svg>
       Let&apos;s Jam
     </a>
-  </section>
+  </Reveal>
 );
 
 export default Contact;

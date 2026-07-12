@@ -72,14 +72,24 @@ const BebopShip = memo(({ active, playing = true, onReady, onFailed }) => {
 
   // Placeholder negro CRT mientras GLTF calienta — chunk ya descarga en paralelo.
   if (!sceneReady) {
-    return <div className={styles.bebopShipSystem} aria-hidden="true" />;
+    return (
+      <div className={styles.bebopShipSystem} aria-hidden="true">
+        <div className={styles.bebopShipStage} />
+      </div>
+    );
   }
 
   return (
     <div className={styles.bebopShipSystem} aria-label="Swordfish II fly-by">
-      <BebopWebGLErrorBoundary onError={onFailed}>
-        <BebopShipScene onReady={onReady} onFailed={onFailed} playing={playing} />
-      </BebopWebGLErrorBoundary>
+      <div className={styles.bebopShipStage}>
+        <BebopWebGLErrorBoundary onError={onFailed}>
+          <BebopShipScene
+            onReady={onReady}
+            onFailed={onFailed}
+            playing={playing}
+          />
+        </BebopWebGLErrorBoundary>
+      </div>
     </div>
   );
 });

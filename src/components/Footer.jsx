@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useCallback } from "react";
 import dynamic from "next/dynamic";
 import { SOCIAL_LINKS } from "@/data/constants";
 import { useBebopAnimation } from "@/hooks/useBebopAnimation";
@@ -12,7 +12,7 @@ const BebopAnimation = dynamic(() => import("./BebopAnimation"), {
  * Footer - Site footer with social links and easter egg
  */
 const Footer = () => {
-  const [currentYear] = useState(() => new Date().getFullYear().toString());
+  const currentYear = new Date().getFullYear();
   const {
     phase,
     isActive,
@@ -35,7 +35,7 @@ const Footer = () => {
   );
 
   return (
-    <footer className="w-full border-t border-(--color-border) bg-bg-light/50 dark:bg-white/1 pt-16 pb-8 relative overflow-hidden">
+    <footer className="w-full bg-bg-main/95 border-t border-border pt-16 pb-8 relative overflow-hidden">
       {isActive ? (
         <BebopAnimation
           phase={phase}
@@ -46,7 +46,7 @@ const Footer = () => {
         />
       ) : null}
 
-      <div className="max-w-container mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-8">
+      <div className="px-6 flex flex-col md:flex-row justify-between items-center gap-8">
         <div className="text-center md:text-left">
           <span className="block font-heading font-bold text-xl mb-1">
             Agustin Ciucani
@@ -75,19 +75,20 @@ const Footer = () => {
         </nav>
       </div>
 
-      <div className="w-full flex justify-center mt-12 mb-4">
+      <div className="w-full flex justify-center mt-12 mb-4 px-6">
         <p
           ref={setTriggerRef}
           tabIndex={0}
           role="button"
-          className="opacity-15 hover:opacity-100 hover:text-amber-glow hover:scale-105 hover:drop-shadow-[0_0_15px_rgba(212,175,55,0.6)] transition-all duration-500 select-none cursor-help font-mono text-xs italic focus:outline-none focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-primary"
+          className="opacity-15 hover:opacity-100 active:opacity-100 hover:text-amber-glow active:text-amber-glow hover:scale-105 active:scale-105 hover:drop-shadow-[0_0_15px_rgba(212,175,55,0.6)] transition-all duration-500 select-none touch-none cursor-help font-mono text-xs italic focus:outline-none focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-primary px-3 py-2"
           title="Hold for 1.5 seconds..."
+          aria-label="Hold for 1.5 seconds to play the easter egg"
           onMouseEnter={handleTriggerEnter}
           onMouseLeave={handleTriggerLeave}
           onPointerDown={handleTriggerPointerDown}
           onPointerUp={handleTriggerPointerUp}
           onPointerCancel={handleTriggerPointerUp}
-          onPointerLeave={handleTriggerPointerUp}
+          onContextMenu={(e) => e.preventDefault()}
           onKeyDown={(e) => {
             if (e.key === "Enter" || e.key === " ") {
               e.preventDefault();

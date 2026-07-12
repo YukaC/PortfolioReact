@@ -1,18 +1,51 @@
+import { useEffect, useRef, useState } from "react";
 import { EDUCATION } from "@/data/constants";
 import Icon from "@/components/Icon";
+import Reveal from "@/components/Reveal";
 
 /**
  * Experience - About section with timeline
  */
 const Experience = () => {
+  const [activeIndex, setActiveIndex] = useState(0);
+  const itemRefs = useRef([]);
+
+  useEffect(() => {
+    const nodes = itemRefs.current.filter(Boolean);
+    if (!nodes.length) return undefined;
+
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      return undefined;
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visible = entries
+          .filter((entry) => entry.isIntersecting)
+          .sort((a, b) => b.intersectionRatio - a.intersectionRatio);
+
+        if (!visible.length) return;
+
+        const nextIndex = nodes.indexOf(visible[0].target);
+        if (nextIndex >= 0) setActiveIndex(nextIndex);
+      },
+      {
+        threshold: [0.25, 0.5, 0.75],
+        rootMargin: "-25% 0px -40% 0px",
+      },
+    );
+
+    nodes.forEach((node) => observer.observe(node));
+    return () => observer.disconnect();
+  }, []);
+
   return (
     <section
-      className="w-full max-w-container px-6 py-24 border-t border-(--color-border) [content-visibility:auto] [contain-intrinsic-size:auto_36rem]"
+      className="w-full px-6 py-24 border-t border-[var(--color-border)]"
       id="experience"
     >
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-24">
-        {/* Left Column - About */}
-        <div className="lg:col-span-5 flex flex-col gap-6" id="about">
+        <Reveal className="lg:col-span-5 flex flex-col gap-6" id="about">
           <h2 className="font-heading font-bold text-3xl">
             What coding means to me
           </h2>
@@ -25,7 +58,6 @@ const Experience = () => {
             project, fixing my Ford Fiesta &apos;95, or playing guitar.
           </p>
 
-          {/* Learning Goal Box */}
           <div className="learningGoal mt-4">
             <p className="font-bold text-primary mb-2 flex items-center gap-2">
               <Icon name="auto_stories" />
@@ -36,10 +68,9 @@ const Experience = () => {
               and improving my responsive design skills with Tailwind CSS.&quot;
             </p>
           </div>
-        </div>
+        </Reveal>
 
-        {/* Right Column - Timeline */}
-        <div className="lg:col-span-7">
+        <Reveal className="lg:col-span-7" delayMs={120}>
           <h2 className="font-heading font-bold text-3xl mb-8">Education</h2>
 
           <div
@@ -47,43 +78,43 @@ const Experience = () => {
             role="list"
             aria-label="Education timeline"
           >
-            {EDUCATION.map((item) => (
-              <div
-                key={item.title}
-                className="relative pl-10 group"
-                role="listitem"
-              >
-                {/* Timeline Dot */}
+            {EDUCATION.map((item, index) => {
+              const isActive = activeIndex === index;
+
+              return (
                 <div
-                  className={`timelineDot ${
-                    item.isCurrent ? "timelineDotActive" : ""
-                  } group-hover:bg-amber-glow`}
-                  aria-hidden="true"
-                />
-
-                {/* Period */}
-                <span
-                  className={`text-xs font-bold uppercase tracking-wider mb-1 block ${
-                    item.isCurrent ? "text-primary" : "text-text-muted"
-                  }`}
+                  key={item.title}
+                  ref={(node) => {
+                    itemRefs.current[index] = node;
+                  }}
+                  className="relative pl-10 group"
+                  role="listitem"
                 >
-                  {item.period}
-                </span>
+                  <div
+                    className={`timelineDot ${isActive ? "timelineDotActive" : ""} group-hover:bg-amber-glow`}
+                    aria-hidden="true"
+                  />
 
-                {/* Title */}
-                <h3 className="text-xl font-bold font-heading">{item.title}</h3>
+                  <span
+                    className={`text-xs font-bold uppercase tracking-wider mb-1 block transition-colors duration-300 ${
+                      isActive ? "text-primary" : "text-text-muted"
+                    }`}
+                  >
+                    {item.period}
+                  </span>
 
-                {/* Company */}
-                <p className="text-sm text-primary/60 mb-2">{item.company}</p>
+                  <h3 className="text-xl font-bold font-heading">{item.title}</h3>
 
-                {/* Description */}
-                <p className="text-text-muted text-sm leading-relaxed">
-                  {item.description}
-                </p>
-              </div>
-            ))}
+                  <p className="text-sm text-primary/60 mb-2">{item.company}</p>
+
+                  <p className="text-text-muted text-sm leading-relaxed">
+                    {item.description}
+                  </p>
+                </div>
+              );
+            })}
           </div>
-        </div>
+        </Reveal>
       </div>
     </section>
   );
