@@ -1,6 +1,6 @@
 # 🎷 Portfolio - Agustin Ciucani
 
-> Full-Stack Developer portfolio.
+> Fullstack Developer portfolio.
 
 ![Next.js](https://img.shields.io/badge/Next.js-15.5-black?logo=next.js)
 ![React](https://img.shields.io/badge/React-19-61DAFB?logo=react)
@@ -9,11 +9,11 @@
 
 ## 📚 Descripción
 
-Portfolio personal construido con **Next.js 15** y **React 19**, presentando mis proyectos y habilidades como desarrollador Full-Stack. Incluye un diseño moderno con animaciones fluidas y un Easter Egg temático de Cowboy Bebop.
+Portfolio personal construido con **Next.js 15** y **React 19**, presentando mis proyectos y habilidades como desarrollador Fullstack. Incluye un diseño moderno con animaciones fluidas y un Easter Egg temático de Cowboy Bebop.
 
 ### ✨ Características
 
-- **🚀 Performance optimizada** - First Load JS ~95 kB, imágenes optimizadas con `next/image`
+- **🚀 Performance optimizada** - Code-split below-the-fold, imágenes con `next/image`
 - **♿ Accesibilidad** - ARIA labels, roles semánticos, focus management
 - **🎨 Diseño responsivo** - Mobile-first con soporte para dark/light mode
 - **🔤 Tipografía profesional** - Manrope + Space Grotesk via `next/font`
@@ -27,7 +27,7 @@ Portfolio personal construido con **Next.js 15** y **React 19**, presentando mis
 | UI Library | React 19                       |
 | Styling    | Tailwind CSS 4 + CSS Variables |
 | Fonts      | Google Fonts (optimizadas)     |
-| Icons      | Material Symbols               |
+| Icons      | SVG propios (`Icon.jsx`)       |
 | Linting    | ESLint 9 + eslint-config-next  |
 
 ## 🚀 Instalación
@@ -38,42 +38,47 @@ git clone https://github.com/YukaC/PortfolioReact.git
 cd PortfolioReact
 
 # Instalar dependencias
-npm install
+pnpm install
 
 # Iniciar servidor de desarrollo
-npm run dev
+pnpm dev
 ```
 
 Abre [http://localhost:3000](http://localhost:3000) en tu navegador.
 
 ## 📦 Scripts Disponibles
 
-| Comando         | Descripción                   |
-| --------------- | ----------------------------- |
-| `npm run dev`   | Inicia servidor de desarrollo |
-| `npm run build` | Genera build de producción    |
-| `npm run start` | Ejecuta build de producción   |
-| `npm run lint`  | Ejecuta ESLint                |
+| Comando                 | Descripción                              |
+| ----------------------- | ---------------------------------------- |
+| `pnpm dev`              | Inicia servidor de desarrollo            |
+| `pnpm build`            | Genera build de producción               |
+| `pnpm start`            | Ejecuta build de producción              |
+| `pnpm lint`             | Ejecuta ESLint                           |
+| `pnpm validate:bebop`   | Valida timing del easter egg Bebop       |
 
 ## 📁 Estructura del Proyecto
 
 ```
 PortfolioReact/
-├── components/          # Componentes React reutilizables
-│   ├── Layout.jsx       # Layout principal con SEO
-│   ├── Navbar.jsx       # Navegación con scroll smooth
-│   ├── HeroSection.jsx  # Sección hero con imagen y terminal
-│   ├── SkillsTicker.jsx # Ticker animado de tecnologías
-│   ├── ProjectsGrid.jsx # Grid de proyectos
-│   ├── Experience.jsx   # Timeline de experiencia
-│   ├── Footer.jsx       # Footer con Easter egg
-│   └── BebopAnimation.jsx # Animación Cowboy Bebop
 ├── src/
-│   ├── pages/           # Páginas Next.js
-│   ├── styles/          # CSS global con Tailwind
-│   └── data/            # Datos estáticos (constants.js)
-├── public/              # Assets estáticos
-└── package.json         # Dependencias y scripts
+│   ├── components/        # Componentes React reutilizables
+│   │   ├── Layout.jsx
+│   │   ├── Navbar.jsx
+│   │   ├── HeroSection.jsx
+│   │   ├── SkillsTicker.jsx
+│   │   ├── ProjectsGrid.jsx
+│   │   ├── Experience.jsx
+│   │   ├── Contact.jsx
+│   │   ├── Footer.jsx
+│   │   ├── Icon.jsx       # Iconos SVG propios
+│   │   └── BebopAnimation.jsx
+│   ├── pages/             # Páginas Next.js
+│   ├── styles/            # CSS global con Tailwind
+│   ├── data/              # Datos estáticos (constants, projects, bebop)
+│   └── hooks/             # Hooks (useBebopAnimation, …)
+├── public/                # Assets estáticos
+├── scripts/               # Utilidades (validate-bebop-timing)
+└── package.json
 ```
 
 ## 🌐 Deploy
@@ -82,7 +87,7 @@ PortfolioReact/
 
 ```bash
 # Instalar Vercel CLI
-npm i -g vercel
+pnpm add -g vercel
 
 # Deploy
 vercel
@@ -99,7 +104,7 @@ El proyecto genera páginas estáticas, compatible con:
 ## 🔧 Requisitos
 
 - **Node.js** 22.x (especificado en `engines`)
-- **npm** 9+
+- **pnpm** 9+ (gestor de paquetes primario)
 
 ## 🎨 Variables CSS
 

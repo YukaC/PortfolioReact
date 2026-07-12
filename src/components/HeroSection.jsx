@@ -7,7 +7,14 @@ import Image from "next/image";
 const HeroSection = () => {
   const [isActive, setIsActive] = useState(false);
 
-  const toggleActive = () => setIsActive(!isActive);
+  const toggleActive = () => setIsActive((prev) => !prev);
+
+  const handleKeyDown = (e) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      toggleActive();
+    }
+  };
 
   return (
     <section
@@ -41,16 +48,10 @@ const HeroSection = () => {
 
           {/* CTA Buttons */}
           <div className="flex flex-col sm:flex-row gap-4 mt-4">
-            <a
-              href="#portfolio"
-              className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-primary text-bg-main font-bold rounded transition-all duration-300 hover:bg-amber-glow hover:text-[#19161c] hover:-translate-y-0.5 shadow-lg shadow-primary/20 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-bg-main"
-            >
+            <a href="#portfolio" className="btn-primary focus-ring">
               See Projects
             </a>
-            <a
-              href="#contact"
-              className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-secondary/10 text-primary font-bold rounded border border-secondary/20 transition-all duration-300 hover:bg-amber-glow hover:text-[#19161c] hover:border-amber-glow hover:-translate-y-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-bg-main"
-            >
+            <a href="#contact" className="btn-ghost focus-ring">
               Let&apos;s Connect
             </a>
           </div>
@@ -58,9 +59,13 @@ const HeroSection = () => {
 
         {/* Hero Image with Code Terminal */}
         <div className="relative order-1 lg:order-2 h-[400px] lg:h-[600px] w-full flex items-center justify-center">
-          {/* Background Glow */}
+          {/* Background Glow — radial-gradient, no CSS blur */}
           <div
-            className="absolute inset-0 bg-gradient-to-tr from-secondary/30 via-transparent to-primary/10 rounded-full blur-[100px] opacity-40"
+            className="absolute inset-0 rounded-full opacity-40 pointer-events-none"
+            style={{
+              background:
+                "radial-gradient(circle at 50% 50%, color-mix(in srgb, var(--color-secondary) 50%, transparent), transparent 70%)",
+            }}
             aria-hidden="true"
           />
 
@@ -68,8 +73,13 @@ const HeroSection = () => {
           <div
             className="relative w-full h-full rounded-2xl overflow-hidden shadow-2xl border border-[var(--color-border)] bg-surface group cursor-pointer"
             onClick={toggleActive}
+            onKeyDown={handleKeyDown}
+            role="button"
+            tabIndex={0}
+            aria-pressed={isActive}
+            aria-label="Toggle profile image focus"
           >
-            {/* Background Image - optimized and prioritized for LCP */}
+            {/* Background Image - optimized and prioritized for LCP (no grayscale filter) */}
             <Image
               src="/profilePic.webp"
               alt="Agustin Ciucani profile"
@@ -77,24 +87,29 @@ const HeroSection = () => {
               priority
               fetchPriority="high"
               sizes="(max-width: 1024px) 100vw, 50vw"
-              className={`object-cover transition-all duration-500 ease-out 
-                ${isActive ? "opacity-100 grayscale-0 scale-105" : "opacity-60 grayscale group-hover:opacity-100 group-hover:grayscale-0 group-hover:scale-105"}`}
+              className={`object-cover transition-transform duration-500 ease-out 
+                ${isActive ? "scale-105" : "group-hover:scale-105"}`}
+            />
+
+            {/* Solid overlay for muted look — replaces grayscale filter on LCP */}
+            <div
+              className={`absolute inset-0 bg-bg-main/55 transition-opacity duration-500 pointer-events-none
+                ${isActive ? "opacity-20" : "group-hover:opacity-20"}`}
               aria-hidden="true"
             />
 
-            {/* Gradient Overlay - stronger by default, fades on hover/active */}
+            {/* Bottom gradient for terminal readability */}
             <div
-              className={`absolute inset-0 bg-gradient-to-t from-bg-main via-bg-main/70 to-bg-main/40 transition-all duration-500 
-                ${isActive ? "via-bg-main/40 to-transparent" : "group-hover:via-bg-main/40 group-hover:to-transparent"}`}
+              className="absolute inset-0 bg-gradient-to-t from-bg-main via-bg-main/40 to-transparent pointer-events-none"
               aria-hidden="true"
             />
 
-            {/* Code Terminal - fades slightly on hover/active */}
+            {/* Code Terminal */}
             <div
-              className={`absolute bottom-4 sm:bottom-8 left-4 sm:left-8 right-4 sm:right-8 transition-opacity duration-500 
+              className={`absolute bottom-4 sm:bottom-8 left-4 sm:left-8 right-4 sm:right-8 transition-opacity duration-500 pointer-events-none
               ${isActive ? "opacity-80" : "group-hover:opacity-80"}`}
             >
-              <div className="bg-black/60 backdrop-blur-xl border border-white/10 p-5 sm:p-5 max-sm:p-3 rounded-xl font-mono text-sm max-sm:text-[0.7rem]">
+              <div className="bg-black/80 border border-white/10 p-5 sm:p-5 max-sm:p-3 rounded-xl font-mono text-sm max-sm:text-[0.7rem]">
                 {/* Terminal Dots */}
                 <div className="flex gap-2 mb-3">
                   <div className="w-3 h-3 rounded-full bg-[#ff5f56]" />

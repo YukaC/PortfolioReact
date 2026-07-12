@@ -1,7 +1,4 @@
-/* ============================================
-   Cowboy Bebop Easter Egg Animation Styles
-   Loaded via BebopAnimation.jsx (code-split)
-   ============================================ */
+/* Cowboy Bebop easter egg — CSS Module (loaded with BebopAnimation chunk). */
 
 /* ============================================
    Keyframe Animations
@@ -142,6 +139,21 @@
 
 .bebopIntroOverlay.crtOff {
   animation: crtPowerOff 0.6s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+/* SHIP phase: kill CRT flicker/noise/blur so they don't fight the GPU. */
+.bebopIntroOverlay.phaseShip {
+  animation: none;
+  filter: none;
+}
+
+.bebopIntroOverlay.phaseShip .bebopCrtNoise {
+  animation: none;
+  opacity: 0.06;
+}
+
+.bebopIntroOverlay.phaseShip .bebopCrtGlow {
+  filter: none;
 }
 
 .bebopSkipButton {
@@ -410,6 +422,36 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .bebopIntroOverlay {
+    animation: none !important;
+    filter: none;
+  }
+
+  .bebopIntroOverlay.crtOn,
+  .bebopIntroOverlay.crtOff {
+    animation: none !important;
+    opacity: 1;
+    clip-path: none;
+  }
+
+  .bebopCrtNoise,
+  .bebopCrtGlow,
+  .bebopCountdownNumber,
+  .bebopJamTypewriter,
+  .bebopEndcardTextWrap,
+  .bebopEndcardText::after {
+    animation: none !important;
+  }
+
+  .bebopCrtNoise {
+    opacity: 0.04;
+  }
+
+  .bebopJamTypewriter {
+    width: 100%;
+    border-color: transparent;
+  }
+
   .bebopIntroOverlay.phaseShip .bebopEndcardContainer {
     animation: none;
     opacity: 1;
