@@ -5,7 +5,7 @@ import SkillsTicker from "@/components/SkillsTicker";
 
 const sectionSkeleton = (minHeight) => (
   <div
-    className="w-full max-w-container px-6 py-24 animate-pulse"
+    className="w-full px-6 py-24 animate-pulse"
     style={{ minHeight }}
     aria-hidden="true"
   />
@@ -26,13 +26,6 @@ const Contact = dynamic(() => import("@/components/Contact"), {
   loading: () => sectionSkeleton("20rem"),
 });
 
-const Footer = dynamic(() => import("@/components/Footer"), {
-  ssr: true,
-  loading: () => (
-    <div className="w-full py-16 animate-pulse" aria-hidden="true" />
-  ),
-});
-
 export default function Index() {
   return (
     <Layout title="Agustin Ciucani | Fullstack Developer">
@@ -41,7 +34,6 @@ export default function Index() {
       <ProjectsGrid />
       <Experience />
       <Contact />
-      <Footer />
     </Layout>
   );
 }
