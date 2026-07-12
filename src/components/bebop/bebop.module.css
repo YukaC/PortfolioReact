@@ -349,7 +349,27 @@
   background: #000;
 }
 
-/* Full-viewport Three.js container — ResizeObserver drives renderer size. */
+/*
+ * Inner 16:9 letterbox stage for the R3F Canvas.
+ * Outer `.bebopShipSystem` stays full-bleed black (V15: inset:0, no flex).
+ * Center via absolute + translate — never display:flex on the system itself.
+ * Ultrawide: width caps at 100vh×16/9 so GPU paints fewer pixels.
+ * Tall/narrow: height caps so the stage still fits the viewport.
+ */
+.bebopShipStage {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: min(100%, calc(100vh * 16 / 9));
+  height: min(100%, calc(100vw * 9 / 16));
+  aspect-ratio: 16 / 9;
+  max-width: 100%;
+  max-height: 100%;
+  overflow: hidden;
+}
+
+/* Canvas fills the stage only — ResizeObserver sizes the renderer to this box. */
 .bebopWebGLCanvas {
   position: absolute;
   inset: 0;
@@ -363,7 +383,7 @@
   height: 100% !important;
 }
 
-/* Legacy alias (kept for compat) */
+/* R3F Canvas root — fills stage (not the ultrawide pillarbox). */
 .bebopShipCanvas {
   position: absolute;
   inset: 0;
@@ -371,6 +391,12 @@
   width: 100%;
   height: 100%;
   background: #000;
+}
+
+.bebopShipCanvas canvas {
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
 }
 
 .bebopEndcardTextWrap {

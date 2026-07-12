@@ -20,7 +20,7 @@ function parseShipPhaseMs(js) {
 
 const css         = readFileSync(join(ROOT, "src/components/bebop/bebop.module.css"), "utf8");
 const globalsCss  = readFileSync(join(ROOT, "src/styles/globals.css"), "utf8");
-const constants   = readFileSync(join(ROOT, "src/data/constants.js"), "utf8");
+const bebopTimings = readFileSync(join(ROOT, "src/data/bebop-timings.js"), "utf8");
 const shipJs      = readFileSync(join(ROOT, "src/components/BebopShip.jsx"), "utf8");
 const animJs      = readFileSync(join(ROOT, "src/components/BebopAnimation.jsx"), "utf8");
 const bebopShipJs = readFileSync(join(ROOT, "src/data/bebopShip.js"), "utf8");
@@ -29,7 +29,7 @@ const modelJs     = readFileSync(join(ROOT, "src/components/bebop/ShipModel.jsx"
 const meta        = JSON.parse(readFileSync(join(ROOT, "scripts/bebop-ship-meta.json"), "utf8"));
 const appJs       = readFileSync(join(ROOT, "src/pages/_app.js"), "utf8");
 
-const shipPhase  = parseShipPhaseMs(constants);
+const shipPhase  = parseShipPhaseMs(bebopTimings);
 const gltfPath   = join(ROOT, "public", BEBOP_SHIP.gltfUrl.replace(/^\//, ""));
 
 const shipPhaseGte = shipPhase >= BEBOP_SHIP.durationMs;

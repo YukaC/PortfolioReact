@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { ANIMATION_PHASES, PHASE_TIMINGS } from "@/data/constants";
+import { ANIMATION_PHASES, PHASE_TIMINGS } from "@/data/bebop-timings";
 import {
   prefetchBebopAssets,
   getBebopDebugMode,
@@ -29,8 +29,11 @@ export function useBebopAnimation() {
   const shipReadyHandledRef = useRef(false);
   const triggerElRef = useRef(null);
 
-  phaseRef.current = phase;
   const isActive = phase !== ANIMATION_PHASES.IDLE;
+
+  // Sync for timers/callbacks — must be render-time so same-tick readers see latest.
+  // eslint-disable-next-line react-hooks/refs -- intentional phase mirror for async handlers
+  phaseRef.current = phase;
 
   const clearPhaseTimer = useCallback(() => {
     if (phaseTimerRef.current) {
@@ -225,6 +228,13 @@ export function useBebopAnimation() {
   const handleTriggerPointerDown = useCallback(
     (e) => {
       if (e.pointerType === "mouse") return;
+      // Block scroll + keep events on this node while holding (mobile).
+      e.preventDefault();
+      try {
+        e.currentTarget.setPointerCapture(e.pointerId);
+      } catch {
+        /* older browsers — arm anyway */
+      }
       armTrigger(e.currentTarget);
     },
     [armTrigger],
@@ -233,6 +243,9 @@ export function useBebopAnimation() {
   const handleTriggerPointerUp = useCallback(
     (e) => {
       if (e.pointerType === "mouse") return;
+      if (e.currentTarget?.hasPointerCapture?.(e.pointerId)) {
+        e.currentTarget.releasePointerCapture(e.pointerId);
+      }
       clearHoverTimer();
     },
     [clearHoverTimer],

@@ -1,5 +1,5 @@
 import { memo, useEffect, useRef } from "react";
-import { ANIMATION_PHASES } from "@/data/constants";
+import { ANIMATION_PHASES } from "@/data/bebop-timings";
 import { prefersBebopReducedMotion } from "@/data/bebopShip";
 import BebopShip from "@/components/BebopShip";
 import styles from "@/components/bebop/bebop.module.css";
@@ -71,6 +71,7 @@ const BebopAnimation = memo(
       };
 
       const overlay = overlayRef.current;
+      const triggerToRestore = restoreFocusRef?.current;
       if (overlay) {
         overlay.addEventListener("keydown", handleTabKey);
         overlay.addEventListener("keydown", handleEscape);
@@ -82,12 +83,11 @@ const BebopAnimation = memo(
           overlay.removeEventListener("keydown", handleTabKey);
           overlay.removeEventListener("keydown", handleEscape);
         }
-        const trigger = restoreFocusRef?.current;
-        if (trigger && typeof trigger.focus === "function") {
+        if (triggerToRestore && typeof triggerToRestore.focus === "function") {
           try {
-            trigger.focus({ preventScroll: true });
+            triggerToRestore.focus({ preventScroll: true });
           } catch {
-            trigger.focus();
+            triggerToRestore.focus();
           }
         }
       };
