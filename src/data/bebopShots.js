@@ -62,14 +62,29 @@ const CAM = { position: [0, BEBOP_CAM_Y, 0.01], target: [0, 0, 0] };
 
 const deg = (d) => (d * Math.PI) / 180;
 
+/** Design aspect floor (tall phones) — frustum never thinner than portrait 9:16. */
+export const BEBOP_ASPECT_MIN = 9 / 16;
+/** Design aspect ceiling — ultrawide uses same frustum as 16:9 (refPng). */
+export const BEBOP_ASPECT_MAX = 16 / 9;
+
 /**
- * Half-width del frustum top-down (fov vertical + aspect).
+ * Clamp canvas aspect into the authored design band before frustum math.
+ * Ultrawide halfWidth would otherwise balloon ship offscreen L/R.
  * @param {number} aspect width/height
  */
-export function bebopHalfWidth(aspect = 16 / 9) {
+export function clampBebopDesignAspect(aspect = BEBOP_ASPECT_MAX) {
+  if (!Number.isFinite(aspect) || aspect <= 0) return BEBOP_ASPECT_MAX;
+  return Math.min(BEBOP_ASPECT_MAX, Math.max(BEBOP_ASPECT_MIN, aspect));
+}
+
+/**
+ * Half-width del frustum top-down (fov vertical + clamped design aspect).
+ * @param {number} aspect width/height
+ */
+export function bebopHalfWidth(aspect = BEBOP_ASPECT_MAX) {
   const halfH =
     BEBOP_CAM_Y * Math.tan(((BEBOP_CAM_FOV / 2) * Math.PI) / 180);
-  return halfH * aspect;
+  return halfH * clampBebopDesignAspect(aspect);
 }
 
 /** Margen past edge para que silueta no clippee al entrar/salir */

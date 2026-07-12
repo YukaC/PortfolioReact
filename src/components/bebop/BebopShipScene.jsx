@@ -9,7 +9,7 @@ import {
 } from "react";
 import { Canvas, useThree, useFrame } from "@react-three/fiber";
 import { EffectComposer, Bloom } from "@react-three/postprocessing";
-import { Color, Vector3, Euler } from "three";
+import { Color, Vector3 } from "three";
 import { gsap } from "gsap";
 import ShipModel from "./ShipModel";
 import HalftoneEffect from "./HalftoneEffect";
@@ -17,20 +17,39 @@ import {
   BEBOP_BG,
   BEBOP_SHOTS,
   BEBOP_TRAIL,
+  BEBOP_ASPECT_MAX,
   SHIP_SCALE,
   TAIL_AFT_X,
   YAW_LEFT,
   OUT1_FRAC,
   OUT2_FRAC,
   bebopHalfWidth,
+  clampBebopDesignAspect,
   offscreenLeftX,
   offscreenRightX,
 } from "@/data/bebopShots";
-import { getBebopDebugMode, prefersBebopReducedMotion } from "@/data/bebopShip";
+import { BEBOP_SHIP, getBebopDebugMode, prefersBebopReducedMotion } from "@/data/bebopShip";
 import styles from "./bebop.module.css";
 
 /** Offset local (post-yaw) escalado — refBebop.md tail tip ≈ 4.55 raw */
 const TAIL_AFT_X_SCALED = TAIL_AFT_X * SHIP_SCALE;
+
+/** Letterboxed stage locks canvas to BEBOP_SHIP design aspect. */
+const DESIGN_ASPECT = BEBOP_SHIP.width / BEBOP_SHIP.height;
+
+/** Soft DPR caps — huge/ultrawide CSS pixels still paint a lot even in stage. */
+const DPR_HUGE_CSS_PX = 2560 * 1440;
+const DPR_WIDE_CSS_W = 1920;
+
+function resolveBebopDpr(isLowEnd) {
+  if (isLowEnd) return 1;
+  if (typeof window === "undefined") return [1, 1.5];
+  const cssW = window.innerWidth;
+  const cssPixels = cssW * window.innerHeight;
+  if (cssPixels > DPR_HUGE_CSS_PX || cssW > 2560) return 1;
+  if (cssW > DPR_WIDE_CSS_W) return [1, 1.25];
+  return [1, 1.5];
+}
 
 /** Micro-bob approach (enter→pre-glow): screen-up = −Z. ⊥ roll/trail (V29).
  * Amps bajos — residual barely-there, no wobble notorio. */
@@ -121,7 +140,9 @@ function applyKeyframe(s, shot) {
   s.camPos.set(cx, cy, cz);
   s.camTarget.set(tx, ty, tz);
   s.shipPos.set(sx, sy, sz);
-  s.shipRot.set(rx, ry, rz);
+  s.shipRot.x = rx;
+  s.shipRot.y = ry;
+  s.shipRot.z = rz;
   s.bgColor.setRGB(col.r, col.g, col.b);
   s.trailLen = shot.trail.length;
   s.trailWidth = shot.trail.width;
@@ -145,6 +166,8 @@ function BebopScene({ onReady, playing }) {
   const tlRef = useRef(null);
   const shipLoadedRef = useRef(false);
   const readyFiredRef = useRef(false);
+  /** Design aspect used for L/R + trail — mount clamp, no timeline rebuild. */
+  const designAspectRef = useRef(BEBOP_ASPECT_MAX);
   /** Rising-edge punch — ⊥ mutate s.camPos (GSAP owns it). */
   const punchRef = useRef({
     primed: false,
@@ -159,7 +182,9 @@ function BebopScene({ onReady, playing }) {
     camPos: new Vector3(0, 16, 0.01),
     camTarget: new Vector3(0, 0, 0),
     shipPos: new Vector3(offscreenRightX(), 0, 0),
-    shipRot: new Euler(0, YAW_LEFT, 0),
+    // Plain props — Three r185 Euler x/y/z are non-enumerable getters;
+    // GSAP tweens plain objects reliably, then we copy onto the mesh.
+    shipRot: { x: 0, y: YAW_LEFT, z: 0 },
     bgColor: new Color(BEBOP_BG),
     trailLen: 0,
     trailWidth: 0.06,
@@ -176,6 +201,17 @@ function BebopScene({ onReady, playing }) {
     }
     invalidate();
   }, [invalidate]);
+
+  // Drive R3F from GSAP's ticker — demand frameloop alone can stall after
+  // three/r3f upgrades (one frame at t=0, tip stuck on right edge).
+  useEffect(() => {
+    if (!playing) return undefined;
+    const onTick = () => invalidate();
+    gsap.ticker.add(onTick);
+    return () => {
+      gsap.ticker.remove(onTick);
+    };
+  }, [playing, invalidate]);
 
   useFrame((_, delta) => {
     const s = state.current;
@@ -230,7 +266,7 @@ function BebopScene({ onReady, playing }) {
 
     if (shipRef.current) {
       shipRef.current.position.copy(s.shipPos);
-      shipRef.current.rotation.copy(s.shipRot);
+      shipRef.current.rotation.set(s.shipRot.x, s.shipRot.y, s.shipRot.z);
 
       // Residual drift pre-flare — ⊥ frozen hold (V29). Off after glow/flare.
       const approachBob =
@@ -243,9 +279,7 @@ function BebopScene({ onReady, playing }) {
 
     scene.background = s.bgColor;
 
-    const halfW = bebopHalfWidth(
-      size.width > 0 && size.height > 0 ? size.width / size.height : 16 / 9,
-    );
+    const halfW = bebopHalfWidth(designAspectRef.current);
     const tailX = s.shipPos.x + TAIL_AFT_X_SCALED;
     const isFlare = s.trailFlare > 0.5;
     const trailOn = s.trailVisible > 0.5;
@@ -278,11 +312,6 @@ function BebopScene({ onReady, playing }) {
         trail.position.set(tailX + len * 0.5, s.shipPos.y, s.shipPos.z);
       }
     }
-
-    // Demand-mode: keep ticking only while the GSAP timeline is active.
-    if (playing && tlRef.current?.isActive()) {
-      invalidate();
-    }
   });
 
   const buildTimeline = useCallback(() => {
@@ -293,15 +322,16 @@ function BebopScene({ onReady, playing }) {
         ? Number(new URLSearchParams(window.location.search).get("t") ?? NaN)
         : NaN;
 
-    // Aspect una sola vez al montar — trail thin se adapta en useFrame.
-    // ⊥ rebuild on resize (rompería onReady / V24).
-    let aspect = 16 / 9;
-    if (size.width > 0 && size.height > 0) {
-      aspect = size.width / size.height;
-    } else if (typeof window !== "undefined" && window.innerHeight > 0) {
-      aspect = window.innerWidth / window.innerHeight;
-    }
-    const shots = resolveShotsForAspect(aspect);
+    // Stage letterbox → canvas ≈ DESIGN_ASPECT. Prefer measured size; clamp
+    // into [9/16, 16/9]. Never fall back to window (ultrawide breaks fly-by).
+    // ⊥ rebuild on resize (rompería onReady / V24 / debugLoop).
+    const rawAspect =
+      size.width > 0 && size.height > 0
+        ? size.width / size.height
+        : DESIGN_ASPECT;
+    const designAspect = clampBebopDesignAspect(rawAspect);
+    designAspectRef.current = designAspect;
+    const shots = resolveShotsForAspect(designAspect);
 
     // Paused until ShipModel signals ready — don't burn phase time without ship.
     const tl = gsap.timeline({
@@ -421,17 +451,46 @@ function BebopScene({ onReady, playing }) {
     return () => {
       tlRef.current?.kill();
       tlRef.current = null;
+      // Dispose current meshes — refs are filled after first commit / GLTF ready.
+      // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional late refs
       disposeObject3D(trailRef.current);
+      // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional late refs
       disposeObject3D(flareRef.current);
     };
   }, [buildTimeline]);
+
+  // Kick if GLTF ready beat timeline build / Strict Mode left tl paused at t=0.
+  useEffect(() => {
+    if (!playing) return undefined;
+
+    const tryPlay = () => {
+      const tl = tlRef.current;
+      if (!tl || !shipLoadedRef.current) return;
+      const seekT =
+        typeof window !== "undefined"
+          ? Number(new URLSearchParams(window.location.search).get("t") ?? NaN)
+          : NaN;
+      if (Number.isFinite(seekT)) return;
+      // Only recover a stuck start — never restart a finished/mid timeline.
+      if (tl.paused() && tl.time() < 0.001) {
+        tl.play(0);
+        invalidate();
+      }
+    };
+
+    tryPlay();
+    const id = window.setInterval(tryPlay, 200);
+    const stop = window.setTimeout(() => window.clearInterval(id), 4000);
+    return () => {
+      window.clearInterval(id);
+      window.clearTimeout(stop);
+    };
+  }, [playing, invalidate]);
 
   // Pause RAF when parent says playing=false (ENDCARD fade uses last frame).
   useEffect(() => {
     if (!playing) {
       tlRef.current?.pause();
-    } else if (shipLoadedRef.current && tlRef.current?.paused()) {
-      // Don't resume mid-flight after ENDCARD — only initial play path.
     }
   }, [playing]);
 
@@ -449,13 +508,15 @@ function BebopScene({ onReady, playing }) {
 export default function BebopShipScene({ onReady, onFailed, playing = true }) {
   const lowEnd = useMemo(() => detectLowEnd(), []);
   const reduced = useMemo(() => prefersBebopReducedMotion(), []);
-  const dpr = lowEnd ? 1 : [1, 1.5];
+  const dpr = useMemo(() => resolveBebopDpr(lowEnd), [lowEnd]);
+  // Halftone is the expensive pass — skip on low-end. Bloom stays (neon silhouette).
   const enableHalftone = !lowEnd && !reduced;
-  const bloomMipmap = !lowEnd && !reduced;
+  const enableBloom = !reduced;
+  const hasPostEffects = enableHalftone || enableBloom;
   const readyRef = useRef(false);
 
-  // demand while playing (invalidate from useFrame); never when faded out.
-  const frameloop = playing ? "demand" : "never";
+  // always while playing — demand + EffectComposer stalled after three/r3f bump.
+  const frameloop = playing ? "always" : "never";
 
   // Suspense hang / GLTF never resolves — only fire if onReady never came.
   useEffect(() => {
@@ -473,7 +534,7 @@ export default function BebopShipScene({ onReady, onFailed, playing = true }) {
 
   return (
     <Canvas
-      className={styles.bebopShipCanvas}
+      className={styles.bebopWebGLCanvas}
       dpr={dpr}
       frameloop={frameloop}
       camera={{ fov: 40, near: 0.1, far: 200, position: [0, 15, 0.01] }}
@@ -489,18 +550,22 @@ export default function BebopShipScene({ onReady, onFailed, playing = true }) {
       }}
     >
       <BebopScene onReady={readyOnce} playing={playing} />
-      <EffectComposer>
-        {enableHalftone ? (
-          <HalftoneEffect dotSize={3} blendAmount={0.12} />
-        ) : null}
-        <Bloom
-          intensity={1.4}
-          luminanceThreshold={0.15}
-          luminanceSmoothing={0.3}
-          mipmapBlur={bloomMipmap}
-          radius={0.6}
-        />
-      </EffectComposer>
+      {hasPostEffects ? (
+        <EffectComposer multisampling={0}>
+          {enableHalftone ? (
+            <HalftoneEffect dotSize={3} blendAmount={0.12} />
+          ) : null}
+          {enableBloom ? (
+            <Bloom
+              intensity={lowEnd ? 1.0 : 1.4}
+              luminanceThreshold={lowEnd ? 0.22 : 0.15}
+              luminanceSmoothing={0.3}
+              mipmapBlur={!lowEnd}
+              radius={lowEnd ? 0.35 : 0.6}
+            />
+          ) : null}
+        </EffectComposer>
+      ) : null}
     </Canvas>
   );
 }
