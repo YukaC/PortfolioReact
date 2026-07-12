@@ -1,4 +1,4 @@
-// projectData.js - Updated with CV projects and technology tags
+// Project portfolio data with technology tags
 const projectData = [
   {
     imgSrc: "/img1.webp",

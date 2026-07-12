@@ -1,7 +1,7 @@
 {
   "source": "scene.gltf",
-  "durationMs": 3400,
+  "durationMs": 3317,
   "mode": "r3f-silhouette",
-  "shotCount": 7,
+  "shotCount": 25,
   "note": "absolute keyframes with t; continuous lerp + cut snaps — see bebopShots.js / refBebop.md"
 }
