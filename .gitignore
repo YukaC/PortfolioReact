@@ -2,6 +2,7 @@
 # Dependencies
 # ============================================
 node_modules/
+.pnpm-store/
 .pnp
 .pnp.js
 .yarn/install-state.gz
@@ -73,6 +74,7 @@ desktop.ini
 .vercel/
 .netlify/
 .serverless/
+.cursorignore
 
 # ============================================
 # TypeScript
@@ -104,3 +106,6 @@ agent.md
 refBebop.md
 *.original.png
 scripts/bebop-source-frames/
+
+# CodeGraph local index
+.codegraph/
