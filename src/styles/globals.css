@@ -1,5 +1,4 @@
 @import "tailwindcss";
-@import "./bebop.css";
 
 /* ============================================
    Tailwind v4 Theme - Native CSS Configuration
@@ -18,13 +17,16 @@
   --color-text-muted: #6b7280;
   --color-border: #e5e7eb;
 
+  /* Layout */
+  --max-width-container: 1280px;
+
   /* Font families */
   --font-display: var(--font-manrope), system-ui, sans-serif;
   --font-heading: var(--font-space-grotesk), system-ui, sans-serif;
   --font-mono: ui-monospace, "Cascadia Mono", "Segoe UI Mono", "Roboto Mono", monospace;
 
-  /* Animations */
-  --animate-pulse-slow: pulse-slow 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  /* Animations — single cycle (respects reduced-motion below) */
+  --animate-pulse-slow: pulse-slow 3s cubic-bezier(0.4, 0, 0.6, 1) 1;
 }
 
 /* Dark mode overrides */
@@ -152,13 +154,81 @@
     animation: ticker 25s linear infinite;
   }
 
-  /* Glassmorphism Panel */
+  /* Opaque nav panel — no permanent backdrop-filter */
   .glass-panel {
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    background-color: rgba(25, 22, 28, 0.8);
+    background-color: color-mix(in srgb, var(--color-bg-main) 95%, transparent);
     border-bottom-width: 1px;
     border-color: var(--color-border);
+  }
+
+  /* Shared button + focus utilities (token-based, no hardcoded hex) */
+  .focus-ring {
+    outline: none;
+  }
+
+  .focus-ring:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+    box-shadow: 0 0 0 2px var(--color-bg-main);
+  }
+
+  .btn-primary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 1rem 2rem;
+    background-color: var(--color-primary);
+    color: white;
+    font-weight: 700;
+    border-radius: 0.25rem;
+    box-shadow: 0 10px 15px -3px color-mix(in srgb, var(--color-primary) 20%, transparent);
+    transition: all 0.3s ease;
+  }
+
+  .btn-primary:hover {
+    background-color: var(--color-amber-glow);
+    color: var(--color-bg-main);
+    transform: translateY(-2px);
+  }
+
+  .btn-ghost {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 1rem 2rem;
+    background-color: color-mix(in srgb, var(--color-secondary) 10%, transparent);
+    color: var(--color-primary);
+    font-weight: 700;
+    border-radius: 0.25rem;
+    border: 1px solid color-mix(in srgb, var(--color-secondary) 20%, transparent);
+    transition: all 0.3s ease;
+  }
+
+  .btn-ghost:hover {
+    background-color: var(--color-amber-glow);
+    color: var(--color-bg-main);
+    border-color: var(--color-amber-glow);
+    transform: translateY(-2px);
+  }
+}
+
+/* ============================================
+   Reduced motion
+   ============================================ */
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  .animateTicker {
+    animation: none;
+  }
+
+  .animate-pulse-slow {
+    animation: none;
   }
 }
 
@@ -181,24 +251,5 @@
 
   body::-webkit-scrollbar-thumb:hover {
     background-color: var(--color-secondary);
-  }
-
-  /* Material Symbols sizing helper */
-  .material-symbols-outlined {
-    font-variation-settings: "FILL" 0, "wght" 400, "GRAD" 0, "opsz" 24;
-    width: 24px;
-    height: 24px;
-    display: inline-block;
-    overflow: hidden;
-    line-height: 1;
-    flex-shrink: 0;
-  }
-
-  /* Text gradient utility */
-  .text-gradient {
-    background: linear-gradient(135deg, var(--color-primary), var(--color-amber-glow));
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
   }
 }

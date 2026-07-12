@@ -1,4 +1,5 @@
 import { EDUCATION } from "@/data/constants";
+import Icon from "@/components/Icon";
 
 /**
  * Experience - About section with timeline
@@ -6,7 +7,7 @@ import { EDUCATION } from "@/data/constants";
 const Experience = () => {
   return (
     <section
-      className="w-full max-w-container px-6 py-24 border-t border-(--color-border)"
+      className="w-full max-w-container px-6 py-24 border-t border-(--color-border) [content-visibility:auto] [contain-intrinsic-size:auto_36rem]"
       id="experience"
     >
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-24">
@@ -17,25 +18,19 @@ const Experience = () => {
           </h2>
 
           <p className="text-text-muted leading-relaxed">
-            It combines two things I love: creativity and problem-solving. I’m
+            It combines two things I love: creativity and problem-solving. I&apos;m
             passionate about building web experiences that not only work
-            seamlessly but also feel intuitive. When I’m not coding, you’ll
-            likely find me listening to music or brainstorming my next project.
-          </p>
-
-          <p className="text-text-muted leading-relaxed">
-            When I&apos;m not coding, I&apos;m probably fixing my Ford Fiesta
-            &apos;95 or playing Guitar.
+            seamlessly but also feel intuitive. When I&apos;m not coding,
+            you&apos;ll likely find me listening to music, brainstorming my next
+            project, fixing my Ford Fiesta &apos;95, or playing guitar.
           </p>
 
           {/* Learning Goal Box */}
           <div className="learningGoal mt-4">
-            <h4 className="font-bold text-primary mb-2 flex items-center gap-2">
-              <span className="material-symbols-outlined" aria-hidden="true">
-                auto_stories
-              </span>
+            <p className="font-bold text-primary mb-2 flex items-center gap-2">
+              <Icon name="auto_stories" />
               Currently Learning
-            </h4>
+            </p>
             <p className="text-sm text-text-muted italic">
               &quot;Currently deepening my knowledge of advanced React patterns
               and improving my responsive design skills with Tailwind CSS.&quot;

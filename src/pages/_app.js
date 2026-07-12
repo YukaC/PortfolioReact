@@ -4,14 +4,14 @@ import { Manrope, Space_Grotesk } from "next/font/google";
 const manrope = Manrope({
   subsets: ["latin"],
   variable: "--font-manrope",
-  weight: ["300", "400", "500", "600", "700", "800"],
+  weight: ["400", "700"],
   display: "swap",
 });
 
 const spaceGrotesk = Space_Grotesk({
   subsets: ["latin"],
   variable: "--font-space-grotesk",
-  weight: ["300", "400", "500", "600", "700"],
+  weight: ["600", "700"],
   display: "swap",
 });
 

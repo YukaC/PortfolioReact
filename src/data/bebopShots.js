@@ -115,6 +115,13 @@ const OFFSCREEN_RIGHT_X = offscreenRightX(bebopHalfWidth(16 / 9));
 /** Off-screen left @ 16:9 fallback — cola past leftEdge */
 const OFFSCREEN_LEFT_X = offscreenLeftX(bebopHalfWidth(16 / 9));
 
+/**
+ * Fracciones de progreso exit→hold (misma curva que refPng f68→f76).
+ * Reusadas en BebopShipScene al reescribir offscreen L/R por aspect.
+ */
+export const OUT1_FRAC = 0.251;
+export const OUT2_FRAC = 0.625;
+
 /** @type {BebopKeyframe[]} */
 export const BEBOP_SHOTS = [
   // t0: nave completamente fuera por derecha (antes del fly-in)
@@ -324,7 +331,7 @@ export const BEBOP_SHOTS = [
     bgColor: BEBOP_BG,
     camera: CAM,
     ship: {
-      position: [-7.42 + 0.251 * (OFFSCREEN_LEFT_X + 7.42), 0, 0],
+      position: [-7.42 + OUT1_FRAC * (OFFSCREEN_LEFT_X + 7.42), 0, 0],
       rotation: [0, YAW_LEFT, deg(360)],
     },
     trail: { visible: true, length: 17.0, width: 0.035, flare: false },
@@ -335,7 +342,7 @@ export const BEBOP_SHOTS = [
     bgColor: BEBOP_BG,
     camera: CAM,
     ship: {
-      position: [-7.42 + 0.625 * (OFFSCREEN_LEFT_X + 7.42), 0, 0],
+      position: [-7.42 + OUT2_FRAC * (OFFSCREEN_LEFT_X + 7.42), 0, 0],
       rotation: [0, YAW_LEFT, deg(360)],
     },
     trail: { visible: true, length: 18.6, width: 0.035, flare: false },

@@ -1,9 +1,15 @@
 "use client";
 
-import { Suspense, useRef, useEffect, useCallback } from "react";
+import {
+  Suspense,
+  useRef,
+  useEffect,
+  useCallback,
+  useMemo,
+} from "react";
 import { Canvas, useThree, useFrame } from "@react-three/fiber";
 import { EffectComposer, Bloom } from "@react-three/postprocessing";
-import * as THREE from "three";
+import { Color, Vector3, Euler } from "three";
 import { gsap } from "gsap";
 import ShipModel from "./ShipModel";
 import HalftoneEffect from "./HalftoneEffect";
@@ -14,17 +20,17 @@ import {
   SHIP_SCALE,
   TAIL_AFT_X,
   YAW_LEFT,
+  OUT1_FRAC,
+  OUT2_FRAC,
   bebopHalfWidth,
   offscreenLeftX,
   offscreenRightX,
 } from "@/data/bebopShots";
+import { getBebopDebugMode, prefersBebopReducedMotion } from "@/data/bebopShip";
+import styles from "./bebop.module.css";
 
 /** Offset local (post-yaw) escalado — refBebop.md tail tip ≈ 4.55 raw */
 const TAIL_AFT_X_SCALED = TAIL_AFT_X * SHIP_SCALE;
-
-/** Fracciones de progreso exit→hold (misma curva que refPng f68→f76) */
-const OUT1_FRAC = 0.251;
-const OUT2_FRAC = 0.625;
 
 /** Micro-bob approach (enter→pre-glow): screen-up = −Z. ⊥ roll/trail (V29).
  * Amps bajos — residual barely-there, no wobble notorio. */
@@ -40,6 +46,13 @@ const PUNCH_AMP_X = 0.12;
 const PUNCH_AMP_Z = 0.09;
 const PUNCH_DUR = 0.12;
 
+function detectLowEnd() {
+  if (typeof window === "undefined") return false;
+  const mobile = window.matchMedia("(max-width: 768px)").matches;
+  const cores = navigator.hardwareConcurrency || 8;
+  return mobile || cores <= 4;
+}
+
 /** Thin wake — box world-aligned (cola → rightEdge). */
 function NeonTrail({ trailRef }) {
   return (
@@ -52,12 +65,12 @@ function NeonTrail({ trailRef }) {
 
 /**
  * Flare / explosión — esfera (vista top-down = círculo, como refPng
- * f35–41). ⊥ boxGeometry que se veía como cuadrado feo.
+ * f35–41). Segmentos bajos — silueta basta bajo Bloom.
  */
 function NeonFlare({ flareRef }) {
   return (
     <mesh ref={flareRef} visible={false} frustumCulled={false}>
-      <sphereGeometry args={[0.5, 24, 16]} />
+      <sphereGeometry args={[0.5, 12, 8]} />
       <meshBasicMaterial color={BEBOP_TRAIL} toneMapped={false} />
     </mesh>
   );
@@ -104,7 +117,7 @@ function applyKeyframe(s, shot) {
   const [tx, ty, tz] = shot.camera.target;
   const [sx, sy, sz] = shot.ship.position;
   const [rx, ry, rz] = shot.ship.rotation;
-  const col = new THREE.Color(shot.bgColor);
+  const col = new Color(shot.bgColor);
   s.camPos.set(cx, cy, cz);
   s.camTarget.set(tx, ty, tz);
   s.shipPos.set(sx, sy, sz);
@@ -116,12 +129,22 @@ function applyKeyframe(s, shot) {
   s.trailFlare = shot.trail.flare ? 1 : 0;
 }
 
-function BebopScene({ onReady }) {
-  const { camera, scene, size } = useThree();
+function disposeObject3D(obj) {
+  if (!obj) return;
+  obj.geometry?.dispose?.();
+  const mat = obj.material;
+  if (Array.isArray(mat)) mat.forEach((m) => m?.dispose?.());
+  else mat?.dispose?.();
+}
+
+function BebopScene({ onReady, playing }) {
+  const { camera, scene, size, invalidate } = useThree();
   const shipRef = useRef(null);
   const trailRef = useRef(null);
   const flareRef = useRef(null);
   const tlRef = useRef(null);
+  const shipLoadedRef = useRef(false);
+  const readyFiredRef = useRef(false);
   /** Rising-edge punch — ⊥ mutate s.camPos (GSAP owns it). */
   const punchRef = useRef({
     primed: false,
@@ -133,21 +156,42 @@ function BebopScene({ onReady }) {
   });
 
   const state = useRef({
-    camPos: new THREE.Vector3(0, 16, 0.01),
-    camTarget: new THREE.Vector3(0, 0, 0),
-    shipPos: new THREE.Vector3(offscreenRightX(), 0, 0),
-    shipRot: new THREE.Euler(0, YAW_LEFT, 0),
-    bgColor: new THREE.Color(BEBOP_BG),
+    camPos: new Vector3(0, 16, 0.01),
+    camTarget: new Vector3(0, 0, 0),
+    shipPos: new Vector3(offscreenRightX(), 0, 0),
+    shipRot: new Euler(0, YAW_LEFT, 0),
+    bgColor: new Color(BEBOP_BG),
     trailLen: 0,
     trailWidth: 0.06,
     trailVisible: 0,
     trailFlare: 0,
   });
 
+  const handleShipModelReady = useCallback(() => {
+    shipLoadedRef.current = true;
+    // Start timeline only once the GLTF is actually in the scene.
+    const tl = tlRef.current;
+    if (tl && tl.paused()) {
+      tl.play(0);
+    }
+    invalidate();
+  }, [invalidate]);
+
   useFrame((_, delta) => {
     const s = state.current;
     const punch = punchRef.current;
     const t = tlRef.current?.time() ?? 0;
+
+    // Gate onReady: ship visible + first rendered frame after timeline play.
+    if (
+      shipLoadedRef.current &&
+      !readyFiredRef.current &&
+      tlRef.current &&
+      !tlRef.current.paused()
+    ) {
+      readyFiredRef.current = true;
+      onReady?.();
+    }
 
     // Edge-detect flare t — fire once per pass (debugLoop re-arms on wrap).
     if (!punch.primed) {
@@ -234,16 +278,20 @@ function BebopScene({ onReady }) {
         trail.position.set(tailX + len * 0.5, s.shipPos.y, s.shipPos.z);
       }
     }
+
+    // Demand-mode: keep ticking only while the GSAP timeline is active.
+    if (playing && tlRef.current?.isActive()) {
+      invalidate();
+    }
   });
 
   const buildTimeline = useCallback(() => {
     const s = state.current;
-    const params =
+    const debugLoop = getBebopDebugMode() === "ship";
+    const seekT =
       typeof window !== "undefined"
-        ? new URLSearchParams(window.location.search)
-        : null;
-    const debugLoop = params?.get("bebopDebug") === "ship";
-    const seekT = Number(params?.get("t") ?? NaN);
+        ? Number(new URLSearchParams(window.location.search).get("t") ?? NaN)
+        : NaN;
 
     // Aspect una sola vez al montar — trail thin se adapta en useFrame.
     // ⊥ rebuild on resize (rompería onReady / V24).
@@ -255,7 +303,11 @@ function BebopScene({ onReady }) {
     }
     const shots = resolveShotsForAspect(aspect);
 
-    const tl = gsap.timeline({ paused: false, repeat: debugLoop ? -1 : 0 });
+    // Paused until ShipModel signals ready — don't burn phase time without ship.
+    const tl = gsap.timeline({
+      paused: true,
+      repeat: debugLoop ? -1 : 0,
+    });
 
     // Pose inicial = primer keyframe (offscreen past rightEdge)
     applyKeyframe(s, shots[0]);
@@ -271,7 +323,7 @@ function BebopScene({ onReady }) {
       const [tx, ty, tz] = shot.camera.target;
       const [sx, sy, sz] = shot.ship.position;
       const [rx, ry, rz] = shot.ship.rotation;
-      const col = new THREE.Color(shot.bgColor);
+      const col = new Color(shot.bgColor);
       const trailProps = {
         trailLen: shot.trail.length,
         trailWidth: shot.trail.width,
@@ -355,53 +407,97 @@ function BebopScene({ onReady }) {
     }
 
     tlRef.current = tl;
+
+    // If ship already loaded (fast cache), start now.
+    if (shipLoadedRef.current && !Number.isFinite(seekT)) {
+      tl.play(0);
+    }
     // size leído una vez al montar; no re-build on resize
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
     buildTimeline();
-    onReady?.();
     return () => {
       tlRef.current?.kill();
+      tlRef.current = null;
+      disposeObject3D(trailRef.current);
+      disposeObject3D(flareRef.current);
     };
-  }, [buildTimeline, onReady]);
+  }, [buildTimeline]);
+
+  // Pause RAF when parent says playing=false (ENDCARD fade uses last frame).
+  useEffect(() => {
+    if (!playing) {
+      tlRef.current?.pause();
+    } else if (shipLoadedRef.current && tlRef.current?.paused()) {
+      // Don't resume mid-flight after ENDCARD — only initial play path.
+    }
+  }, [playing]);
 
   return (
     <>
       <NeonTrail trailRef={trailRef} />
       <NeonFlare flareRef={flareRef} />
       <Suspense fallback={null}>
-        <ShipModel ref={shipRef} />
+        <ShipModel ref={shipRef} onReady={handleShipModelReady} />
       </Suspense>
     </>
   );
 }
 
-export default function BebopShipScene({ onReady }) {
+export default function BebopShipScene({ onReady, onFailed, playing = true }) {
+  const lowEnd = useMemo(() => detectLowEnd(), []);
+  const reduced = useMemo(() => prefersBebopReducedMotion(), []);
+  const dpr = lowEnd ? 1 : [1, 1.5];
+  const enableHalftone = !lowEnd && !reduced;
+  const bloomMipmap = !lowEnd && !reduced;
+  const readyRef = useRef(false);
+
+  // demand while playing (invalidate from useFrame); never when faded out.
+  const frameloop = playing ? "demand" : "never";
+
+  // Suspense hang / GLTF never resolves — only fire if onReady never came.
+  useEffect(() => {
+    const id = setTimeout(() => {
+      if (!readyRef.current) onFailed?.();
+    }, 15000);
+    return () => clearTimeout(id);
+  }, [onFailed]);
+
+  const readyOnce = useCallback(() => {
+    if (readyRef.current) return;
+    readyRef.current = true;
+    onReady?.();
+  }, [onReady]);
+
   return (
     <Canvas
-      className="bebopShipCanvas"
-      dpr={[1, 1.5]}
+      className={styles.bebopShipCanvas}
+      dpr={dpr}
+      frameloop={frameloop}
       camera={{ fov: 40, near: 0.1, far: 200, position: [0, 15, 0.01] }}
       gl={{
         antialias: false,
         alpha: false,
         powerPreference: "high-performance",
       }}
-      onCreated={({ gl, scene }) => {
+      onCreated={({ gl, scene, invalidate }) => {
         gl.setClearColor(BEBOP_BG);
-        scene.background = new THREE.Color(BEBOP_BG);
+        scene.background = new Color(BEBOP_BG);
+        invalidate();
       }}
     >
-      <BebopScene onReady={onReady} />
+      <BebopScene onReady={readyOnce} playing={playing} />
       <EffectComposer>
-        <HalftoneEffect dotSize={3} blendAmount={0.12} />
+        {enableHalftone ? (
+          <HalftoneEffect dotSize={3} blendAmount={0.12} />
+        ) : null}
         <Bloom
           intensity={1.4}
           luminanceThreshold={0.15}
           luminanceSmoothing={0.3}
-          mipmapBlur
+          mipmapBlur={bloomMipmap}
           radius={0.6}
         />
       </EffectComposer>
