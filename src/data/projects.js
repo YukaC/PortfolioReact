@@ -21,7 +21,7 @@ const projectData = [
   {
     imgSrc: "/img3.webp",
     alt: "Portfolio Screenshot",
-    title: "Portfolio Profesional",
+    title: "Professional Portfolio",
     description:
       "Personal website featuring Server-Side Rendering for optimized SEO, built with modular and reusable Tailwind CSS components.",
     tags: ["React", "Next.js", "Tailwind CSS"],

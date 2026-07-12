@@ -2,6 +2,7 @@ import { memo } from "react";
 import Image from "next/image";
 import projectData from "@/data/projects";
 import Icon from "@/components/Icon";
+import Reveal from "@/components/Reveal";
 
 /** Tiny neutral blur for next/image placeholders (avoids CLS flash). */
 const PROJECT_BLUR =
@@ -13,30 +14,38 @@ const PROJECT_BLUR =
   );
 
 /**
- * ProjectCard - Individual project card with hover effects
+ * ProjectCard - Individual project card with hover effects.
+ * Whole card is the link (pointer + click target), not only "View Project".
  */
 const ProjectCard = memo(
   ({ imgSrc, alt, title, description, tags, repoLink }) => {
     return (
-      <article className="relative rounded-xl bg-surface border border-[var(--color-border)] overflow-hidden transition-all duration-500 hover:border-primary/40 hover:shadow-xl group h-full flex flex-col [content-visibility:auto] [contain-intrinsic-size:auto_28rem]">
-        {/* Image Container */}
+      <a
+        href={repoLink}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="relative rounded-xl bg-surface border border-[var(--color-border)] overflow-hidden transition-[border-color,box-shadow] duration-500 hover:border-primary/40 hover:shadow-xl group h-full flex flex-col cursor-pointer focus-ring"
+      >
         <div className="aspect-video w-full overflow-hidden bg-bg-light shrink-0">
-          <Image
-            src={imgSrc}
-            alt={alt}
-            width={600}
-            height={340}
-            quality={75}
-            sizes="(max-width: 768px) 100vw, 50vw"
-            placeholder="blur"
-            blurDataURL={PROJECT_BLUR}
-            className="w-full aspect-video object-cover grayscale transition-all duration-700 group-hover:grayscale-0 group-hover:scale-105"
-          />
+          {/* Separate layers, same duration/easing — filter + scale stay in sync */}
+          <div className="h-full w-full grayscale transition-[filter] duration-700 ease-out group-hover:grayscale-0">
+            <div className="h-full w-full origin-center transition-transform duration-700 ease-out group-hover:scale-105">
+              <Image
+                src={imgSrc}
+                alt={alt}
+                width={600}
+                height={340}
+                quality={75}
+                sizes="(max-width: 768px) 100vw, 50vw"
+                placeholder="blur"
+                blurDataURL={PROJECT_BLUR}
+                className="w-full aspect-video object-cover"
+              />
+            </div>
+          </div>
         </div>
 
-        {/* Content */}
         <div className="p-8 flex-1 flex flex-col">
-          {/* Tags */}
           <div
             className="flex gap-2 mb-4 flex-wrap"
             role="list"
@@ -59,50 +68,35 @@ const ProjectCard = memo(
               : null}
           </div>
 
-          {/* Title */}
           <h3 className="text-2xl font-heading font-bold mb-2 group-hover:text-amber-glow transition-colors duration-300">
             {title}
           </h3>
 
-          {/* Description */}
           <p className="text-text-muted mb-6 line-clamp-2 leading-relaxed">
             {description}
           </p>
 
-          {/* Link */}
-          <a
-            href={repoLink}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center text-sm font-bold text-primary hover:text-amber-glow transition-all duration-300 group/link mt-auto focus-ring rounded"
-          >
+          <span className="inline-flex items-center text-sm font-bold text-primary group-hover:text-amber-glow transition-colors duration-300 mt-auto">
             View Project
             <Icon
               name="arrow_forward"
               size={16}
-              className="ml-1 group-hover/link:translate-x-1 transition-transform"
+              className="ml-1 group-hover:translate-x-1 transition-transform"
             />
-          </a>
+          </span>
         </div>
-      </article>
+      </a>
     );
   },
 );
 
 ProjectCard.displayName = "ProjectCard";
 
-/**
- * ProjectsGrid - Grid layout for all projects
- */
 const ProjectsGrid = () => {
   return (
-    <section
-      className="w-full max-w-container px-6 py-24 [content-visibility:auto] [contain-intrinsic-size:auto_40rem]"
-      id="portfolio"
-    >
-      {/* Section Header */}
-      <div className="flex flex-col md:flex-row justify-between items-end mb-16 gap-4">
-        <div>
+    <section className="w-full px-6 py-24" id="portfolio">
+      <Reveal className="flex w-full flex-col md:flex-row justify-between items-start md:items-end mb-16 gap-4">
+        <div className="w-full md:w-auto text-left">
           <h2 className="font-heading font-bold text-4xl mb-2">
             Selected Works
           </h2>
@@ -114,19 +108,22 @@ const ProjectsGrid = () => {
           href="https://github.com/YukaC"
           target="_blank"
           rel="noopener noreferrer"
-          className="text-primary font-bold flex items-center gap-1 hover:gap-3 hover:text-amber-glow transition-all duration-300 underline decoration-secondary/30 underline-offset-4 hover:decoration-amber-glow focus-ring rounded"
+          className="self-start text-primary font-bold flex items-center gap-1 hover:gap-3 hover:text-amber-glow transition-[color,gap] duration-300 underline decoration-secondary/30 underline-offset-4 hover:decoration-amber-glow focus-ring rounded"
         >
           Explore GitHub
           <Icon name="arrow_forward" size={16} />
         </a>
-      </div>
+      </Reveal>
 
-      {/* Projects Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        {projectData.map((project) => (
-          <div key={project.title} className="h-full">
+        {projectData.map((project, index) => (
+          <Reveal
+            key={project.title}
+            className="h-full"
+            delayMs={index * 90}
+          >
             <ProjectCard {...project} />
-          </div>
+          </Reveal>
         ))}
       </div>
     </section>

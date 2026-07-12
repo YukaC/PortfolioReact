@@ -5,32 +5,12 @@
    ============================================ */
 
 @theme {
-  /* Colors */
+  /* Colors — dark-only site (`html.dark` in _document); keep token names for utilities */
   --color-primary: #825ca3;
   --color-secondary: #5e3b5a;
   --color-amber-glow: #ffbf00;
-  --color-bg: #f7f6f7;
-  --color-bg-main: #f7f6f7;
-  --color-bg-light: #ffffff;
-  --color-surface: #ffffff;
-  --color-text: #1e293b;
-  --color-text-muted: #6b7280;
-  --color-border: #e5e7eb;
-
-  /* Layout */
-  --max-width-container: 1280px;
-
-  /* Font families */
-  --font-display: var(--font-manrope), system-ui, sans-serif;
-  --font-heading: var(--font-space-grotesk), system-ui, sans-serif;
-  --font-mono: ui-monospace, "Cascadia Mono", "Segoe UI Mono", "Roboto Mono", monospace;
-
-  /* Animations — single cycle (respects reduced-motion below) */
-  --animate-pulse-slow: pulse-slow 3s cubic-bezier(0.4, 0, 0.6, 1) 1;
-}
-
-/* Dark mode overrides */
-.dark {
+  /* Status: available / online (not amber — that reads as “waiting”) */
+  --color-available: #3ecf8e;
   --color-bg: #19161c;
   --color-bg-main: #19161c;
   --color-bg-light: #1b1e23;
@@ -38,6 +18,14 @@
   --color-text: #e5e5e5;
   --color-text-muted: #9ca3af;
   --color-border: rgba(255, 255, 255, 0.05);
+
+  /* Font families */
+  --font-display: var(--font-manrope), system-ui, sans-serif;
+  --font-heading: var(--font-space-grotesk), system-ui, sans-serif;
+  --font-mono: ui-monospace, "Cascadia Mono", "Segoe UI Mono", "Roboto Mono", monospace;
+
+  /* Animations */
+  --animate-pulse-slow: pulse-slow 2.4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
 /* ============================================
@@ -45,13 +33,96 @@
    ============================================ */
 
 @keyframes ticker {
-  0% { transform: translateX(0); }
-  100% { transform: translateX(-75%); }
+  0% { transform: translate3d(0, 0, 0); }
+  100% { transform: translate3d(-50%, 0, 0); }
 }
 
 @keyframes pulse-slow {
   0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
+  50% { opacity: 0.45; }
+}
+
+@keyframes hero-enter-in {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 14px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes section-flash {
+  0% {
+    color: var(--color-text);
+  }
+  35% {
+    color: var(--color-amber-glow);
+  }
+  100% {
+    color: var(--color-text);
+  }
+}
+
+/* Hamburger → X (all bars share the same center) */
+.menu-toggle {
+  position: relative;
+  display: block;
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
+.menu-toggle-bar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 2px;
+  margin-top: -1px;
+  border-radius: 9999px;
+  background-color: currentColor;
+  transition:
+    transform 0.42s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.28s ease;
+}
+
+.menu-toggle-bar-top {
+  transform: translateY(-7px);
+}
+
+.menu-toggle-bar-mid {
+  opacity: 1;
+}
+
+.menu-toggle-bar-bot {
+  transform: translateY(7px);
+}
+
+.menu-toggle[data-open="true"] .menu-toggle-bar-top {
+  transform: translateY(0) rotate(45deg);
+}
+
+.menu-toggle[data-open="true"] .menu-toggle-bar-mid {
+  opacity: 0;
+}
+
+.menu-toggle[data-open="true"] .menu-toggle-bar-bot {
+  transform: translateY(0) rotate(-45deg);
+}
+
+/* Mobile panel: short ease-out — long/flat curves read as stuttered “steps” */
+.mobile-menu-panel {
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.mobile-menu-panel-open {
+  grid-template-rows: 1fr;
+}
+
+.mobile-menu-panel-inner {
+  min-height: 0;
 }
 
 /* ============================================
@@ -61,6 +132,7 @@
 @layer base {
   html {
     scroll-behavior: smooth;
+    scrollbar-gutter: stable;
   }
 
   body {
@@ -133,12 +205,19 @@
     height: 0.625rem;
     border-radius: 9999px;
     background-color: var(--color-text-muted);
-    transition: background-color 0.2s ease;
+    transition:
+      background-color 0.35s ease,
+      box-shadow 0.35s ease,
+      transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
     box-shadow: 0 0 0 4px var(--color-bg);
   }
 
   .timelineDotActive {
     background-color: var(--color-primary);
+    transform: scale(1.35);
+    box-shadow:
+      0 0 0 4px var(--color-bg),
+      0 0 12px color-mix(in srgb, var(--color-primary) 55%, transparent);
   }
 
   /* Learning Goal Box */
@@ -149,9 +228,10 @@
     border-radius: 0.5rem;
   }
 
-  /* Skills Ticker Animation */
+  /* Skills Ticker — 2 tracks × 50% loop; slower to avoid jump/feel rush */
   .animateTicker {
-    animation: ticker 25s linear infinite;
+    animation: ticker 45s linear infinite;
+    backface-visibility: hidden;
   }
 
   /* Opaque nav panel — no permanent backdrop-filter */
@@ -179,11 +259,16 @@
     gap: 0.5rem;
     padding: 1rem 2rem;
     background-color: var(--color-primary);
-    color: white;
+    /* Dark text on primary purple */
+    color: var(--color-bg-main);
     font-weight: 700;
     border-radius: 0.25rem;
     box-shadow: 0 10px 15px -3px color-mix(in srgb, var(--color-primary) 20%, transparent);
-    transition: all 0.3s ease;
+    transition:
+      background-color 0.3s ease,
+      color 0.3s ease,
+      transform 0.3s ease,
+      box-shadow 0.3s ease;
   }
 
   .btn-primary:hover {
@@ -203,7 +288,11 @@
     font-weight: 700;
     border-radius: 0.25rem;
     border: 1px solid color-mix(in srgb, var(--color-secondary) 20%, transparent);
-    transition: all 0.3s ease;
+    transition:
+      background-color 0.3s ease,
+      color 0.3s ease,
+      border-color 0.3s ease,
+      transform 0.3s ease;
   }
 
   .btn-ghost:hover {
@@ -211,6 +300,55 @@
     color: var(--color-bg-main);
     border-color: var(--color-amber-glow);
     transform: translateY(-2px);
+  }
+
+  /* Scroll reveal */
+  .reveal {
+    opacity: 0;
+    transform: translate3d(0, 18px, 0);
+    transition:
+      opacity 0.65s cubic-bezier(0.22, 1, 0.36, 1),
+      transform 0.65s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .reveal-visible {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+
+  /* Hero load stagger */
+  .hero-enter {
+    opacity: 0;
+    animation: hero-enter-in 0.7s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  }
+
+  .hero-enter-delay-1 { animation-delay: 0.05s; }
+  .hero-enter-delay-2 { animation-delay: 0.14s; }
+  .hero-enter-delay-3 { animation-delay: 0.24s; }
+  .hero-enter-delay-4 { animation-delay: 0.34s; }
+  .hero-enter-delay-5 { animation-delay: 0.44s; }
+
+  /* Nav/CTA section heading flash */
+  .section-flash {
+    animation: section-flash 0.9s ease-out;
+  }
+
+  /* Ticker edge fade */
+  .ticker-mask {
+    mask-image: linear-gradient(
+      90deg,
+      transparent 0%,
+      #000 8%,
+      #000 92%,
+      transparent 100%
+    );
+    -webkit-mask-image: linear-gradient(
+      90deg,
+      transparent 0%,
+      #000 8%,
+      #000 92%,
+      transparent 100%
+    );
   }
 }
 
@@ -228,6 +366,29 @@
   }
 
   .animate-pulse-slow {
+    animation: none;
+  }
+
+  .menu-toggle-bar {
+    transition: none;
+  }
+
+  .mobile-menu-panel {
+    transition: none;
+  }
+
+  .reveal {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+
+  .hero-enter {
+    opacity: 1;
+    animation: none;
+  }
+
+  .section-flash {
     animation: none;
   }
 }

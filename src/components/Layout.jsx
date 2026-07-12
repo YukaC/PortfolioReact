@@ -1,4 +1,5 @@
 import Navbar from "./Navbar";
+import Footer from "./Footer";
 import Head from "next/head";
 
 const SITE_URL = "https://agustinciucani.dev";
@@ -42,6 +43,8 @@ const Layout = ({
       <main className="w-full flex flex-col items-center px-4 sm:px-6 lg:px-8">
         {children}
       </main>
+      {/* Sibling of main — full-bleed like Navbar (not clipped by main padding) */}
+      <Footer />
     </div>
   </>
 );
