@@ -15,8 +15,8 @@ export function useInView({
     const element = ref.current;
     if (!element) return undefined;
 
+    // CSS keeps `.reveal` visible under prefers-reduced-motion — skip observer.
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      setIsVisible(true);
       return undefined;
     }
 
