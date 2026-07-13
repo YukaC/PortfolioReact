@@ -2,6 +2,7 @@ import dynamic from "next/dynamic";
 import Layout from "@/components/Layout";
 import HeroSection from "@/components/HeroSection";
 import SkillsTicker from "@/components/SkillsTicker";
+import { fetchPinnedProjects } from "@/lib/fetch-pinned-projects";
 
 const sectionSkeleton = (minHeight) => (
   <div
@@ -26,12 +27,22 @@ const Contact = dynamic(() => import("@/components/Contact"), {
   loading: () => sectionSkeleton("20rem"),
 });
 
-export default function Index() {
+/** Revalidate pinned projects hourly (ISR). */
+export async function getStaticProps() {
+  const projects = await fetchPinnedProjects();
+
+  return {
+    props: { projects },
+    revalidate: 3600,
+  };
+}
+
+export default function Index({ projects }) {
   return (
     <Layout title="Agustin Ciucani | Fullstack Developer">
       <HeroSection />
       <SkillsTicker />
-      <ProjectsGrid />
+      <ProjectsGrid projects={projects} />
       <Experience />
       <Contact />
     </Layout>

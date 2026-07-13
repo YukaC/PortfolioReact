@@ -5,8 +5,8 @@ import { useEffect, useRef, useState } from "react";
  * Reduced motion is handled in CSS (`.reveal` stays visible); no setState needed.
  */
 export function useInView({
-  threshold = 0.12,
-  rootMargin = "0px 0px -8% 0px",
+  threshold = 0,
+  rootMargin = "0px 0px -40px 0px",
 } = {}) {
   const ref = useRef(null);
   const [isVisible, setIsVisible] = useState(false);
@@ -16,6 +16,7 @@ export function useInView({
     if (!element) return undefined;
 
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      setIsVisible(true);
       return undefined;
     }
 

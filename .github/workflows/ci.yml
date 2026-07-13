@@ -19,7 +19,8 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 22
+          # Pin CI to Node 22 LTS; package.json engines allows >=22 (e.g. Node 26 locally)
+          node-version-file: ".nvmrc"
           cache: pnpm
 
       - name: Install dependencies
