@@ -2,6 +2,13 @@
   "name": "portfolio",
   "version": "0.1.0",
   "private": true,
+  "description": "Fullstack Developer portfolio built with Next.js, React, and a Cowboy Bebop–themed R3F easter egg.",
+  "license": "MIT",
+  "author": "Agustin Ciucani",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/YukaC/PortfolioReact.git"
+  },
   "packageManager": "pnpm@11.5.2",
   "scripts": {
     "dev": "next dev",
@@ -22,7 +29,7 @@
     "three": "^0.185.1"
   },
   "engines": {
-    "node": "22.x"
+    "node": ">=22"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.3.2",

@@ -7,7 +7,7 @@ const SITE_URL = "https://agustinciucani.dev";
 const Layout = ({
   children,
   title = "Agustin Ciucani | Fullstack Developer",
-  description = "Desarrollador Front-End especializado en React y Tailwind CSS. Portfolio profesional con proyectos web.",
+  description = "Fullstack Developer specialized in React and Next.js. Personal portfolio with web projects and interactive UI.",
 }) => (
   <>
     <Head>
@@ -35,7 +35,7 @@ const Layout = ({
       <link rel="icon" type="image/png" sizes="96x96" href="/favicon-96x96.png?v=2" />
       <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=2" />
       <link rel="manifest" href="/site.webmanifest" />
-      <meta name="theme-color" content="#584668" />
+      <meta name="theme-color" content="#19161c" />
     </Head>
 
     <div className="min-h-screen bg-bg-main jazz-gradient transition-colors duration-300">

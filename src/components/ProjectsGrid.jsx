@@ -1,8 +1,8 @@
 import { memo } from "react";
 import Image from "next/image";
-import projectData from "@/data/projects";
 import Icon from "@/components/Icon";
 import Reveal from "@/components/Reveal";
+import { PINNED_FALLBACK } from "@/data/projects";
 
 /** Tiny neutral blur for next/image placeholders (avoids CLS flash). */
 const PROJECT_BLUR =
@@ -12,6 +12,39 @@ const PROJECT_BLUR =
       <rect width="100%" height="100%" fill="#2a2430"/>
     </svg>`,
   );
+
+const ProjectMedia = memo(({ imgSrc, alt }) => {
+  if (imgSrc) {
+    return (
+      <div className="h-full w-full grayscale transition-[filter] duration-700 ease-out group-hover:grayscale-0">
+        <div className="h-full w-full origin-center transition-transform duration-700 ease-out group-hover:scale-105">
+          <Image
+            src={imgSrc}
+            alt={alt}
+            width={600}
+            height={340}
+            quality={75}
+            sizes="(max-width: 768px) 100vw, 50vw"
+            placeholder="blur"
+            blurDataURL={PROJECT_BLUR}
+            className="w-full aspect-video object-cover"
+          />
+        </div>
+      </div>
+    );
+  }
+
+  // Visual-only cover — title/tags live in the card body below (avoid duplication).
+  return (
+    <div className="relative h-full w-full overflow-hidden" aria-hidden="true">
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(130,92,163,0.35),transparent_55%),linear-gradient(160deg,#1b1e23_0%,#19161c_55%,#120f14_100%)] transition-transform duration-700 ease-out group-hover:scale-105" />
+      <div className="pointer-events-none absolute -right-8 -top-8 h-40 w-40 rounded-full bg-primary/20 blur-3xl transition-opacity duration-700 group-hover:opacity-80" />
+      <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-1/2 bg-gradient-to-t from-surface/80 to-transparent" />
+    </div>
+  );
+});
+
+ProjectMedia.displayName = "ProjectMedia";
 
 /**
  * ProjectCard - Individual project card with hover effects.
@@ -27,22 +60,7 @@ const ProjectCard = memo(
         className="relative rounded-xl bg-surface border border-[var(--color-border)] overflow-hidden transition-[border-color,box-shadow] duration-500 hover:border-primary/40 hover:shadow-xl group h-full flex flex-col cursor-pointer focus-ring"
       >
         <div className="aspect-video w-full overflow-hidden bg-bg-light shrink-0">
-          {/* Separate layers, same duration/easing — filter + scale stay in sync */}
-          <div className="h-full w-full grayscale transition-[filter] duration-700 ease-out group-hover:grayscale-0">
-            <div className="h-full w-full origin-center transition-transform duration-700 ease-out group-hover:scale-105">
-              <Image
-                src={imgSrc}
-                alt={alt}
-                width={600}
-                height={340}
-                quality={75}
-                sizes="(max-width: 768px) 100vw, 50vw"
-                placeholder="blur"
-                blurDataURL={PROJECT_BLUR}
-                className="w-full aspect-video object-cover"
-              />
-            </div>
-          </div>
+          <ProjectMedia imgSrc={imgSrc} alt={alt} />
         </div>
 
         <div className="p-8 flex-1 flex flex-col">
@@ -92,7 +110,7 @@ const ProjectCard = memo(
 
 ProjectCard.displayName = "ProjectCard";
 
-const ProjectsGrid = () => {
+const ProjectsGrid = ({ projects = PINNED_FALLBACK }) => {
   return (
     <section className="w-full px-6 py-24" id="portfolio">
       <Reveal className="flex w-full flex-col md:flex-row justify-between items-start md:items-end mb-16 gap-4">
@@ -101,7 +119,7 @@ const ProjectsGrid = () => {
             Selected Works
           </h2>
           <p className="text-text-muted">
-            A curation of my recent digital projects.
+            Pinned repositories from my GitHub profile.
           </p>
         </div>
         <a
@@ -116,9 +134,9 @@ const ProjectsGrid = () => {
       </Reveal>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        {projectData.map((project, index) => (
+        {projects.map((project, index) => (
           <Reveal
-            key={project.title}
+            key={project.name ?? project.repoLink}
             className="h-full"
             delayMs={index * 90}
           >
