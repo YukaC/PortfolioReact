@@ -52,6 +52,14 @@ export const PROJECT_OVERRIDES = {
     alt: "cleanupDiskW11 Windows 11 cleaner GUI screenshot",
     tags: ["Python", "Windows"],
   },
+  AhorrAR: {
+    title: "AhorrAR",
+    description:
+      "Live price comparison for Argentine stores — ranked real offers with confirmed shipping (Scrapling + Express + React).",
+    imgSrc: "/ahorrar.webp",
+    alt: "AhorrAR price comparison landing page screenshot",
+    tags: ["React", "TypeScript", "Express"],
+  },
 };
 
 /**
@@ -116,5 +124,15 @@ export const PINNED_FALLBACK = [
     alt: "cleanupDiskW11 Windows 11 cleaner GUI screenshot",
     tags: ["Python", "Windows"],
     repoLink: "https://github.com/YukaC/cleanupDiskW11",
+  },
+  {
+    name: "AhorrAR",
+    title: "AhorrAR",
+    description:
+      "Live price comparison for Argentine stores — ranked real offers with confirmed shipping (Scrapling + Express + React).",
+    imgSrc: "/ahorrar.webp",
+    alt: "AhorrAR price comparison landing page screenshot",
+    tags: ["React", "TypeScript", "Express"],
+    repoLink: "https://github.com/YukaC/AhorrAR",
   },
 ];
