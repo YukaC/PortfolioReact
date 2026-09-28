@@ -112,6 +112,27 @@ Works with Netlify, Railway, and [Next.js Docker](https://nextjs.org/docs/deploy
 - **Node.js** 22+ (see `engines` in `package.json`, `.nvmrc`, and CI — local Node 26 OK)
 - **pnpm** 11+ (see `packageManager` in `package.json`)
 
+## 🐢 Local development on a slow disk (HDD)
+
+`next dev` (Turbopack) writes heavily under `.next/` and reads large deps (`three` / R3F / `gsap`) from `node_modules`. On a spinning HDD (e.g. `/mnt/JuegosHDD`) cold first compile of `/` can take ~20s and Next may warn `Slow filesystem detected`.
+
+**Recommended layout**
+
+1. Keep the git checkout wherever you like.
+2. Put hot paths on SSD/NVMe via bind/symlink, e.g.:
+
+```bash
+# Example: cache + modules on fast disk
+mkdir -p ~/ssd-cache/PortfolioReact/{.next,node_modules}
+# after clone, before pnpm install:
+ln -s ~/ssd-cache/PortfolioReact/node_modules node_modules
+# optional: point Next dist at SSD (see next.config `distDir`)
+```
+
+3. Or clone/worktree the whole repo under `~/` (SSD) and only keep a mirror on the HDD.
+
+**Not the main bottleneck:** GitHub pin scrape in `getStaticProps` (~hundreds of ms). See [#20](https://github.com/YukaC/PortfolioReact/issues/20).
+
 ## 🎨 CSS Variables
 
 Dark tokens live in `@theme` (`src/styles/globals.css`):
