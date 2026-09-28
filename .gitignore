@@ -101,7 +101,6 @@ next-env.d.ts
 .gemini/
 AGENTS.md
 CLAUDE.md
-SPEC.md
 agent.md
 refBebop.md
 *.original.png
