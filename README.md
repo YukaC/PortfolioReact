@@ -2,7 +2,7 @@
 
 > Fullstack Developer portfolio.
 
-![Next.js](https://img.shields.io/badge/Next.js-16.2-black?logo=next.js)
+![Next.js](https://img.shields.io/badge/Next.js-16.3-black?logo=next.js)
 ![React](https://img.shields.io/badge/React-19-61DAFB?logo=react)
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind-4.3-38B2AC?logo=tailwindcss)
 ![Three.js](https://img.shields.io/badge/Three.js-R3F-000000?logo=threedotjs)
