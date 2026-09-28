@@ -1,0 +1,28 @@
+version: 2
+
+updates:
+  # pnpm-lock.yaml is the only lockfile in the repo. Dependabot reads the
+  # "packageManager" field in package.json and uses pnpm to update it.
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    # Transitive security fixes arrive in bursts; one PR per patch keeps
+    # review cheap without hiding minor bumps, which still get their own PR.
+    groups:
+      patch-updates:
+        patterns:
+          - "*"
+        update-types:
+          - "patch"
+    labels:
+      - "dependencies"
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    labels:
+      - "dependencies"

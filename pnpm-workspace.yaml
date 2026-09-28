@@ -1,5 +1,24 @@
 overrides:
-  postcss: 8.5.16
+  # Next's PostCSS chain. Pinned because Tailwind 4 + Autoprefixer + Next all
+  # depend on it; bump together with the devDependency in package.json.
+  postcss: 8.5.23
+
+  # No direct dependency can pull a patched release, so pin the minimum
+  # version that clears the advisory.
+  browserslist: 4.28.7
+  js-yaml: 4.3.2
+  # next@16.3.6 allows ^2.9.19, so its copy resolves to a stale 2.10.42.
+  baseline-browser-mapping: 2.11.0
+
+  # Scoped: the tree also holds fflate 0.8.3, which must NOT be downgraded
+  # to the 0.6.x line. Only three-stdlib (via @react-three/drei) is affected.
+  "three-stdlib>fflate": 0.6.11
+
+  # Scoped: the tree holds two independent brace-expansion major lines and
+  # minimatch 3 vs 10 are not API-compatible with each other's expansion.
+  # A flat override would force 5.x into minimatch 3 and break it.
+  "minimatch@3>brace-expansion": 1.1.18
+  "minimatch@10>brace-expansion": 5.0.9
 
 peerDependencyRules:
   allowAny:
