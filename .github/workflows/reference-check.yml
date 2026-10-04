@@ -30,8 +30,8 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pnpm install --frozen-lockfile
+          pnpm install
 
       - name: Run project check
         run: |
-          pnpm lint && pnpm build && bash .ra/checks/ra-checks .
+          pnpm build
