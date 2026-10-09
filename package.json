@@ -17,7 +17,11 @@
     "lint": "eslint .",
     "check:lint": "eslint .",
     "e2e:a11y": "node scripts/e2e-a11y.mjs",
-    "validate:bebop": "node scripts/validate-bebop-timing.mjs"
+    "validate:bebop": "node scripts/validate-bebop-timing.mjs",
+    "setup:ssd": "node scripts/setup-ssd-cache.mjs",
+    "setup:ssd:store": "node scripts/setup-ssd-cache.mjs --store",
+    "dev:nvme": "node scripts/run-nvme.mjs dev",
+    "build:nvme": "node scripts/run-nvme.mjs build"
   },
   "dependencies": {
     "@react-three/drei": "^10.7.7",
