@@ -114,22 +114,28 @@ Works with Netlify, Railway, and [Next.js Docker](https://nextjs.org/docs/deploy
 
 ## 🐢 Local development on a slow disk (HDD)
 
-`next dev` (Turbopack) writes heavily under `.next/` and reads large deps (`three` / R3F / `gsap`) from `node_modules`. On a spinning HDD (e.g. `/mnt/JuegosHDD`) cold first compile of `/` can take ~20s and Next may warn `Slow filesystem detected`.
+Stay on **Next.js** (Vercel, ISR pins, Bebop). The slow part is not “Next vs Vite” in the abstract: this app pulls **three / R3F / drei / postprocessing / gsap**, and Turbopack is I/O-heavy. On a spinning HDD (e.g. `/mnt/JuegosHDD`) cold compile hurts; the same tree on NVMe is fine.
 
-**Recommended layout**
+**Do not** symlink `.next` or `node_modules` across disks — Turbopack rejects out-of-root `node_modules` symlinks, and a cross-device `.next` breaks PostCSS.
 
-1. Keep the git checkout wherever you like.
-2. Put hot paths on SSD/NVMe via bind/symlink, e.g.:
+**Recommended: NVMe git worktree**
 
 ```bash
-# Example: cache + modules on fast disk
-mkdir -p ~/ssd-cache/PortfolioReact/{.next,node_modules}
-# after clone, before pnpm install:
-ln -s ~/ssd-cache/PortfolioReact/node_modules node_modules
-# optional: point Next dist at SSD (see next.config `distDir`)
+# From the HDD checkout (stop any next first)
+pnpm setup:ssd         # creates ~/ssd-cache/PortfolioReact/wt
+pnpm setup:ssd:store   # optional: pnpm store-dir on NVMe inside the worktree
+# Open that folder in Cursor, then:
+cd ~/ssd-cache/PortfolioReact/wt && pnpm dev
 ```
 
-3. Or clone/worktree the whole repo under `~/` (SSD) and only keep a mirror on the HDD.
+Convenience from the HDD tree (runs inside the worktree — use after the worktree has your commits):
+
+```bash
+pnpm dev:nvme
+pnpm build:nvme
+```
+
+Prefer **pnpm** (`packageManager`); `npm run …` works but locks/CI use pnpm.
 
 **Not the main bottleneck:** GitHub pin scrape in `getStaticProps` (~hundreds of ms). See [#20](https://github.com/YukaC/PortfolioReact/issues/20).
 
