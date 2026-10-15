@@ -1,10 +1,19 @@
-import { useEffect, useState, useSyncExternalStore } from "react";
+import { useEffect, useId, useState, useSyncExternalStore } from "react";
+import Image from "next/image";
 import Icon from "@/components/Icon";
-import { SKILLS } from "@/data/constants";
+import Magnetic from "@/components/Magnetic";
 import { GITHUB_USERNAME } from "@/data/projects";
 import { scrollToSectionByHash } from "@/utils/scroll-to-section";
 
 const ROTATE_MS = 5000;
+
+const PROJECT_BLUR =
+  "data:image/svg+xml;charset=utf-8," +
+  encodeURIComponent(
+    `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="9">
+      <rect width="100%" height="100%" fill="#131d33"/>
+    </svg>`,
+  );
 
 const reduceMotionQuery =
   typeof window !== "undefined"
@@ -21,56 +30,60 @@ function getReduceMotionSnapshot() {
 }
 
 function getReduceMotionServerSnapshot() {
-  // Server render has no matchMedia — motion-sensitive default is "animate";
-  // the client snapshot corrects it right after hydration.
   return false;
 }
 
-/**
- * Defensive fallback — ISR normally guarantees `projects`, but the hero must
- * render standalone (storybook-ish previews, edge cases).
- */
 const FALLBACK_FEATURED = [
   {
     name: "PortfolioReact",
     title: "Professional Portfolio",
     description:
-      "This site — Next.js SSG/ISR, a Tailwind design system, and a WebGL easter egg.",
+      "This site. Next.js SSG/ISR, a Tailwind design system, and a WebGL easter egg.",
     tags: ["React", "Next.js", "Tailwind CSS"],
+    imgSrc: "/img3.webp",
+    alt: "Portfolio Screenshot",
     repoLink: `https://github.com/${GITHUB_USERNAME}/PortfolioReact`,
   },
 ];
 
 /**
- * HeroSection - Trust-first landing hero.
+ * HeroSection - Practice landing hero.
  *
- * Copy + CTAs on the left; a glassmorphism card on the right that adapts to
- * the GitHub profile: it rotates through the pinned repos scraped at build
- * time (ISR) and links back to the profile. Tech strip replaces a generic
- * "trusted by" logo row.
+ * Copy + one work CTA on the left; a glass card on the right that rotates
+ * through pinned GitHub repos (screenshot + title). Controls share the site
+ * button language (btn-icon / btn-nav radius) and include a pause control
+ * for WCAG 2.2.2.
  */
 const HeroSection = ({ projects = [] }) => {
   const featured = projects.length > 0 ? projects : FALLBACK_FEATURED;
   const [activeIndex, setActiveIndex] = useState(0);
-  const [isPaused, setIsPaused] = useState(false);
+  const [isHoverPaused, setIsHoverPaused] = useState(false);
+  const [isUserPaused, setIsUserPaused] = useState(false);
   const reduceMotion = useSyncExternalStore(
     subscribeReduceMotion,
     getReduceMotionSnapshot,
     getReduceMotionServerSnapshot,
   );
+  const slidePanelId = useId();
 
-  // Auto-rotate the featured repo. Paused on hover/focus, reduced motion,
-  // or when there is nothing to rotate. `activeIndex` in deps restarts the
-  // countdown after a manual dot selection.
+  const projectCount = featured.length;
+  const active = featured[activeIndex % projectCount];
+  const isRotationPaused = isUserPaused || isHoverPaused || reduceMotion;
+
   useEffect(() => {
-    if (isPaused || reduceMotion || featured.length <= 1) return undefined;
+    if (isRotationPaused || projectCount <= 1) return undefined;
 
     const timer = setInterval(() => {
-      setActiveIndex((prev) => (prev + 1) % featured.length);
+      setActiveIndex((prev) => (prev + 1) % projectCount);
     }, ROTATE_MS);
 
     return () => clearInterval(timer);
-  }, [isPaused, reduceMotion, featured.length, activeIndex]);
+  }, [isRotationPaused, projectCount, activeIndex]);
+
+  const goToIndex = (index) => {
+    if (projectCount <= 0) return;
+    setActiveIndex((index + projectCount) % projectCount);
+  };
 
   const handleCtaClick = (e, href) => {
     e.preventDefault();
@@ -78,185 +91,223 @@ const HeroSection = ({ projects = [] }) => {
   };
 
   const handleCardBlur = (e) => {
-    if (!e.currentTarget.contains(e.relatedTarget)) setIsPaused(false);
+    if (!e.currentTarget.contains(e.relatedTarget)) setIsHoverPaused(false);
   };
 
-  const active = featured[activeIndex % featured.length];
+  const handleCarouselKeyDown = (e) => {
+    if (projectCount <= 1) return;
+    if (e.target.closest("a[href]")) return;
+    if (e.key === "ArrowLeft") {
+      e.preventDefault();
+      goToIndex(activeIndex - 1);
+    } else if (e.key === "ArrowRight") {
+      e.preventDefault();
+      goToIndex(activeIndex + 1);
+    } else if (e.key === "Home") {
+      e.preventDefault();
+      goToIndex(0);
+    } else if (e.key === "End") {
+      e.preventDefault();
+      goToIndex(projectCount - 1);
+    }
+  };
+
+  const liveStatus = isUserPaused
+    ? `${active.title}, ${activeIndex + 1} of ${projectCount}, paused`
+    : `${active.title}, ${activeIndex + 1} of ${projectCount}`;
 
   return (
     <section
-      className="w-full min-h-screen flex items-center px-6 pt-24 pb-16 relative overflow-hidden"
+      className="relative w-full min-h-[100dvh] overflow-hidden"
       id="home"
     >
-      {/* Ambient color fields — depth behind the glass, quiet on the copy side */}
-      <div
-        className="absolute top-1/4 -right-24 w-[36rem] h-[36rem] rounded-full bg-primary/20 blur-[120px] opacity-60 pointer-events-none"
-        aria-hidden="true"
-      />
-      <div
-        className="absolute -top-32 -left-32 w-[28rem] h-[28rem] rounded-full bg-secondary/25 blur-[110px] opacity-40 pointer-events-none"
-        aria-hidden="true"
-      />
-
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-center w-full">
-        {/* Copy */}
-        <div className="lg:col-span-7 flex flex-col gap-6">
-          <div className="hero-enter hero-enter-delay-1 inline-flex w-fit items-center gap-2 px-3 py-1 rounded-full bg-available/15 border border-available/30 text-available text-xs font-bold uppercase tracking-wide">
-            <span
-              className="w-2 h-2 rounded-full bg-available animate-pulse-slow"
-              aria-hidden="true"
-            />
-            Available for new projects
-          </div>
-
-          <h1 className="hero-enter hero-enter-delay-2">
+      <div className="site-shell grid min-h-[100dvh] grid-cols-1 content-start gap-10 pt-24 pb-16 md:gap-12 md:pb-20 lg:grid-cols-12 lg:items-center lg:gap-x-16">
+        <div className="copy-veil flex flex-col gap-6 lg:col-span-6">
+          <h1
+            data-intro
+            className="text-balance text-[clamp(2.25rem,4.4vw,3.4rem)] leading-[1.14]"
+          >
             Turning Real Problems Into{" "}
-            <span className="text-gradient-accent">Working Software</span>
+            <span className="headline-accent">Working Software</span>
           </h1>
 
-          <p className="hero-enter hero-enter-delay-3 text-lg sm:text-xl text-text-muted max-w-xl leading-relaxed">
-            {"I'm Agustin Ciucani, a Full-Stack Developer from Buenos Aires, " +
-              "Argentina. I ship dynamic, responsive products with React and " +
-              "Tailwind CSS — real tools for real workflows, not just polished " +
-              "demos."}
+          <p data-intro className="max-w-md text-lg leading-relaxed text-fog">
+            Agustin Ciucani. Full-stack developer in Buenos Aires. I ship
+            React and Next.js products people can actually use.
           </p>
 
-          <div className="hero-enter hero-enter-delay-4 flex flex-col sm:flex-row gap-4 mt-2">
-            <a
-              href="#portfolio"
-              className="btn-primary focus-ring"
-              onClick={(e) => handleCtaClick(e, "#portfolio")}
-            >
-              See Projects
-            </a>
-            <a
-              href="#contact"
-              className="btn-ghost focus-ring"
-              onClick={(e) => handleCtaClick(e, "#contact")}
-            >
-              {"Let's Connect"}
-            </a>
-          </div>
-
-          {/* Tech strip — what the work is actually built with */}
-          <div className="hero-enter hero-enter-delay-5 mt-6">
-            <p className="text-xs font-bold text-primary/60 uppercase tracking-widest mb-3">
-              Built with
-            </p>
-            <ul className="flex flex-wrap gap-2">
-              {SKILLS.map((skill) => (
-                <li
-                  key={skill.name}
-                  className="glass-pill flex items-center gap-2 rounded-full px-3.5 py-1.5 text-sm text-text-muted hover:text-amber-glow hover:border-primary/40 transition-colors cursor-default"
-                >
-                  <Icon
-                    name={skill.icon}
-                    size={15}
-                    className="text-primary"
-                  />
-                  {skill.name}
-                </li>
-              ))}
-            </ul>
+          <div data-intro className="mt-2">
+            <Magnetic>
+              <a
+                href="#portfolio"
+                className="btn-primary focus-ring"
+                onClick={(e) => handleCtaClick(e, "#portfolio")}
+              >
+                See work
+              </a>
+            </Magnetic>
           </div>
         </div>
 
-        {/* Glass card — live from GitHub */}
-        <div className="lg:col-span-5 hero-enter hero-enter-delay-5 relative">
+        <div data-intro className="lg:col-span-5 lg:col-start-8">
           <div
-            className="glass-card rounded-3xl p-6 sm:p-8 overflow-hidden"
-            onMouseEnter={() => setIsPaused(true)}
-            onMouseLeave={() => setIsPaused(false)}
-            onFocus={() => setIsPaused(true)}
+            className="glass-card overflow-hidden rounded-sm"
+            onMouseEnter={() => setIsHoverPaused(true)}
+            onMouseLeave={() => setIsHoverPaused(false)}
+            onFocus={() => setIsHoverPaused(true)}
             onBlur={handleCardBlur}
           >
             <div
-              className="glass-noise absolute inset-0 opacity-30 rounded-3xl"
+              className="glass-noise pointer-events-none absolute inset-0 z-[1] opacity-25"
               aria-hidden="true"
             />
 
-            <div className="relative flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <span
-                  className="w-2 h-2 rounded-full bg-available animate-pulse-slow"
-                  aria-hidden="true"
+            {active.imgSrc ? (
+              <div className="relative aspect-video overflow-hidden border-b border-white/10 bg-deep">
+                <Image
+                  key={active.imgSrc}
+                  src={active.imgSrc}
+                  alt={active.alt ?? `${active.title} screenshot`}
+                  width={1280}
+                  height={720}
+                  quality={70}
+                  priority={activeIndex === 0}
+                  sizes="(max-width: 1024px) 100vw, 42vw"
+                  placeholder="blur"
+                  blurDataURL={PROJECT_BLUR}
+                  className="h-full w-full object-cover"
                 />
-                <span className="font-mono text-[0.65rem] tracking-[0.2em] uppercase text-text-muted">
+              </div>
+            ) : null}
+
+            <div className="relative p-5 sm:p-6">
+              <div className="flex items-center justify-between gap-3">
+                <p className="font-mono text-[0.65rem] uppercase tracking-[0.18em] text-fog">
                   Live from GitHub
-                </span>
-              </div>
-              <Icon
-                name="github"
-                size={18}
-                className="text-text-muted"
-              />
-            </div>
-
-            {/* Reserves height so rotating repos don't shift the footer */}
-            <div className="relative mt-6 min-h-[10.5rem] sm:min-h-[9rem]">
-              <div key={active.name} className="repo-card-enter">
-                <a
-                  href={active.repoLink}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="group/repo inline-flex items-start gap-1.5 font-heading text-xl sm:text-2xl text-text hover:text-amber-glow transition-colors focus-ring rounded-sm"
-                >
-                  {active.title}
-                  <Icon
-                    name="arrow_forward"
-                    size={18}
-                    className="mt-1 opacity-0 -translate-x-1 group-hover/repo:opacity-100 group-hover/repo:translate-x-0 transition-all shrink-0"
-                  />
-                </a>
-                <p className="mt-2 text-sm sm:text-[0.95rem] leading-relaxed text-text-muted line-clamp-3">
-                  {active.description}
                 </p>
-                {active.tags?.length > 0 && (
-                  <ul className="mt-4 flex flex-wrap gap-1.5">
-                    {active.tags.map((tag) => (
-                      <li
-                        key={tag}
-                        className="rounded-full border border-white/10 bg-white/5 px-2.5 py-0.5 font-mono text-[0.65rem] text-text-muted"
-                      >
-                        {tag}
-                      </li>
-                    ))}
-                  </ul>
-                )}
+                <Icon name="github" size={18} className="text-fog" />
               </div>
-            </div>
 
-            <div className="relative mt-6 pt-5 border-t border-white/10 flex items-center justify-between gap-4">
               <div
-                className="flex items-center gap-1.5"
-                role="group"
-                aria-label="Featured project selector"
+                className="mt-4"
+                role="region"
+                aria-roledescription="carousel"
+                aria-label="Featured GitHub projects"
+                onKeyDown={handleCarouselKeyDown}
               >
-                {featured.map((project, index) => (
-                  <button
-                    key={project.name}
-                    type="button"
-                    onClick={() => setActiveIndex(index)}
-                    aria-label={`Show ${project.title}`}
-                    aria-current={index === activeIndex}
-                    className={`h-1.5 rounded-full transition-all focus-ring ${
-                      index === activeIndex
-                        ? "w-6 bg-primary"
-                        : "w-1.5 bg-white/20 hover:bg-white/40"
-                    }`}
-                  />
-                ))}
-              </div>
+                <p aria-live="polite" aria-atomic="true" className="sr-only">
+                  {liveStatus}
+                </p>
 
-              <a
-                href={`https://github.com/${GITHUB_USERNAME}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 font-mono text-xs text-text-muted hover:text-amber-glow transition-colors focus-ring rounded-sm"
-              >
-                github.com/{GITHUB_USERNAME}
-                <Icon name="arrow_forward" size={14} />
-              </a>
+                <div
+                  id={slidePanelId}
+                  key={active.name}
+                  className="repo-card-enter min-h-[7.5rem] sm:min-h-[6.75rem]"
+                  role="group"
+                  aria-roledescription="slide"
+                  aria-label={`${activeIndex + 1} of ${projectCount}`}
+                >
+                  <a
+                    href={active.repoLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="group/repo focus-ring inline-flex items-start gap-1.5 rounded-sm font-heading text-xl text-paper hover:text-ice sm:text-2xl"
+                  >
+                    {active.title}
+                    <Icon
+                      name="arrow_forward"
+                      size={18}
+                      className="mt-1 shrink-0 opacity-0 transition-transform duration-200 ease-out group-hover/repo:translate-x-0.5 group-hover/repo:opacity-100"
+                    />
+                  </a>
+                  <p className="mt-2 line-clamp-3 text-sm leading-relaxed text-fog">
+                    {active.outcome ?? active.description}
+                  </p>
+                </div>
+
+                <div className="mt-5 flex flex-col gap-3 border-t border-white/10 pt-4">
+                  <div
+                    className="flex flex-wrap items-center gap-1"
+                    role="group"
+                    aria-label="Featured project controls"
+                  >
+                    <button
+                      type="button"
+                      className="btn-icon focus-ring"
+                      onClick={() => goToIndex(activeIndex - 1)}
+                      disabled={projectCount <= 1}
+                      aria-label="Previous project"
+                      aria-controls={slidePanelId}
+                    >
+                      <Icon name="arrow_back" size={16} />
+                    </button>
+
+                    <div
+                      className="flex flex-wrap items-center"
+                      role="group"
+                      aria-label="Featured project selector"
+                    >
+                      {featured.map((project, index) => (
+                        <button
+                          key={project.name}
+                          type="button"
+                          className="carousel-dot focus-ring"
+                          onClick={() => goToIndex(index)}
+                          aria-label={`Show ${project.title}`}
+                          aria-controls={slidePanelId}
+                          aria-current={
+                            index === activeIndex ? "true" : undefined
+                          }
+                        >
+                          <span className="carousel-dot-pip" />
+                        </button>
+                      ))}
+                    </div>
+
+                    <button
+                      type="button"
+                      className="btn-icon focus-ring"
+                      onClick={() => goToIndex(activeIndex + 1)}
+                      disabled={projectCount <= 1}
+                      aria-label="Next project"
+                      aria-controls={slidePanelId}
+                    >
+                      <Icon name="arrow_forward" size={16} />
+                    </button>
+
+                    {reduceMotion ? null : (
+                      <button
+                        type="button"
+                        className="btn-icon focus-ring"
+                        onClick={() => setIsUserPaused((paused) => !paused)}
+                        aria-label={
+                          isUserPaused
+                            ? "Play featured projects"
+                            : "Pause featured projects"
+                        }
+                        aria-pressed={isUserPaused}
+                        aria-controls={slidePanelId}
+                      >
+                        <Icon
+                          name={isUserPaused ? "play" : "pause"}
+                          size={16}
+                        />
+                      </button>
+                    )}
+                  </div>
+
+                  <a
+                    href={`https://github.com/${GITHUB_USERNAME}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="link-underline focus-ring inline-flex items-center gap-1.5 rounded-sm text-sm text-fog hover:text-paper"
+                  >
+                    github.com/{GITHUB_USERNAME}
+                    <span className="sr-only"> (opens in a new tab)</span>
+                    <Icon name="arrow_forward" size={14} />
+                  </a>
+                </div>
+              </div>
             </div>
           </div>
         </div>

@@ -66,11 +66,14 @@ function mapPinnedRepo(repo) {
     name: repo.name,
     title,
     description,
+    problem: override.problem ?? null,
+    outcome: override.outcome ?? null,
     // Local screenshots only — GitHub OG images rate-limit and clash with dark UI.
     imgSrc: override.imgSrc ?? null,
     alt: override.alt ?? `${title} repository`,
     tags: buildTags(repo, override),
     repoLink: repo.url,
+    isFeatured: Boolean(override.isFeatured),
   };
 }
 

@@ -27,6 +27,25 @@ const icons = {
       strokeLinejoin="round"
     />
   ),
+  arrow_back: (
+    <path
+      d="M19 12H5M11 6l-6 6 6 6"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  ),
+  pause: (
+    <>
+      <rect x="6.5" y="6" width="3.5" height="12" rx="0.5" fill="currentColor" />
+      <rect x="14" y="6" width="3.5" height="12" rx="0.5" fill="currentColor" />
+    </>
+  ),
+  play: (
+    <path d="M8 6.5v11l10-5.5L8 6.5z" fill="currentColor" />
+  ),
   auto_stories: (
     <>
       <path
@@ -173,14 +192,15 @@ const icons = {
  * Inline SVG icon by name.
  *
  * Valid `name` values:
- * `"menu"` | `"close"` | `"arrow_forward"` | `"auto_stories"` | `"html"` | `"css"` |
- * `"javascript"` | `"deployed_code"` | `"style"` | `"code"` | `"database"` | `"account_tree"` |
- * `"github"` | `"linkedin"` | `"instagram"`
+ * `"menu"` | `"close"` | `"arrow_forward"` | `"arrow_back"` | `"pause"` | `"play"` |
+ * `"auto_stories"` | `"html"` | `"css"` | `"javascript"` | `"deployed_code"` |
+ * `"style"` | `"code"` | `"database"` | `"account_tree"` | `"github"` |
+ * `"linkedin"` | `"instagram"`
  *
  * Social icons (`github` | `linkedin` | `instagram`) are ready for Footer to consume.
  *
  * @param {object} props
- * @param {"menu"|"close"|"arrow_forward"|"auto_stories"|"html"|"css"|"javascript"|"deployed_code"|"style"|"code"|"database"|"account_tree"|"github"|"linkedin"|"instagram"} props.name
+ * @param {"menu"|"close"|"arrow_forward"|"arrow_back"|"pause"|"play"|"auto_stories"|"html"|"css"|"javascript"|"deployed_code"|"style"|"code"|"database"|"account_tree"|"github"|"linkedin"|"instagram"} props.name
  * @param {string} [props.className]
  * @param {number} [props.size=24]
  */

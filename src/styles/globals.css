@@ -27,27 +27,10 @@
   --font-mono: ui-monospace, "Cascadia Mono", "Segoe UI Mono", monospace;
 }
 
-@keyframes pulse-slow {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.4; }
-}
-
 @keyframes section-flash {
   0% { color: var(--color-paper); }
   40% { color: var(--color-ice); }
   100% { color: var(--color-paper); }
-}
-
-/* Trust-hero entrance + GitHub card swap */
-@keyframes hero-enter-in {
-  from {
-    opacity: 0;
-    transform: translate3d(0, 14px, 0);
-  }
-  to {
-    opacity: 1;
-    transform: translate3d(0, 0, 0);
-  }
 }
 
 @keyframes card-swap-in {
@@ -58,6 +41,15 @@
   to {
     opacity: 1;
     transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+@keyframes footer-beam-drift {
+  from {
+    transform: translate3d(-8%, -6%, 0);
+  }
+  to {
+    transform: translate3d(8%, 6%, 0);
   }
 }
 
@@ -161,56 +153,37 @@
     outline-offset: 3px;
   }
 
-  /* Hero load stagger */
-  .hero-enter {
-    opacity: 0;
-    animation: hero-enter-in 0.7s cubic-bezier(0.22, 1, 0.36, 1) forwards;
-  }
-
-  .hero-enter-delay-1 { animation-delay: 0.05s; }
-  .hero-enter-delay-2 { animation-delay: 0.14s; }
-  .hero-enter-delay-3 { animation-delay: 0.24s; }
-  .hero-enter-delay-4 { animation-delay: 0.34s; }
-  .hero-enter-delay-5 { animation-delay: 0.44s; }
-
-  /* Glassmorphism surface (trust hero card) */
+  /* Glassmorphism surface (trust hero card) — web frosted-glass, not Apple Liquid Glass */
   .glass-card {
     position: relative;
+    isolation: isolate;
     background: linear-gradient(
       160deg,
-      rgba(255, 255, 255, 0.07),
-      rgba(255, 255, 255, 0.02) 45%,
-      rgba(1, 94, 195, 0.12)
+      color-mix(in srgb, var(--color-night) 82%, white 8%),
+      color-mix(in srgb, var(--color-deep) 88%, #015ec3)
     );
-    backdrop-filter: blur(18px);
-    -webkit-backdrop-filter: blur(18px);
-    border: 1px solid rgba(255, 255, 255, 0.09);
+    backdrop-filter: blur(20px) saturate(140%);
+    -webkit-backdrop-filter: blur(20px) saturate(140%);
+    border: 1px solid color-mix(in srgb, var(--color-ice) 34%, white 10%);
     box-shadow:
-      0 24px 60px -24px rgba(0, 0, 0, 0.6),
-      inset 0 1px 0 rgba(255, 255, 255, 0.08);
+      0 24px 60px -24px rgba(2, 18, 45, 0.72),
+      inset 0 1px 0 rgba(255, 255, 255, 0.18);
   }
 
   /* Top sheen — light catching the glass edge */
   .glass-card::before {
     content: "";
     position: absolute;
-    inset: 0 12% auto 12%;
+    inset: 0 10% auto 10%;
+    z-index: 1;
     height: 1px;
     background: linear-gradient(
       90deg,
       transparent,
-      rgba(255, 255, 255, 0.35),
+      rgba(255, 255, 255, 0.45),
       transparent
     );
     pointer-events: none;
-  }
-
-  /* Frosted pill (tech strip) */
-  .glass-pill {
-    background: rgba(255, 255, 255, 0.04);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.08);
   }
 
   /* Film-grain noise layer for glass depth (static, GPU-cheap) */
@@ -218,18 +191,6 @@
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E");
     mix-blend-mode: overlay;
     pointer-events: none;
-  }
-
-  /* Gradient accent for the headline keyword (Bocanada palette: ice → paper) */
-  .text-gradient-accent {
-    background: linear-gradient(
-      92deg,
-      color-mix(in oklab, var(--color-ice) 55%, white),
-      var(--color-paper)
-    );
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
   }
 
   /* Rotating card content enters on swap */
@@ -296,16 +257,90 @@
     border-color: var(--color-ice);
   }
 
+  .site-nav {
+    border-bottom: 1px solid color-mix(in srgb, var(--color-mist) 42%, transparent);
+    background-color: color-mix(in srgb, var(--color-ink) 64%, transparent);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+  }
+
   .site-nav.is-nav-scrolled {
-    border-color: color-mix(in srgb, var(--color-mist) 50%, transparent);
-    background-color: color-mix(in srgb, var(--color-ink) 72%, transparent);
-    backdrop-filter: blur(12px);
+    border-color: color-mix(in srgb, var(--color-mist) 62%, transparent);
+    background-color: color-mix(in srgb, var(--color-ink) 84%, transparent);
+  }
+
+  .btn-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.75rem;
+    height: 2.75rem;
+    color: var(--color-paper);
+    border: 1px solid color-mix(in srgb, var(--color-ice) 40%, transparent);
+    border-radius: 0.125rem;
+    background-color: color-mix(in srgb, var(--color-ink) 35%, transparent);
+    transition:
+      background-color 160ms cubic-bezier(0.23, 1, 0.32, 1),
+      color 160ms cubic-bezier(0.23, 1, 0.32, 1),
+      transform 160ms cubic-bezier(0.23, 1, 0.32, 1);
+  }
+
+  .btn-icon:active {
+    transform: scale(0.97);
+  }
+
+  .btn-icon:disabled {
+    opacity: 0.4;
+    pointer-events: none;
+  }
+
+  .btn-icon[aria-pressed="true"] {
+    background-color: var(--color-ice);
+    color: var(--color-ink);
+    border-color: var(--color-ice);
+  }
+
+  .carousel-dot {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.75rem;
+    height: 2.75rem;
+    border-radius: 0.125rem;
+    background: transparent;
+  }
+
+  .carousel-dot-pip {
+    display: block;
+    width: 0.5rem;
+    height: 0.5rem;
+    border-radius: 0.125rem;
+    border: 1px solid color-mix(in srgb, var(--color-ice) 40%, transparent);
+    background-color: transparent;
+    transition:
+      width 160ms cubic-bezier(0.23, 1, 0.32, 1),
+      background-color 160ms cubic-bezier(0.23, 1, 0.32, 1),
+      border-color 160ms cubic-bezier(0.23, 1, 0.32, 1);
+  }
+
+  .carousel-dot[aria-current="true"] .carousel-dot-pip {
+    width: 1.25rem;
+    background-color: var(--color-ice);
+    border-color: var(--color-ice);
   }
 
   @media (prefers-reduced-transparency: reduce) {
+    .site-nav,
     .site-nav.is-nav-scrolled {
       backdrop-filter: none;
+      -webkit-backdrop-filter: none;
       background-color: var(--color-ink);
+    }
+
+    .glass-card {
+      backdrop-filter: none;
+      -webkit-backdrop-filter: none;
+      background: var(--color-night);
     }
   }
 
@@ -314,9 +349,15 @@
       background-color: var(--color-paper);
     }
 
-    .btn-nav:hover {
+    .btn-nav:hover,
+    .btn-icon:hover {
       background-color: var(--color-ice);
       color: var(--color-ink);
+    }
+
+    .carousel-dot:hover .carousel-dot-pip {
+      border-color: var(--color-ice);
+      background-color: color-mix(in srgb, var(--color-ice) 35%, transparent);
     }
   }
 
@@ -374,12 +415,8 @@
     animation: none;
   }
 
-  .animate-pulse-slow {
-    animation: none;
-  }
-
-  .hero-enter,
-  .repo-card-enter {
+  .repo-card-enter,
+  .footer-beam {
     opacity: 1;
     transform: none;
     animation: none;
@@ -429,8 +466,14 @@
 
 .site-content .btn-primary,
 .site-content .btn-nav,
-.site-content .btn-nav.is-nav-active {
+.site-content .btn-nav.is-nav-active,
+.site-content .btn-icon,
+.site-content .headline-accent {
   text-shadow: none;
+}
+
+.headline-accent {
+  color: var(--color-ice);
 }
 
 .sr-only {
@@ -556,6 +599,32 @@
 
 .font-heading {
   font-family: var(--font-space-grotesk), ui-sans-serif, system-ui, sans-serif;
+}
+
+.footer-beam {
+  position: absolute;
+  inset: -20% -10%;
+  pointer-events: none;
+  background: linear-gradient(
+    118deg,
+    transparent 36%,
+    color-mix(in srgb, var(--color-ice) 26%, transparent) 50%,
+    transparent 64%
+  );
+  opacity: 0.7;
+  animation: footer-beam-drift 22s linear infinite alternate;
+}
+
+.footer-wordmark {
+  font-family: var(--font-space-grotesk), ui-sans-serif, system-ui, sans-serif;
+  font-size: clamp(4.5rem, 18vw, 13rem);
+  font-weight: 600;
+  line-height: 0.72;
+  letter-spacing: -0.06em;
+  color: color-mix(in srgb, var(--color-paper) 14%, transparent);
+  transform: translateY(22%);
+  user-select: none;
+  pointer-events: none;
 }
 
 @media (min-width: 768px) {

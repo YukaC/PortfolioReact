@@ -12,7 +12,7 @@ import { scrollToSectionByHash } from "@/utils/scroll-to-section";
 
 const isValidHash = (href) => typeof href === "string" && /^#[\w-]+$/.test(href);
 
-const SPY_SECTION_IDS = ["portfolio", "experience", "contact"];
+const SPY_SECTION_IDS = ["portfolio", "about", "contact"];
 
 function syncNavSpy(linkNodes) {
   const spyY = Math.max(120, Math.round(window.innerHeight * 0.33));
@@ -37,9 +37,7 @@ function syncNavSpy(linkNodes) {
 
   for (let i = 0; i < linkNodes.length; i += 1) {
     const href = linkNodes[i].getAttribute("data-nav-href");
-    const isActive =
-      href === `#${activeId}` ||
-      (activeId === "experience" && href === "#about");
+    const isActive = href === `#${activeId}`;
     linkNodes[i].classList.toggle("is-nav-active", isActive);
     if (isActive) {
       linkNodes[i].setAttribute("aria-current", "true");
@@ -255,7 +253,7 @@ const Navbar = () => {
     <>
       <nav
         ref={navRef}
-        className="site-nav fixed inset-x-0 top-0 z-50 border-b border-transparent bg-transparent"
+        className="site-nav fixed inset-x-0 top-0 z-50"
         aria-label="Main navigation"
       >
         <div className="site-shell flex h-16 items-center justify-between md:h-[4.5rem]">
@@ -274,7 +272,7 @@ const Navbar = () => {
 
           <button
             type="button"
-            className="focus-ring rounded-sm p-2 text-fog hover:text-paper md:hidden"
+            className="btn-icon focus-ring md:hidden"
             onClick={() => setIsMenuOpen((open) => !open)}
             aria-expanded={isMenuOpen}
             aria-controls={menuId}
@@ -292,7 +290,7 @@ const Navbar = () => {
         role="menu"
         aria-hidden={!isMenuOpen}
       >
-        <div className="flex h-full flex-col justify-center px-8 pt-24">
+        <div className="site-shell flex h-full flex-col justify-center pt-24">
           <NavLinks scrollToSection={scrollToSection} isMobile />
           <ContactButton scrollToSection={scrollToSection} isMobile />
         </div>
