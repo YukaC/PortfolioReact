@@ -15,6 +15,8 @@ const nextConfig = {
   ],
   images: {
     formats: ["image/avif", "image/webp"],
+    // Hero/work-card images request quality 70 — allow it beside the 75 default.
+    qualities: [70, 75],
   },
   experimental: {
     // Barrel opt for drei only — three/gsap OPI can break under Turbopack.
