@@ -2,15 +2,12 @@ import { useCallback } from "react";
 import dynamic from "next/dynamic";
 import { SOCIAL_LINKS } from "@/data/constants";
 import { useBebopAnimation } from "@/hooks/useBebopAnimation";
-import Icon from "./Icon";
+import SiteLogo from "./SiteLogo";
 
 const BebopAnimation = dynamic(() => import("./BebopAnimation"), {
   ssr: false,
 });
 
-/**
- * Footer - Site footer with social links and easter egg
- */
 const Footer = () => {
   const currentYear = new Date().getFullYear();
   const {
@@ -26,7 +23,6 @@ const Footer = () => {
     triggerElRef,
   } = useBebopAnimation();
 
-  // Share the phrase node with the hook + BebopAnimation for focus restore.
   const setTriggerRef = useCallback(
     (node) => {
       triggerElRef.current = node;
@@ -35,7 +31,7 @@ const Footer = () => {
   );
 
   return (
-    <footer className="w-full bg-bg-main/95 border-t border-border pt-16 pb-8 relative overflow-hidden">
+    <footer className="section-rule relative w-full overflow-hidden">
       {isActive ? (
         <BebopAnimation
           phase={phase}
@@ -46,41 +42,36 @@ const Footer = () => {
         />
       ) : null}
 
-      <div className="px-6 flex flex-col md:flex-row justify-between items-center gap-8">
-        <div className="text-center md:text-left">
-          <span className="block font-heading font-bold text-xl mb-1">
-            Agustin Ciucani
-          </span>
-          <p className="text-xs text-text-muted uppercase tracking-widest">
-            © {currentYear} • Built with Soul & Code
-          </p>
+      <div className="site-shell relative py-8 md:py-10">
+        <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
+          <SiteLogo className="h-8 w-auto opacity-80" />
+
+          <nav aria-label="Social media links">
+            <ul className="flex flex-wrap items-center gap-x-6 gap-y-2">
+              {SOCIAL_LINKS.map((link) => (
+                <li key={link.name}>
+                  <a
+                    href={link.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="link-underline focus-ring text-sm text-fog hover:text-paper"
+                  >
+                    {link.name}
+                    <span className="sr-only"> (opens in a new tab)</span>
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </nav>
+
+          <p className="text-sm text-fog">© {currentYear} Agustin Ciucani</p>
         </div>
 
-        <nav aria-label="Social media links">
-          <ul className="flex items-center gap-6">
-            {SOCIAL_LINKS.map((link) => (
-              <li key={link.name}>
-                <a
-                  href={link.href}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="block text-text-muted hover:text-amber-glow hover:scale-110 transition-all duration-300 focus-ring rounded"
-                  aria-label={`Visit ${link.name} profile`}
-                >
-                  <Icon name={link.platform} className="h-8 w-8" size={32} />
-                </a>
-              </li>
-            ))}
-          </ul>
-        </nav>
-      </div>
-
-      <div className="w-full flex justify-center mt-12 mb-4 px-6">
         <p
           ref={setTriggerRef}
           tabIndex={0}
           role="button"
-          className="opacity-15 hover:opacity-100 active:opacity-100 hover:text-amber-glow active:text-amber-glow hover:scale-105 active:scale-105 hover:drop-shadow-[0_0_15px_rgba(212,175,55,0.6)] transition-all duration-500 select-none touch-none cursor-help font-mono text-xs italic focus:outline-none focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-primary px-3 py-2"
+          className="mt-6 max-w-fit cursor-help py-1 font-mono text-[11px] text-fog/35 select-none touch-none transition-colors duration-200 ease-out hover:text-ice focus:outline-none focus-visible:text-ice focus-visible:ring-2 focus-visible:ring-ice"
           title="Hold for 1.5 seconds..."
           aria-label="Hold for 1.5 seconds to play the easter egg"
           onMouseEnter={handleTriggerEnter}

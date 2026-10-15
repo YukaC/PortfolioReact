@@ -1,10 +1,53 @@
-import { useState, useEffect, useId } from "react";
+import { useState, useEffect, useId, useRef } from "react";
 import Link from "next/link";
-import Image from "next/image";
+import Magnetic from "@/components/Magnetic";
+import SiteLogo from "@/components/SiteLogo";
 import { NAV_LINKS } from "@/data/constants";
+import { DURATION, EASE, STAGGER } from "@/motion/config";
+import { prefersReducedMotion } from "@/motion/prefersReducedMotion";
+import { gsap, registerMotion, ScrollTrigger } from "@/motion/register";
+import { lockSmoothScroll, unlockSmoothScroll } from "@/motion/smoothScroll";
+import { willChangeVars } from "@/motion/willChange";
 import { scrollToSectionByHash } from "@/utils/scroll-to-section";
 
 const isValidHash = (href) => typeof href === "string" && /^#[\w-]+$/.test(href);
+
+const SPY_SECTION_IDS = ["portfolio", "experience", "contact"];
+
+function syncNavSpy(linkNodes) {
+  const spyY = Math.max(120, Math.round(window.innerHeight * 0.33));
+  let activeId = "";
+  for (let i = 0; i < SPY_SECTION_IDS.length; i += 1) {
+    const section = document.getElementById(SPY_SECTION_IDS[i]);
+    if (section && section.getBoundingClientRect().top <= spyY) {
+      activeId = SPY_SECTION_IDS[i];
+    }
+  }
+
+  const contact = document.getElementById("contact");
+  if (contact) {
+    const contactTop = contact.getBoundingClientRect().top;
+    const scrollRoot = document.scrollingElement ?? document.documentElement;
+    const remaining =
+      scrollRoot.scrollHeight - (scrollRoot.scrollTop + window.innerHeight);
+    if (contactTop <= spyY || remaining < 96) {
+      activeId = "contact";
+    }
+  }
+
+  for (let i = 0; i < linkNodes.length; i += 1) {
+    const href = linkNodes[i].getAttribute("data-nav-href");
+    const isActive =
+      href === `#${activeId}` ||
+      (activeId === "experience" && href === "#about");
+    linkNodes[i].classList.toggle("is-nav-active", isActive);
+    if (isActive) {
+      linkNodes[i].setAttribute("aria-current", "true");
+    } else {
+      linkNodes[i].removeAttribute("aria-current");
+    }
+  }
+}
 
 const NavLinks = ({ scrollToSection, isMobile = false }) => (
   <>
@@ -13,9 +56,11 @@ const NavLinks = ({ scrollToSection, isMobile = false }) => (
         key={link.name}
         href={link.href}
         onClick={(e) => scrollToSection(e, link.href)}
-        className={`font-medium text-text-muted hover:text-amber-glow transition-colors duration-300 focus-ring rounded ${
+        data-nav-href={link.href}
+        data-menu-item={isMobile ? "" : undefined}
+        className={`inline-block text-fog hover:text-paper link-underline focus-ring ${
           isMobile
-            ? "text-lg py-3 border-b border-border/60 last:border-b-0"
+            ? "py-4 font-heading text-3xl tracking-[0.01em]"
             : "text-sm"
         }`}
         {...(isMobile && { role: "menuitem" })}
@@ -27,23 +72,23 @@ const NavLinks = ({ scrollToSection, isMobile = false }) => (
 );
 
 const ContactButton = ({ scrollToSection, isMobile = false }) => (
-  <a
-    href="#contact"
-    onClick={(e) => scrollToSection(e, "#contact")}
-    className={`btn-primary focus-ring ${
-      isMobile ? "py-3 text-center mt-3 w-full" : "px-6 py-2 text-sm"
-    }`}
-    {...(isMobile && { role: "menuitem" })}
-  >
-    Get in Touch
-  </a>
+  <Magnetic>
+    <a
+      href="#contact"
+      onClick={(e) => scrollToSection(e, "#contact")}
+      data-nav-href="#contact"
+      data-menu-item={isMobile ? "" : undefined}
+      className={`btn-nav focus-ring ${isMobile ? "mt-8 w-full py-3" : ""}`}
+      {...(isMobile && { role: "menuitem" })}
+    >
+      Get in Touch
+    </a>
+  </Magnetic>
 );
 
-/** Three bars centered — closed: spaced; open: rotate into a clean X. */
 const MenuToggleIcon = ({ isOpen }) => (
   <span className="menu-toggle" aria-hidden="true" data-open={isOpen ? "true" : "false"}>
     <span className="menu-toggle-bar menu-toggle-bar-top" />
-    <span className="menu-toggle-bar menu-toggle-bar-mid" />
     <span className="menu-toggle-bar menu-toggle-bar-bot" />
   </span>
 );
@@ -51,6 +96,10 @@ const MenuToggleIcon = ({ isOpen }) => (
 const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuId = useId();
+  const panelRef = useRef(null);
+  const navRef = useRef(null);
+  const isMenuOpenRef = useRef(false);
+  const hasOpenedOnce = useRef(false);
 
   const closeMenu = () => setIsMenuOpen(false);
 
@@ -64,9 +113,10 @@ const Navbar = () => {
     closeMenu();
   };
 
-  // Lock page scroll while menu open.
-  // Width stays put via html { scrollbar-gutter: stable } — no padding hack
-  // (padding + gutter caused a double shift / jump).
+  useEffect(() => {
+    isMenuOpenRef.current = isMenuOpen;
+  }, [isMenuOpen]);
+
   useEffect(() => {
     if (!isMenuOpen) return undefined;
 
@@ -76,6 +126,7 @@ const Navbar = () => {
 
     html.style.overflow = "hidden";
     document.body.style.overflow = "hidden";
+    lockSmoothScroll();
 
     const onKeyDown = (e) => {
       if (e.key === "Escape") closeMenu();
@@ -85,43 +136,145 @@ const Navbar = () => {
     return () => {
       html.style.overflow = previousHtmlOverflow;
       document.body.style.overflow = previousBodyOverflow;
+      unlockSmoothScroll();
       window.removeEventListener("keydown", onKeyDown);
     };
+  }, [isMenuOpen]);
+
+  useEffect(() => {
+    const nav = navRef.current;
+    if (!nav) return undefined;
+
+    registerMotion();
+
+    const syncSpy = () =>
+      syncNavSpy(document.querySelectorAll("[data-nav-href]"));
+    syncSpy();
+
+    const trigger = ScrollTrigger.create({
+      start: 0,
+      end: "max",
+      invalidateOnRefresh: true,
+      onRefresh: syncSpy,
+      onUpdate(self) {
+        nav.classList.toggle("is-nav-scrolled", self.scroll() > 16);
+        syncSpy();
+      },
+    });
+
+    ScrollTrigger.addEventListener("scrollEnd", syncSpy);
+
+    return () => {
+      ScrollTrigger.removeEventListener("scrollEnd", syncSpy);
+      trigger.kill();
+      gsap.killTweensOf(nav);
+    };
+  }, []);
+
+  useEffect(() => {
+    const panel = panelRef.current;
+    if (!panel) return undefined;
+
+    registerMotion();
+    const items = panel.querySelectorAll("[data-menu-item]");
+    const isReduced = prefersReducedMotion();
+
+    if (!hasOpenedOnce.current && !isMenuOpen) {
+      gsap.set(panel, { autoAlpha: 0, yPercent: -3, pointerEvents: "none" });
+      return undefined;
+    }
+    hasOpenedOnce.current = true;
+
+    if (isReduced) {
+      gsap.set(panel, {
+        autoAlpha: isMenuOpen ? 1 : 0,
+        yPercent: 0,
+        pointerEvents: isMenuOpen ? "auto" : "none",
+      });
+      gsap.set(items, { autoAlpha: 1, y: 0 });
+      return undefined;
+    }
+
+    if (isMenuOpen) {
+      gsap.set(panel, { pointerEvents: "auto", transformOrigin: "100% 0%" });
+      gsap.to(
+        panel,
+        willChangeVars({
+          autoAlpha: 1,
+          yPercent: 0,
+          duration: DURATION.uiSlow,
+          ease: EASE.drawer,
+          overwrite: "auto",
+        }),
+      );
+      gsap.fromTo(
+        items,
+        { autoAlpha: 0, y: 16, scale: 0.97 },
+        willChangeVars({
+          autoAlpha: 1,
+          y: 0,
+          scale: 1,
+          duration: DURATION.ui,
+          ease: EASE.medium,
+          overwrite: "auto",
+          stagger: { each: STAGGER.phrase, ease: "power1.inOut" },
+        }),
+      );
+      return undefined;
+    }
+
+    gsap.to(
+      items,
+      willChangeVars({
+        autoAlpha: 0,
+        y: 8,
+        duration: DURATION.uiFast,
+        ease: EASE.drawer,
+        overwrite: "auto",
+        stagger: { each: STAGGER.min, from: "end" },
+      }),
+    );
+    gsap.to(
+      panel,
+      willChangeVars({
+        autoAlpha: 0,
+        yPercent: -3,
+        duration: DURATION.ui,
+        ease: EASE.drawer,
+        overwrite: "auto",
+        onComplete() {
+          gsap.set(panel, { pointerEvents: "none" });
+        },
+      }),
+    );
+
+    return undefined;
   }, [isMenuOpen]);
 
   return (
     <>
       <nav
-        className="fixed top-0 left-0 right-0 z-50 bg-bg-main/70 border-b border-border backdrop-blur-md supports-[backdrop-filter]:bg-bg-main/60"
-        role="navigation"
+        ref={navRef}
+        className="site-nav fixed inset-x-0 top-0 z-50 border-b border-transparent bg-transparent"
         aria-label="Main navigation"
       >
-        <div className="w-full px-6 h-20 flex items-center justify-between">
+        <div className="site-shell flex h-16 items-center justify-between md:h-[4.5rem]">
           <Link
             href="#home"
-            className="group flex items-center h-16 shrink-0 hover:drop-shadow-[0_0_10px_var(--color-amber-glow)] transition-all duration-300 focus-ring rounded"
+            className="focus-ring shrink-0 rounded-sm"
             onClick={(e) => scrollToSection(e, "#home")}
             aria-label="Go to home section"
           >
-            <Image
-              src="/logo-white.webp"
-              alt="Agustin Ciucani Logo"
-              width={233}
-              height={188}
-              priority
-              loading="eager"
-              className="h-16 w-auto object-contain"
-              style={{ width: "auto" }}
-            />
+            <SiteLogo priority showStroke className="h-8 w-auto md:h-9" />
           </Link>
-          <div className="hidden md:flex items-center gap-8">
+          <div className="hidden items-center gap-8 md:flex">
             <NavLinks scrollToSection={scrollToSection} />
             <ContactButton scrollToSection={scrollToSection} />
           </div>
 
           <button
             type="button"
-            className="md:hidden p-2 text-text-muted hover:text-amber-glow transition-colors duration-300 focus-ring rounded"
+            className="focus-ring rounded-sm p-2 text-fog hover:text-paper md:hidden"
             onClick={() => setIsMenuOpen((open) => !open)}
             aria-expanded={isMenuOpen}
             aria-controls={menuId}
@@ -132,35 +285,16 @@ const Navbar = () => {
         </div>
       </nav>
 
-      {/* Scrim */}
-      <button
-        type="button"
-        aria-label="Close menu"
-        tabIndex={isMenuOpen ? 0 : -1}
-        onClick={closeMenu}
-        className={`md:hidden fixed inset-0 z-40 bg-bg-main/50 transition-opacity duration-[320ms] ease-out ${
-          isMenuOpen
-            ? "opacity-100 pointer-events-auto"
-            : "opacity-0 pointer-events-none"
-        }`}
-      />
-
-      {/* Single height animation — no child transforms (those cause micro-jumps) */}
       <div
+        ref={panelRef}
         id={menuId}
-        className={`mobile-menu-panel md:hidden fixed top-20 left-0 right-0 z-40 grid ${
-          isMenuOpen
-            ? "mobile-menu-panel-open pointer-events-auto"
-            : "pointer-events-none"
-        }`}
+        className="mobile-menu-panel fixed inset-0 z-40 bg-ink md:hidden"
         role="menu"
         aria-hidden={!isMenuOpen}
       >
-        <div className="mobile-menu-panel-inner overflow-hidden min-h-0">
-          <div className="border-b border-border bg-bg-main/95 px-6 py-5 flex flex-col gap-1">
-            <NavLinks scrollToSection={scrollToSection} isMobile />
-            <ContactButton scrollToSection={scrollToSection} isMobile />
-          </div>
+        <div className="flex h-full flex-col justify-center px-8 pt-24">
+          <NavLinks scrollToSection={scrollToSection} isMobile />
+          <ContactButton scrollToSection={scrollToSection} isMobile />
         </div>
       </div>
     </>

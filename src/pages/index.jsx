@@ -1,7 +1,6 @@
 import dynamic from "next/dynamic";
 import Layout from "@/components/Layout";
 import HeroSection from "@/components/HeroSection";
-import SkillsTicker from "@/components/SkillsTicker";
 import { fetchPinnedProjects } from "@/lib/fetch-pinned-projects";
 
 const sectionSkeleton = (minHeight) => (
@@ -39,9 +38,8 @@ export async function getStaticProps() {
 
 export default function Index({ projects }) {
   return (
-    <Layout title="Agustin Ciucani | Fullstack Developer">
+    <Layout projects={projects}>
       <HeroSection />
-      <SkillsTicker />
       <ProjectsGrid projects={projects} />
       <Experience />
       <Contact />

@@ -1,17 +1,18 @@
+import "lenis/dist/lenis.css";
 import "@/styles/globals.css";
 import { Manrope, Space_Grotesk } from "next/font/google";
 
 const manrope = Manrope({
   subsets: ["latin"],
   variable: "--font-manrope",
-  weight: ["400", "700"],
+  weight: ["400", "500"],
   display: "swap",
 });
 
 const spaceGrotesk = Space_Grotesk({
   subsets: ["latin"],
   variable: "--font-space-grotesk",
-  weight: ["600", "700"],
+  weight: ["500", "600"],
   display: "swap",
 });
 

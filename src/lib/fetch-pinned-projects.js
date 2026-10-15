@@ -1,5 +1,6 @@
 import {
   GITHUB_USERNAME,
+  MAX_PINNED_PROJECTS,
   PINNED_FALLBACK,
   PROJECT_OVERRIDES,
 } from "@/data/projects";
@@ -100,12 +101,12 @@ export async function fetchPinnedProjects() {
       throw new Error("No pinned repositories found on profile");
     }
 
-    return pinnedRepos.map(mapPinnedRepo);
+    return pinnedRepos.slice(0, MAX_PINNED_PROJECTS).map(mapPinnedRepo);
   } catch (error) {
     console.warn(
       "[fetchPinnedProjects] Falling back to static pins:",
       error instanceof Error ? error.message : error,
     );
-    return PINNED_FALLBACK;
+    return PINNED_FALLBACK.slice(0, MAX_PINNED_PROJECTS);
   }
 }
