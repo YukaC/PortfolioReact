@@ -21,7 +21,7 @@ const Contact = () => (
         </p>
       </div>
 
-      <div className="lg:col-span-5 lg:col-start-8 lg:pt-2">
+      <div className="copy-veil lg:col-span-5 lg:col-start-8 lg:pt-2">
         <Magnetic className="w-full">
           <a
             href={`mailto:${CONTACT_EMAIL}`}
