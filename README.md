@@ -71,7 +71,6 @@ PortfolioReact/
 │   │   ├── Layout.jsx
 │   │   ├── Navbar.jsx
 │   │   ├── HeroSection.jsx
-│   │   ├── SkillsTicker.jsx
 │   │   ├── ProjectsGrid.jsx
 │   │   ├── Experience.jsx
 │   │   ├── Contact.jsx
