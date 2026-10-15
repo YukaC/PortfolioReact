@@ -17,10 +17,10 @@ Personal portfolio built with **Next.js 16** and **React 19**, showcasing my pro
 ### ✨ Features
 
 - **🚀 Performance** — Below-the-fold code-splitting, `next/image` (AVIF/WebP), Bebop timings kept off the critical path
-- **♿ Accessibility** — ARIA labels, semantic roles, focus trap/restore in the easter egg
+- **♿ Accessibility** — ARIA labels, semantic roles, featured-repo pause/previous/next (44px targets), focus trap/restore in the easter egg
 - **🎨 Responsive design** — Mobile-first, dark theme
 - **🔤 Typography** — Manrope + Space Grotesk via `next/font`
-- **🎬 Motion** — Scroll reveal, hero entrance, skills ticker; CRT intro + R3F fly-by
+- **🎬 Motion** — GSAP springs, scroll reveal, hero intro, image parallax; CRT intro + R3F fly-by
 - **📱 Touch** — Hold the footer line to trigger the easter egg on mobile
 
 ## 🛠️ Tech Stack
@@ -139,19 +139,26 @@ Prefer **pnpm** (`packageManager`); `npm run …` works but locks/CI use pnpm.
 
 **Not the main bottleneck:** GitHub pin scrape in `getStaticProps` (~hundreds of ms). See [#20](https://github.com/YukaC/PortfolioReact/issues/20).
 
-## 🎨 CSS Variables
+## Visual system
+
+Bocanada (cobalt field, coral lattice, ice accent) is the north star. Shared
+layout is `.site-shell` (max 88rem, 24/48/64px inset) and `.section-y`.
+Glass is a frosted panel (`.glass-card`), not a second theme. Hero, work,
+about, and footer share `.site-shell`. The GitHub card in the hero has
+previous / next / pause controls and a live region. Motion lives in
+`src/motion/config.js`. Task notes: `odd/tasks/agency-bocanada-pass.md`.
 
 Dark tokens live in `@theme` (`src/styles/globals.css`):
 
 ```css
 @theme {
-  --color-primary: #825ca3;
-  --color-secondary: #5e3b5a;
-  --color-amber-glow: #ffbf00;
-  --color-available: #3ecf8e;
-  --color-bg-main: #19161c;
-  --color-text: #e5e5e5;
-  --color-text-muted: #9ca3af;
+  --color-ink: #0a0f1c;
+  --color-night: #0e1626;
+  --color-deep: #131d33;
+  --color-mist: #1b2742;
+  --color-fog: #d0dceb;
+  --color-paper: #e6ecf5;
+  --color-ice: #8fb4e8;
 }
 ```
 

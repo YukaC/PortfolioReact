@@ -62,6 +62,5 @@ export const SOCIAL_LINKS = [
 
 export const NAV_LINKS = [
   { name: "Projects", href: "#portfolio" },
-  { name: "Experience", href: "#experience" },
   { name: "About", href: "#about" },
 ];

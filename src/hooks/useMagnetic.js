@@ -17,6 +17,7 @@ export function useMagnetic(ref, { strength = 0.28, radius } = {}) {
     if (prefersReducedMotion() || !hasFinePointer()) return undefined;
 
     registerMotion();
+    gsap.set(element, { x: 0, y: 0 });
 
     const xTo = gsap.quickTo(element, "x", {
       duration: FOLLOW_DURATION,
@@ -30,13 +31,8 @@ export function useMagnetic(ref, { strength = 0.28, radius } = {}) {
     });
 
     const reset = () => {
-      gsap.to(element, {
-        x: 0,
-        y: 0,
-        duration: DURATION.ui,
-        ease: RELEASE_EASE,
-        overwrite: "auto",
-      });
+      xTo(0, DURATION.ui, RELEASE_EASE);
+      yTo(0, DURATION.ui, RELEASE_EASE);
     };
 
     const onPointerMove = (event) => {

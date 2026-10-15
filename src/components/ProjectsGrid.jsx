@@ -16,7 +16,16 @@ const PROJECT_BLUR =
     </svg>`,
   );
 
-const ProjectMedia = memo(({ imgSrc, alt }) => {
+function splitFeaturedProjects(projects) {
+  const featuredProject =
+    projects.find((project) => project.isFeatured) ?? projects[0] ?? null;
+  const remainingProjects = projects.filter(
+    (project) => project.name !== featuredProject?.name,
+  );
+  return { featuredProject, remainingProjects };
+}
+
+const ProjectMedia = memo(({ imgSrc, alt, sizes }) => {
   if (imgSrc) {
     return (
       <div className="overflow-hidden rounded-sm border border-mist/60 bg-deep">
@@ -28,10 +37,10 @@ const ProjectMedia = memo(({ imgSrc, alt }) => {
             height={720}
             quality={70}
             loading="lazy"
-            sizes="(max-width: 1024px) 100vw, 58vw"
+            sizes={sizes}
             placeholder="blur"
             blurDataURL={PROJECT_BLUR}
-            className="aspect-video w-full object-cover"
+            className="aspect-video w-full scale-110 object-cover"
           />
         </div>
       </div>
@@ -43,32 +52,51 @@ const ProjectMedia = memo(({ imgSrc, alt }) => {
       className="overflow-hidden rounded-sm border border-mist/60 bg-deep"
       aria-hidden="true"
     >
-      <div data-card-media className="aspect-video w-full origin-center bg-mist/80" />
+      <div
+        data-card-media
+        className="aspect-video w-full origin-center bg-mist/80"
+      />
     </div>
   );
 });
 
 ProjectMedia.displayName = "ProjectMedia";
 
-function useProjectCardMotion(cardRef) {
+function useProjectMediaMotion(cardRef) {
   useEffect(() => {
     const card = cardRef.current;
-    if (!card || prefersReducedMotion()) return undefined;
+    if (!card) return undefined;
 
     registerMotion();
     const media = card.querySelector("[data-card-media]");
     if (!media) return undefined;
 
-    const canHover = window.matchMedia(
-      "(hover: hover) and (pointer: fine)",
-    ).matches;
+    const ctx = gsap.context(() => {
+      if (!prefersReducedMotion()) {
+        gsap.fromTo(
+          media,
+          { yPercent: -6 },
+          {
+            yPercent: 6,
+            ease: "none",
+            scrollTrigger: {
+              trigger: card,
+              start: "top bottom",
+              end: "bottom top",
+              scrub: true,
+            },
+          },
+        );
+      }
+    }, card);
 
     const pressIn = () => {
+      if (prefersReducedMotion()) return;
       gsap.to(
-        media,
+        card,
         willChangeVars({
-          scale: 1.03,
-          duration: DURATION.uiSlow,
+          scale: 0.98,
+          duration: DURATION.uiFast,
           ease: EASE.medium,
           overwrite: "auto",
         }),
@@ -77,7 +105,7 @@ function useProjectCardMotion(cardRef) {
 
     const pressOut = () => {
       gsap.to(
-        media,
+        card,
         willChangeVars({
           scale: 1,
           duration: DURATION.ui,
@@ -87,96 +115,116 @@ function useProjectCardMotion(cardRef) {
       );
     };
 
-    if (canHover) {
-      card.addEventListener("pointerenter", pressIn);
-      card.addEventListener("pointerleave", pressOut);
-    }
     card.addEventListener("pointerdown", pressIn);
     card.addEventListener("pointerup", pressOut);
     card.addEventListener("pointercancel", pressOut);
+    card.addEventListener("pointerleave", pressOut);
 
     return () => {
-      if (canHover) {
-        card.removeEventListener("pointerenter", pressIn);
-        card.removeEventListener("pointerleave", pressOut);
-      }
       card.removeEventListener("pointerdown", pressIn);
       card.removeEventListener("pointerup", pressOut);
       card.removeEventListener("pointercancel", pressOut);
-      gsap.killTweensOf(media);
+      card.removeEventListener("pointerleave", pressOut);
+      gsap.killTweensOf(card);
+      ctx.revert();
     };
   }, [cardRef]);
 }
 
-const ProjectCard = memo(
-  ({
-    imgSrc,
-    alt,
-    title,
-    description,
-    tags,
-    repoLink,
-    isImageLeft = true,
-  }) => {
-    const cardRef = useRef(null);
-    useProjectCardMotion(cardRef);
+const ProjectCopy = ({ title, problem, outcome, description, tags }) => (
+  <>
+    {problem ? (
+      <p className="mb-3 text-sm leading-6 text-fog">{problem}</p>
+    ) : tags && tags.length > 0 ? (
+      <p className="mb-3 text-sm leading-6 text-fog">{tags.join(" · ")}</p>
+    ) : null}
 
-    const mediaPlacement = isImageLeft
-      ? "order-1 lg:col-span-7 lg:col-start-1"
-      : "order-1 lg:col-span-7 lg:col-start-6";
-    const copyPlacement = isImageLeft
-      ? "order-2 lg:col-span-5 lg:col-start-8"
-      : "order-2 lg:col-span-5 lg:col-start-1 lg:row-start-1";
+    <h3 className="font-heading text-2xl font-semibold md:text-3xl">{title}</h3>
 
-    return (
-      <a
-        ref={cardRef}
-        href={repoLink}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="group focus-ring grid grid-cols-1 items-center gap-6 rounded-sm lg:grid-cols-12 lg:gap-x-12 xl:gap-x-16"
-        aria-label={`${title}, GitHub repository, opens in a new tab`}
-      >
-        <div className={mediaPlacement}>
-          <ProjectMedia imgSrc={imgSrc} alt="" />
-        </div>
+    <p className="mt-4 max-w-md text-base leading-8 text-fog">
+      {outcome ?? description}
+    </p>
 
-        <div className={`copy-veil flex flex-col justify-center ${copyPlacement}`}>
-          {tags && tags.length > 0 ? (
-            <p className="mb-3 text-sm leading-6 text-fog">{tags.join(" · ")}</p>
-          ) : null}
+    {problem && tags && tags.length > 0 ? (
+      <p className="mt-4 text-sm leading-6 text-ice">{tags.join(" · ")}</p>
+    ) : null}
 
-          <h3 className="font-heading text-2xl font-semibold md:text-3xl">
-            {title}
-          </h3>
-
-          <p className="mt-4 max-w-md text-base leading-8 text-fog">
-            {description}
-          </p>
-
-          <span className="mt-6 inline-flex items-center text-sm text-ice">
-            View repository
-            <Icon
-              name="arrow_forward"
-              size={16}
-              className="ml-1 transition-transform duration-200 ease-out group-hover:translate-x-1"
-              aria-hidden="true"
-            />
-          </span>
-        </div>
-      </a>
-    );
-  },
+    <span className="mt-6 inline-flex items-center text-sm text-ice">
+      View repository
+      <Icon
+        name="arrow_forward"
+        size={16}
+        className="ml-1 transition-transform duration-200 ease-out group-hover:translate-x-1"
+        aria-hidden="true"
+      />
+    </span>
+  </>
 );
 
-ProjectCard.displayName = "ProjectCard";
+const FeaturedProjectCard = memo((project) => {
+  const cardRef = useRef(null);
+  useProjectMediaMotion(cardRef);
+
+  return (
+    <a
+      ref={cardRef}
+      href={project.repoLink}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="group focus-ring grid grid-cols-1 items-center gap-6 rounded-sm lg:grid-cols-12 lg:gap-x-12 xl:gap-x-16"
+      aria-label={`${project.title}, GitHub repository, opens in a new tab`}
+    >
+      <div className="lg:col-span-7">
+        <ProjectMedia
+          imgSrc={project.imgSrc}
+          alt=""
+          sizes="(max-width: 1024px) 100vw, 58vw"
+        />
+      </div>
+      <div className="copy-veil flex flex-col justify-center lg:col-span-5">
+        <ProjectCopy {...project} />
+      </div>
+    </a>
+  );
+});
+
+FeaturedProjectCard.displayName = "FeaturedProjectCard";
+
+const ProjectTile = memo((project) => {
+  const cardRef = useRef(null);
+  useProjectMediaMotion(cardRef);
+
+  return (
+    <a
+      ref={cardRef}
+      href={project.repoLink}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="group focus-ring flex flex-col gap-5 rounded-sm"
+      aria-label={`${project.title}, GitHub repository, opens in a new tab`}
+    >
+      <ProjectMedia
+        imgSrc={project.imgSrc}
+        alt=""
+        sizes="(max-width: 768px) 100vw, 42vw"
+      />
+      <div className="copy-veil flex flex-col">
+        <ProjectCopy {...project} />
+      </div>
+    </a>
+  );
+});
+
+ProjectTile.displayName = "ProjectTile";
 
 const ProjectsGrid = ({ projects = PINNED_FALLBACK }) => {
   const pinnedProjects = projects.slice(0, MAX_PINNED_PROJECTS);
+  const { featuredProject, remainingProjects } =
+    splitFeaturedProjects(pinnedProjects);
 
   return (
     <section
-        className="section-rule section-y w-full"
+      className="section-rule section-y w-full"
       id="portfolio"
       aria-labelledby="work-heading"
     >
@@ -184,8 +232,8 @@ const ProjectsGrid = ({ projects = PINNED_FALLBACK }) => {
         <Reveal className="copy-veil mb-14 max-w-xl md:mb-20">
           <h2 id="work-heading">Selected work</h2>
           <p className="mt-4 text-base leading-8 text-fog">
-            Up to six pinned GitHub repositories, refreshed as the profile
-            changes. Screenshots and source for each.
+            Interfaces, dashboards, and tools shipped for real use. Source
+            for each.
           </p>
           <a
             href="https://github.com/YukaC"
@@ -195,23 +243,36 @@ const ProjectsGrid = ({ projects = PINNED_FALLBACK }) => {
           >
             GitHub profile
             <span className="sr-only"> (opens in a new tab)</span>
-            <Icon name="arrow_forward" size={16} className="ml-1" aria-hidden="true" />
+            <Icon
+              name="arrow_forward"
+              size={16}
+              className="ml-1"
+              aria-hidden="true"
+            />
           </a>
         </Reveal>
 
-        {pinnedProjects.length > 0 ? (
-          <ol className="flex flex-col gap-16 md:gap-24">
-            {pinnedProjects.map((project, index) => (
-              <li key={project.name ?? project.repoLink} className="work-card">
-                <Reveal>
-                  <ProjectCard
-                    {...project}
-                    isImageLeft={index % 2 === 0}
-                  />
-                </Reveal>
-              </li>
-            ))}
-          </ol>
+        {featuredProject ? (
+          <div className="flex flex-col gap-16 md:gap-20">
+            <Reveal>
+              <FeaturedProjectCard {...featuredProject} />
+            </Reveal>
+
+            {remainingProjects.length > 0 ? (
+              <ul className="grid grid-cols-1 gap-12 md:grid-cols-2 md:gap-x-10 md:gap-y-16">
+                {remainingProjects.map((project) => (
+                  <li
+                    key={project.name ?? project.repoLink}
+                    className="work-card"
+                  >
+                    <Reveal>
+                      <ProjectTile {...project} />
+                    </Reveal>
+                  </li>
+                ))}
+              </ul>
+            ) : null}
+          </div>
         ) : (
           <p className="text-base leading-8 text-fog">
             Projects will show up here soon.
