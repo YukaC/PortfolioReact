@@ -4,6 +4,9 @@
  */
 export const GITHUB_USERNAME = "YukaC";
 
+/** GitHub profile pins cap at six; ISR refreshes the list hourly. */
+export const MAX_PINNED_PROJECTS = 6;
+
 /** @type {Record<string, { title?: string, description?: string, imgSrc?: string, alt?: string, tags?: string[] }>} */
 export const PROJECT_OVERRIDES = {
   PortfolioReact: {
@@ -25,14 +28,14 @@ export const PROJECT_OVERRIDES = {
   btrfs2ext4: {
     title: "btrfs2ext4",
     description:
-      "In-place Btrfs → Ext4 converter for block devices and images — crash-recovery journal, rollback, and memory-aware scaling.",
+      "In-place Btrfs to Ext4 converter for block devices and images: crash-recovery journal, rollback, and memory-aware scaling.",
     imgSrc: "/btrfs2ext4.webp",
     alt: "btrfs2ext4 dry-run terminal screenshot",
     tags: ["C", "Linux", "btrfs", "ext4"],
   },
   "cowboy-bebop-grub-theme": {
     title: "Cowboy Bebop GRUB Theme",
-    description: "Cowboy Bebop–themed GRUB bootloader theme.",
+    description: "Cowboy Bebop themed GRUB bootloader theme.",
     imgSrc: "/cowboy-bebop-grub-theme.webp",
     alt: "Cowboy Bebop GRUB theme boot menu screenshot",
     tags: ["Shell", "GRUB", "Linux"],
@@ -40,7 +43,7 @@ export const PROJECT_OVERRIDES = {
   AppDespensa: {
     title: "App Despensa",
     description:
-      "Local-first PWA POS for a pantry/grocery store — sales dashboard, caja, products, and stock intake (React + Node + PostgreSQL).",
+      "Local-first PWA POS for a pantry store: sales dashboard, caja, products, and stock intake (React + Node + PostgreSQL).",
     imgSrc: "/AppDespensa.webp",
     alt: "App Despensa admin dashboard screenshot",
     tags: ["React", "Node", "PostgreSQL", "PWA"],
@@ -55,7 +58,7 @@ export const PROJECT_OVERRIDES = {
   AhorrAR: {
     title: "AhorrAR",
     description:
-      "Live price comparison for Argentine stores — ranked real offers with confirmed shipping (Scrapling + Express + React).",
+      "Live price comparison for Argentine stores, ranked real offers with confirmed shipping (Scrapling + Express + React).",
     imgSrc: "/ahorrar.webp",
     alt: "AhorrAR price comparison landing page screenshot",
     tags: ["React", "TypeScript", "Express"],
@@ -91,7 +94,7 @@ export const PINNED_FALLBACK = [
     name: "btrfs2ext4",
     title: "btrfs2ext4",
     description:
-      "In-place Btrfs → Ext4 converter for block devices and images — crash-recovery journal, rollback, and memory-aware scaling.",
+      "In-place Btrfs to Ext4 converter for block devices and images: crash-recovery journal, rollback, and memory-aware scaling.",
     imgSrc: "/btrfs2ext4.webp",
     alt: "btrfs2ext4 dry-run terminal screenshot",
     tags: ["C", "Linux", "btrfs", "ext4"],
@@ -100,7 +103,7 @@ export const PINNED_FALLBACK = [
   {
     name: "cowboy-bebop-grub-theme",
     title: "Cowboy Bebop GRUB Theme",
-    description: "Cowboy Bebop–themed GRUB bootloader theme.",
+    description: "Cowboy Bebop themed GRUB bootloader theme.",
     imgSrc: "/cowboy-bebop-grub-theme.webp",
     alt: "Cowboy Bebop GRUB theme boot menu screenshot",
     tags: ["Shell", "GRUB", "Linux"],
@@ -110,7 +113,7 @@ export const PINNED_FALLBACK = [
     name: "AppDespensa",
     title: "App Despensa",
     description:
-      "Local-first PWA POS for a pantry/grocery store — sales dashboard, caja, products, and stock intake (React + Node + PostgreSQL).",
+      "Local-first PWA POS for a pantry store: sales dashboard, caja, products, and stock intake (React + Node + PostgreSQL).",
     imgSrc: "/AppDespensa.webp",
     alt: "App Despensa admin dashboard screenshot",
     tags: ["React", "Node", "PostgreSQL", "PWA"],
@@ -129,7 +132,7 @@ export const PINNED_FALLBACK = [
     name: "AhorrAR",
     title: "AhorrAR",
     description:
-      "Live price comparison for Argentine stores — ranked real offers with confirmed shipping (Scrapling + Express + React).",
+      "Live price comparison for Argentine stores, ranked real offers with confirmed shipping (Scrapling + Express + React).",
     imgSrc: "/ahorrar.webp",
     alt: "AhorrAR price comparison landing page screenshot",
     tags: ["React", "TypeScript", "Express"],

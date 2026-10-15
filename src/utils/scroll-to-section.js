@@ -1,3 +1,6 @@
+import { prefersReducedMotion } from "@/motion/prefersReducedMotion";
+import { getLenis } from "@/motion/smoothScroll";
+
 /**
  * Smooth-scroll to a section and briefly flash its main heading.
  * Used by Navbar + Hero CTAs.
@@ -9,13 +12,19 @@ export function scrollToSectionByHash(href) {
   const section = document.getElementById(sectionId);
   if (!section) return false;
 
-  section.scrollIntoView({ behavior: "smooth" });
+  const isReduced = prefersReducedMotion();
+  const lenis = getLenis();
+
+  if (lenis && !isReduced) {
+    lenis.scrollTo(section, { offset: -104 });
+  } else {
+    section.scrollIntoView({ behavior: isReduced ? "auto" : "smooth" });
+  }
 
   const heading = section.querySelector("h1, h2");
   if (!heading) return true;
 
   heading.classList.remove("section-flash");
-  // Restart CSS animation if already applied.
   void heading.offsetWidth;
   heading.classList.add("section-flash");
 

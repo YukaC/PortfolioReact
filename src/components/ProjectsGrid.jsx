@@ -1,105 +1,166 @@
-import { memo } from "react";
+import { memo, useEffect, useRef } from "react";
 import Image from "next/image";
 import Icon from "@/components/Icon";
 import Reveal from "@/components/Reveal";
-import { PINNED_FALLBACK } from "@/data/projects";
+import { MAX_PINNED_PROJECTS, PINNED_FALLBACK } from "@/data/projects";
+import { DURATION, EASE } from "@/motion/config";
+import { prefersReducedMotion } from "@/motion/prefersReducedMotion";
+import { gsap, registerMotion } from "@/motion/register";
+import { willChangeVars } from "@/motion/willChange";
 
-/** Tiny neutral blur for next/image placeholders (avoids CLS flash). */
 const PROJECT_BLUR =
   "data:image/svg+xml;charset=utf-8," +
   encodeURIComponent(
     `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="9">
-      <rect width="100%" height="100%" fill="#2a2430"/>
+      <rect width="100%" height="100%" fill="#131d33"/>
     </svg>`,
   );
 
 const ProjectMedia = memo(({ imgSrc, alt }) => {
   if (imgSrc) {
     return (
-      <div className="h-full w-full grayscale transition-[filter] duration-700 ease-out group-hover:grayscale-0">
-        <div className="h-full w-full origin-center transition-transform duration-700 ease-out group-hover:scale-105">
+      <div className="overflow-hidden rounded-sm border border-mist/60 bg-deep">
+        <div data-card-media className="origin-center">
           <Image
             src={imgSrc}
             alt={alt}
-            width={600}
-            height={340}
-            quality={75}
-            sizes="(max-width: 768px) 100vw, 50vw"
+            width={1280}
+            height={720}
+            quality={70}
+            loading="lazy"
+            sizes="(max-width: 1024px) 100vw, 58vw"
             placeholder="blur"
             blurDataURL={PROJECT_BLUR}
-            className="w-full aspect-video object-cover"
+            className="aspect-video w-full object-cover"
           />
         </div>
       </div>
     );
   }
 
-  // Visual-only cover — title/tags live in the card body below (avoid duplication).
   return (
-    <div className="relative h-full w-full overflow-hidden" aria-hidden="true">
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(130,92,163,0.35),transparent_55%),linear-gradient(160deg,#1b1e23_0%,#19161c_55%,#120f14_100%)] transition-transform duration-700 ease-out group-hover:scale-105" />
-      <div className="pointer-events-none absolute -right-8 -top-8 h-40 w-40 rounded-full bg-primary/20 blur-3xl transition-opacity duration-700 group-hover:opacity-80" />
-      <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-1/2 bg-gradient-to-t from-surface/80 to-transparent" />
+    <div
+      className="overflow-hidden rounded-sm border border-mist/60 bg-deep"
+      aria-hidden="true"
+    >
+      <div data-card-media className="aspect-video w-full origin-center bg-mist/80" />
     </div>
   );
 });
 
 ProjectMedia.displayName = "ProjectMedia";
 
-/**
- * ProjectCard - Individual project card with hover effects.
- * Whole card is the link (pointer + click target), not only "View Project".
- */
+function useProjectCardMotion(cardRef) {
+  useEffect(() => {
+    const card = cardRef.current;
+    if (!card || prefersReducedMotion()) return undefined;
+
+    registerMotion();
+    const media = card.querySelector("[data-card-media]");
+    if (!media) return undefined;
+
+    const canHover = window.matchMedia(
+      "(hover: hover) and (pointer: fine)",
+    ).matches;
+
+    const pressIn = () => {
+      gsap.to(
+        media,
+        willChangeVars({
+          scale: 1.03,
+          duration: DURATION.uiSlow,
+          ease: EASE.medium,
+          overwrite: "auto",
+        }),
+      );
+    };
+
+    const pressOut = () => {
+      gsap.to(
+        media,
+        willChangeVars({
+          scale: 1,
+          duration: DURATION.ui,
+          ease: EASE.medium,
+          overwrite: "auto",
+        }),
+      );
+    };
+
+    if (canHover) {
+      card.addEventListener("pointerenter", pressIn);
+      card.addEventListener("pointerleave", pressOut);
+    }
+    card.addEventListener("pointerdown", pressIn);
+    card.addEventListener("pointerup", pressOut);
+    card.addEventListener("pointercancel", pressOut);
+
+    return () => {
+      if (canHover) {
+        card.removeEventListener("pointerenter", pressIn);
+        card.removeEventListener("pointerleave", pressOut);
+      }
+      card.removeEventListener("pointerdown", pressIn);
+      card.removeEventListener("pointerup", pressOut);
+      card.removeEventListener("pointercancel", pressOut);
+      gsap.killTweensOf(media);
+    };
+  }, [cardRef]);
+}
+
 const ProjectCard = memo(
-  ({ imgSrc, alt, title, description, tags, repoLink }) => {
+  ({
+    imgSrc,
+    alt,
+    title,
+    description,
+    tags,
+    repoLink,
+    isImageLeft = true,
+  }) => {
+    const cardRef = useRef(null);
+    useProjectCardMotion(cardRef);
+
+    const mediaPlacement = isImageLeft
+      ? "order-1 lg:col-span-7 lg:col-start-1"
+      : "order-1 lg:col-span-7 lg:col-start-6";
+    const copyPlacement = isImageLeft
+      ? "order-2 lg:col-span-5 lg:col-start-8"
+      : "order-2 lg:col-span-5 lg:col-start-1 lg:row-start-1";
+
     return (
       <a
+        ref={cardRef}
         href={repoLink}
         target="_blank"
         rel="noopener noreferrer"
-        className="relative rounded-xl bg-surface border border-[var(--color-border)] overflow-hidden transition-[border-color,box-shadow] duration-500 hover:border-primary/40 hover:shadow-xl group h-full flex flex-col cursor-pointer focus-ring"
+        className="group focus-ring grid grid-cols-1 items-center gap-6 rounded-sm lg:grid-cols-12 lg:gap-x-12 xl:gap-x-16"
+        aria-label={`${title}, GitHub repository, opens in a new tab`}
       >
-        <div className="aspect-video w-full overflow-hidden bg-bg-light shrink-0">
-          <ProjectMedia imgSrc={imgSrc} alt={alt} />
+        <div className={mediaPlacement}>
+          <ProjectMedia imgSrc={imgSrc} alt="" />
         </div>
 
-        <div className="p-8 flex-1 flex flex-col">
-          <div
-            className="flex gap-2 mb-4 flex-wrap"
-            role="list"
-            aria-label="Technologies used"
-          >
-            {tags && tags.length > 0
-              ? tags.map((tag, index) => (
-                  <span
-                    key={tag}
-                    role="listitem"
-                    className={
-                      index === 0
-                        ? "inline-block px-3 py-1 text-xs font-semibold rounded bg-primary/20 text-[#d4b8e8] border border-primary/20"
-                        : "inline-block px-3 py-1 text-xs font-semibold rounded bg-secondary/10 text-text-muted"
-                    }
-                  >
-                    {tag}
-                  </span>
-                ))
-              : null}
-          </div>
+        <div className={`copy-veil flex flex-col justify-center ${copyPlacement}`}>
+          {tags && tags.length > 0 ? (
+            <p className="mb-3 text-sm leading-6 text-fog">{tags.join(" · ")}</p>
+          ) : null}
 
-          <h3 className="text-2xl font-heading font-bold mb-2 group-hover:text-amber-glow transition-colors duration-300">
+          <h3 className="font-heading text-2xl font-semibold md:text-3xl">
             {title}
           </h3>
 
-          <p className="text-text-muted mb-6 line-clamp-2 leading-relaxed">
+          <p className="mt-4 max-w-md text-base leading-8 text-fog">
             {description}
           </p>
 
-          <span className="inline-flex items-center text-sm font-bold text-primary group-hover:text-amber-glow transition-colors duration-300 mt-auto">
-            View Project
+          <span className="mt-6 inline-flex items-center text-sm text-ice">
+            View repository
             <Icon
               name="arrow_forward"
               size={16}
-              className="ml-1 group-hover:translate-x-1 transition-transform"
+              className="ml-1 transition-transform duration-200 ease-out group-hover:translate-x-1"
+              aria-hidden="true"
             />
           </span>
         </div>
@@ -111,38 +172,51 @@ const ProjectCard = memo(
 ProjectCard.displayName = "ProjectCard";
 
 const ProjectsGrid = ({ projects = PINNED_FALLBACK }) => {
-  return (
-    <section className="w-full px-6 py-24" id="portfolio">
-      <Reveal className="flex w-full flex-col md:flex-row justify-between items-start md:items-end mb-16 gap-4">
-        <div className="w-full md:w-auto text-left">
-          <h2 className="font-heading font-bold text-4xl mb-2">
-            Selected Works
-          </h2>
-          <p className="text-text-muted">
-            Pinned repositories from my GitHub profile.
-          </p>
-        </div>
-        <a
-          href="https://github.com/YukaC"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="self-start text-primary font-bold flex items-center gap-1 hover:gap-3 hover:text-amber-glow transition-[color,gap] duration-300 underline decoration-secondary/30 underline-offset-4 hover:decoration-amber-glow focus-ring rounded"
-        >
-          Explore GitHub
-          <Icon name="arrow_forward" size={16} />
-        </a>
-      </Reveal>
+  const pinnedProjects = projects.slice(0, MAX_PINNED_PROJECTS);
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        {projects.map((project, index) => (
-          <Reveal
-            key={project.name ?? project.repoLink}
-            className="h-full"
-            delayMs={index * 90}
+  return (
+    <section
+        className="section-rule section-y w-full"
+      id="portfolio"
+      aria-labelledby="work-heading"
+    >
+      <div className="site-shell">
+        <Reveal className="copy-veil mb-14 max-w-xl md:mb-20">
+          <h2 id="work-heading">Selected work</h2>
+          <p className="mt-4 text-base leading-8 text-fog">
+            Up to six pinned GitHub repositories, refreshed as the profile
+            changes. Screenshots and source for each.
+          </p>
+          <a
+            href="https://github.com/YukaC"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="link-underline focus-ring mt-5 inline-flex items-center text-sm text-fog hover:text-paper"
           >
-            <ProjectCard {...project} />
-          </Reveal>
-        ))}
+            GitHub profile
+            <span className="sr-only"> (opens in a new tab)</span>
+            <Icon name="arrow_forward" size={16} className="ml-1" aria-hidden="true" />
+          </a>
+        </Reveal>
+
+        {pinnedProjects.length > 0 ? (
+          <ol className="flex flex-col gap-16 md:gap-24">
+            {pinnedProjects.map((project, index) => (
+              <li key={project.name ?? project.repoLink} className="work-card">
+                <Reveal>
+                  <ProjectCard
+                    {...project}
+                    isImageLeft={index % 2 === 0}
+                  />
+                </Reveal>
+              </li>
+            ))}
+          </ol>
+        ) : (
+          <p className="text-base leading-8 text-fog">
+            Projects will show up here soon.
+          </p>
+        )}
       </div>
     </section>
   );
