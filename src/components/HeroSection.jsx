@@ -163,7 +163,7 @@ const HeroSection = ({ projects = [] }) => {
             />
 
             {active.imgSrc ? (
-              <div className="relative aspect-video overflow-hidden border-b border-white/10 bg-deep">
+              <div className="relative aspect-video overflow-hidden border-b border-mist/60 bg-deep">
                 <Image
                   key={active.imgSrc}
                   src={active.imgSrc}
@@ -225,7 +225,7 @@ const HeroSection = ({ projects = [] }) => {
                   </p>
                 </div>
 
-                <div className="mt-5 flex flex-col gap-3 border-t border-white/10 pt-4">
+                <div className="mt-5 flex flex-col gap-3 border-t border-mist/60 pt-4">
                   <div
                     className="flex flex-wrap items-center gap-1"
                     role="group"
