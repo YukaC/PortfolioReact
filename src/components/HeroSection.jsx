@@ -1,58 +1,106 @@
-import { useState, useEffect, useRef } from "react";
-import Image from "next/image";
+import { useEffect, useState, useSyncExternalStore } from "react";
+import Icon from "@/components/Icon";
+import { SKILLS } from "@/data/constants";
+import { GITHUB_USERNAME } from "@/data/projects";
 import { scrollToSectionByHash } from "@/utils/scroll-to-section";
 
-/** Tiny neutral blur for next/image placeholders (avoids CLS flash). */
-const HERO_BLUR =
-  "data:image/svg+xml;charset=utf-8," +
-  encodeURIComponent(
-    `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="9">
-      <rect width="100%" height="100%" fill="#2a2430"/>
-    </svg>`,
-  );
+const ROTATE_MS = 5000;
+
+const reduceMotionQuery =
+  typeof window !== "undefined"
+    ? window.matchMedia("(prefers-reduced-motion: reduce)")
+    : null;
+
+function subscribeReduceMotion(onChange) {
+  reduceMotionQuery?.addEventListener("change", onChange);
+  return () => reduceMotionQuery?.removeEventListener("change", onChange);
+}
+
+function getReduceMotionSnapshot() {
+  return reduceMotionQuery?.matches ?? false;
+}
+
+function getReduceMotionServerSnapshot() {
+  // Server render has no matchMedia — motion-sensitive default is "animate";
+  // the client snapshot corrects it right after hydration.
+  return false;
+}
 
 /**
- * HeroSection - Main landing section with intro and code terminal
+ * Defensive fallback — ISR normally guarantees `projects`, but the hero must
+ * render standalone (storybook-ish previews, edge cases).
  */
-const HeroSection = () => {
-  const [isActive, setIsActive] = useState(false);
-  const imageCardRef = useRef(null);
+const FALLBACK_FEATURED = [
+  {
+    name: "PortfolioReact",
+    title: "Professional Portfolio",
+    description:
+      "This site — Next.js SSG/ISR, a Tailwind design system, and a WebGL easter egg.",
+    tags: ["React", "Next.js", "Tailwind CSS"],
+    repoLink: `https://github.com/${GITHUB_USERNAME}/PortfolioReact`,
+  },
+];
 
-  const toggleActive = () => setIsActive((prev) => !prev);
+/**
+ * HeroSection - Trust-first landing hero.
+ *
+ * Copy + CTAs on the left; a glassmorphism card on the right that adapts to
+ * the GitHub profile: it rotates through the pinned repos scraped at build
+ * time (ISR) and links back to the profile. Tech strip replaces a generic
+ * "trusted by" logo row.
+ */
+const HeroSection = ({ projects = [] }) => {
+  const featured = projects.length > 0 ? projects : FALLBACK_FEATURED;
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [isPaused, setIsPaused] = useState(false);
+  const reduceMotion = useSyncExternalStore(
+    subscribeReduceMotion,
+    getReduceMotionSnapshot,
+    getReduceMotionServerSnapshot,
+  );
 
-  // Mobile has no hover — tap outside restores grayscale (desktop hover still works).
+  // Auto-rotate the featured repo. Paused on hover/focus, reduced motion,
+  // or when there is nothing to rotate. `activeIndex` in deps restarts the
+  // countdown after a manual dot selection.
   useEffect(() => {
-    if (!isActive) return undefined;
+    if (isPaused || reduceMotion || featured.length <= 1) return undefined;
 
-    const dismissIfOutside = (event) => {
-      if (imageCardRef.current?.contains(event.target)) return;
-      setIsActive(false);
-    };
+    const timer = setInterval(() => {
+      setActiveIndex((prev) => (prev + 1) % featured.length);
+    }, ROTATE_MS);
 
-    document.addEventListener("pointerdown", dismissIfOutside);
-    return () => document.removeEventListener("pointerdown", dismissIfOutside);
-  }, [isActive]);
-
-  const handleKeyDown = (e) => {
-    if (e.key === "Enter" || e.key === " ") {
-      e.preventDefault();
-      toggleActive();
-    }
-  };
+    return () => clearInterval(timer);
+  }, [isPaused, reduceMotion, featured.length, activeIndex]);
 
   const handleCtaClick = (e, href) => {
     e.preventDefault();
     scrollToSectionByHash(href);
   };
 
+  const handleCardBlur = (e) => {
+    if (!e.currentTarget.contains(e.relatedTarget)) setIsPaused(false);
+  };
+
+  const active = featured[activeIndex % featured.length];
+
   return (
     <section
-      className="w-full min-h-screen flex flex-col justify-center px-6 pt-20 relative"
+      className="w-full min-h-screen flex items-center px-6 pt-24 pb-16 relative overflow-hidden"
       id="home"
     >
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-        {/* Text Content */}
-        <div className="flex flex-col gap-6 order-2 lg:order-1">
+      {/* Ambient color fields — depth behind the glass, quiet on the copy side */}
+      <div
+        className="absolute top-1/4 -right-24 w-[36rem] h-[36rem] rounded-full bg-primary/20 blur-[120px] opacity-60 pointer-events-none"
+        aria-hidden="true"
+      />
+      <div
+        className="absolute -top-32 -left-32 w-[28rem] h-[28rem] rounded-full bg-secondary/25 blur-[110px] opacity-40 pointer-events-none"
+        aria-hidden="true"
+      />
+
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-center w-full">
+        {/* Copy */}
+        <div className="lg:col-span-7 flex flex-col gap-6">
           <div className="hero-enter hero-enter-delay-1 inline-flex w-fit items-center gap-2 px-3 py-1 rounded-full bg-available/15 border border-available/30 text-available text-xs font-bold uppercase tracking-wide">
             <span
               className="w-2 h-2 rounded-full bg-available animate-pulse-slow"
@@ -62,17 +110,18 @@ const HeroSection = () => {
           </div>
 
           <h1 className="hero-enter hero-enter-delay-2">
-            Crafting <span className="text-primary italic">smooth</span> digital
-            compositions.
+            Turning Real Problems Into{" "}
+            <span className="text-gradient-accent">Working Software</span>
           </h1>
 
-          <p className="hero-enter hero-enter-delay-3 text-lg sm:text-xl text-text-muted max-w-lg leading-relaxed">
-            I&apos;m Agustin Ciucani, a Full-Stack Developer from Buenos Aires,
-            Argentina. I build dynamic, responsive interfaces with React and
-            Tailwind CSS, focused on clean code and great user experiences.
+          <p className="hero-enter hero-enter-delay-3 text-lg sm:text-xl text-text-muted max-w-xl leading-relaxed">
+            {"I'm Agustin Ciucani, a Full-Stack Developer from Buenos Aires, " +
+              "Argentina. I ship dynamic, responsive products with React and " +
+              "Tailwind CSS — real tools for real workflows, not just polished " +
+              "demos."}
           </p>
 
-          <div className="hero-enter hero-enter-delay-4 flex flex-col sm:flex-row gap-4 mt-4">
+          <div className="hero-enter hero-enter-delay-4 flex flex-col sm:flex-row gap-4 mt-2">
             <a
               href="#portfolio"
               className="btn-primary focus-ring"
@@ -85,91 +134,129 @@ const HeroSection = () => {
               className="btn-ghost focus-ring"
               onClick={(e) => handleCtaClick(e, "#contact")}
             >
-              Let&apos;s Connect
+              {"Let's Connect"}
             </a>
+          </div>
+
+          {/* Tech strip — what the work is actually built with */}
+          <div className="hero-enter hero-enter-delay-5 mt-6">
+            <p className="text-xs font-bold text-primary/60 uppercase tracking-widest mb-3">
+              Built with
+            </p>
+            <ul className="flex flex-wrap gap-2">
+              {SKILLS.map((skill) => (
+                <li
+                  key={skill.name}
+                  className="glass-pill flex items-center gap-2 rounded-full px-3.5 py-1.5 text-sm text-text-muted hover:text-amber-glow hover:border-primary/40 transition-colors cursor-default"
+                >
+                  <Icon
+                    name={skill.icon}
+                    size={15}
+                    className="text-primary"
+                  />
+                  {skill.name}
+                </li>
+              ))}
+            </ul>
           </div>
         </div>
 
-        {/* Hero Image with Code Terminal */}
-        <div className="hero-enter hero-enter-delay-5 relative order-1 lg:order-2 h-[400px] lg:h-[600px] w-full flex items-center justify-center">
+        {/* Glass card — live from GitHub */}
+        <div className="lg:col-span-5 hero-enter hero-enter-delay-5 relative">
           <div
-            className="absolute inset-6 bg-gradient-to-tr from-secondary/30 via-transparent to-primary/10 rounded-full blur-[50px] opacity-40 pointer-events-none"
-            aria-hidden="true"
-          />
-
-          <div
-            ref={imageCardRef}
-            className="relative w-full h-full rounded-2xl overflow-hidden shadow-2xl border border-[var(--color-border)] bg-surface group cursor-pointer"
-            onClick={toggleActive}
-            onKeyDown={handleKeyDown}
-            role="button"
-            tabIndex={0}
-            aria-pressed={isActive}
-            aria-label="Toggle profile image focus"
+            className="glass-card rounded-3xl p-6 sm:p-8 overflow-hidden"
+            onMouseEnter={() => setIsPaused(true)}
+            onMouseLeave={() => setIsPaused(false)}
+            onFocus={() => setIsPaused(true)}
+            onBlur={handleCardBlur}
           >
-            {/* Filter snaps (no filter transition); transform on own layer — no exit flash */}
             <div
-              className={`absolute inset-0 transition-opacity duration-500 ease-out
-                ${isActive ? "opacity-100 grayscale-0" : "opacity-60 grayscale group-hover:opacity-100 group-hover:grayscale-0"}`}
-            >
-              <div
-                className={`absolute inset-0 transition-transform duration-500 ease-out
-                  ${isActive ? "scale-105" : "scale-100 group-hover:scale-105"}`}
-              >
-                <Image
-                  src="/profilePic.webp"
-                  alt="Agustin Ciucani profile"
-                  fill
-                  priority
-                  fetchPriority="high"
-                  sizes="(max-width: 1024px) 100vw, 50vw"
-                  placeholder="blur"
-                  blurDataURL={HERO_BLUR}
-                  className="object-cover"
-                />
-              </div>
-            </div>
-
-            <div
-              className={`absolute inset-0 bg-gradient-to-t from-bg-main via-bg-main/70 to-bg-main/40 transition-opacity duration-500 pointer-events-none
-                ${isActive ? "opacity-70" : "opacity-100 group-hover:opacity-70"}`}
+              className="glass-noise absolute inset-0 opacity-30 rounded-3xl"
               aria-hidden="true"
             />
 
-            <div
-              className={`absolute bottom-4 sm:bottom-8 left-4 sm:left-8 right-4 sm:right-8 transition-opacity duration-500 pointer-events-none
-              ${isActive ? "opacity-80" : "opacity-100 group-hover:opacity-80"}`}
-            >
-              <div className="bg-black/60 border border-white/10 p-5 sm:p-5 max-sm:p-3 rounded-xl font-mono text-sm max-sm:text-[0.7rem]">
-                <div className="flex gap-2 mb-3">
-                  <div className="w-3 h-3 rounded-full bg-[#ff5f56]" />
-                  <div className="w-3 h-3 rounded-full bg-[#ffbd2e]" />
-                  <div className="w-3 h-3 rounded-full bg-[#27c93f]" />
-                </div>
-
-                <div className="text-gray-300 leading-relaxed">
-                  <span className="text-secondary">const</span> developer ={" "}
-                  {"{"}
-                  <br />
-                  &nbsp;&nbsp;name:{" "}
-                  <span className="text-primary">
-                    &apos;Agustin Ciucani&apos;
-                  </span>
-                  ,
-                  <br />
-                  &nbsp;&nbsp;role:{" "}
-                  <span className="text-primary">
-                    &apos;Full-Stack Developer&apos;
-                  </span>
-                  ,<br />
-                  &nbsp;&nbsp;stack: [
-                  <span className="text-primary">&apos;React&apos;</span>,{" "}
-                  <span className="text-primary">&apos;JavaScript&apos;</span>,{" "}
-                  <span className="text-primary">&apos;Tailwind&apos;</span>]
-                  <br />
-                  {"}"};
-                </div>
+            <div className="relative flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span
+                  className="w-2 h-2 rounded-full bg-available animate-pulse-slow"
+                  aria-hidden="true"
+                />
+                <span className="font-mono text-[0.65rem] tracking-[0.2em] uppercase text-text-muted">
+                  Live from GitHub
+                </span>
               </div>
+              <Icon
+                name="github"
+                size={18}
+                className="text-text-muted"
+              />
+            </div>
+
+            {/* Reserves height so rotating repos don't shift the footer */}
+            <div className="relative mt-6 min-h-[10.5rem] sm:min-h-[9rem]">
+              <div key={active.name} className="repo-card-enter">
+                <a
+                  href={active.repoLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="group/repo inline-flex items-start gap-1.5 font-heading text-xl sm:text-2xl text-text hover:text-amber-glow transition-colors focus-ring rounded-sm"
+                >
+                  {active.title}
+                  <Icon
+                    name="arrow_forward"
+                    size={18}
+                    className="mt-1 opacity-0 -translate-x-1 group-hover/repo:opacity-100 group-hover/repo:translate-x-0 transition-all shrink-0"
+                  />
+                </a>
+                <p className="mt-2 text-sm sm:text-[0.95rem] leading-relaxed text-text-muted line-clamp-3">
+                  {active.description}
+                </p>
+                {active.tags?.length > 0 && (
+                  <ul className="mt-4 flex flex-wrap gap-1.5">
+                    {active.tags.map((tag) => (
+                      <li
+                        key={tag}
+                        className="rounded-full border border-white/10 bg-white/5 px-2.5 py-0.5 font-mono text-[0.65rem] text-text-muted"
+                      >
+                        {tag}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            </div>
+
+            <div className="relative mt-6 pt-5 border-t border-white/10 flex items-center justify-between gap-4">
+              <div
+                className="flex items-center gap-1.5"
+                role="group"
+                aria-label="Featured project selector"
+              >
+                {featured.map((project, index) => (
+                  <button
+                    key={project.name}
+                    type="button"
+                    onClick={() => setActiveIndex(index)}
+                    aria-label={`Show ${project.title}`}
+                    aria-current={index === activeIndex}
+                    className={`h-1.5 rounded-full transition-all focus-ring ${
+                      index === activeIndex
+                        ? "w-6 bg-primary"
+                        : "w-1.5 bg-white/20 hover:bg-white/40"
+                    }`}
+                  />
+                ))}
+              </div>
+
+              <a
+                href={`https://github.com/${GITHUB_USERNAME}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 font-mono text-xs text-text-muted hover:text-amber-glow transition-colors focus-ring rounded-sm"
+              >
+                github.com/{GITHUB_USERNAME}
+                <Icon name="arrow_forward" size={14} />
+              </a>
             </div>
           </div>
         </div>

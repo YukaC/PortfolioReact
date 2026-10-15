@@ -40,7 +40,7 @@ export async function getStaticProps() {
 export default function Index({ projects }) {
   return (
     <Layout title="Agustin Ciucani | Fullstack Developer">
-      <HeroSection />
+      <HeroSection projects={projects} />
       <SkillsTicker />
       <ProjectsGrid projects={projects} />
       <Experience />
