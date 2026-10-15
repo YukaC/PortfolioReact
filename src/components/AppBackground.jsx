@@ -48,8 +48,9 @@ const AppBackground = () => {
   }, []);
 
   useEffect(() => {
+    // simQuality === null only arrives via the motion-preference effect above,
+    // which already resets canUseWebgl alongside it — nothing to reset here.
     if (!simQuality) {
-      setCanUseWebgl(false);
       return undefined;
     }
     const enableWebgl = () => setCanUseWebgl(true);

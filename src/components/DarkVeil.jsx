@@ -289,7 +289,11 @@ export const DarkVeil = ({
     // Strict Mode remount (or a previous loseContext) can leave this canvas dead.
     // Swap the node once; if GL is still unavailable, CSS fallback stays.
     if (!gl || gl.isContextLost()) {
-      if (canvasGeneration < 2) setCanvasGeneration((generation) => generation + 1);
+      // Deferred out of the effect body (react-hooks/set-state-in-effect):
+      // a microtask keeps the Strict-Mode-safe retry without a cascading render.
+      if (canvasGeneration < 2) {
+        queueMicrotask(() => setCanvasGeneration((generation) => generation + 1));
+      }
       return undefined;
     }
 
