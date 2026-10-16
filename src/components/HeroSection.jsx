@@ -163,7 +163,7 @@ const HeroSection = ({ projects = [] }) => {
             />
 
             {active.imgSrc ? (
-              <div className="relative aspect-video overflow-hidden border-b border-mist/60 bg-deep">
+              <div className="relative aspect-video overflow-hidden bg-deep">
                 <Image
                   key={active.imgSrc}
                   src={active.imgSrc}

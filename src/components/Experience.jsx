@@ -3,7 +3,7 @@ import Reveal from "@/components/Reveal";
 
 const Experience = () => (
   <section
-    className="section-rule section-y w-full"
+    className="section-y w-full"
     id="about"
     aria-labelledby="about-heading"
   >

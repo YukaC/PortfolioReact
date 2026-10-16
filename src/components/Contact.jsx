@@ -7,7 +7,7 @@ const Contact = () => (
   <Reveal
     as="section"
     id="contact"
-    className="section-rule w-full"
+    className="w-full"
     aria-labelledby="contact-heading"
   >
     <div className="site-shell py-16 md:py-24 lg:py-28">
