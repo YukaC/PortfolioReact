@@ -134,3 +134,34 @@ alcance: el candidato que el proveedor calcula es `main..HEAD` (22 commits,
 +6265/−971) y excede su presupuesto de contexto; declarar la rebanada con `baseRef`
 cae en el error de ruteo graph-v1. Se desbloquea cuando la rama aterrice en
 rebanadas.
+
+### Confirmación del loop (segundo disparo de RDD)
+
+Tras el commit de contraste, la extensión RDD volvió a disparar con un target
+nuevo (`sha256:8acaf5ba…`) y un linaje nuevo (`review-320743c7632db49c`).
+`inspect` volvió a ofrecer `execute / fresh_target_ready`, pero el alcance es el
+**mismo** que el ya declarado terminal:
+
+| campo | inspect #1 | inspect #3 |
+|---|---|---|
+| `base-ref` | `ddbaa23` (main) | `ddbaa23` (main) |
+| `paths_digest` | `sha256:b369623b…` | `sha256:b369623b…` (idéntico) |
+| paths | 47 | 47 |
+| `initial_review_tree` | `cc9b1e72` | `0645525a` |
+
+Se siguió la transición una vez (sin lentes, que a este alcance ya se rechazaron
+en preflight) → mismo `lens_context_budget_exceeded`, mismo `phase: preflight`,
+`mutation_outcome: not_started`, `next_action: stop`.
+
+**Loop determinista probado**: cada commit nuevo → target nuevo → mismo alcance
+→ mismo rechazo en preflight → ninguna autoridad. Va a re-disparar en cada
+mutación. Se corta por una de tres:
+1. la rama aterriza en `main` (merge/push) → el candidato baja a la rebanada y entra en presupuesto;
+2. `gentle-ai review mode disable --scope clone` → continuación `D` sancionada para candidato terminal;
+3. el user deja este candidato explícitamente sin revisar.
+
+**Defecto nativo acotado a reportar**: declarar la rebanada con el input
+documentado `baseRef` + `committedOnly` no produce un START de rango commiteado;
+devuelve `Judgment Day graph-v1 START requires lineageId`, un `lineageId` que el
+controlador nunca entregó. Sin esa ruta, no hay forma soportada de revisar un
+slice ya commiteado en esta versión.
