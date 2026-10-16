@@ -173,15 +173,15 @@ const FeaturedProjectCard = memo((project) => {
       className="group glass-panel glass-live focus-ring grid grid-cols-1 overflow-hidden lg:grid-cols-12"
       aria-label={`${project.title}, GitHub repository, opens in a new tab`}
     >
-      <div className="lg:col-span-7">
+      <div className="lg:col-span-6">
         <ProjectMedia
           imgSrc={project.imgSrc}
           alt=""
-          sizes="(max-width: 1024px) 100vw, 58vw"
+          sizes="(max-width: 1024px) 100vw, 50vw"
           stretch
         />
       </div>
-      <div className="flex flex-col justify-center p-6 md:p-8 lg:col-span-5 lg:p-10">
+      <div className="flex flex-col justify-center p-6 md:p-8 lg:col-span-6 lg:p-10">
         <ProjectCopy {...project} />
       </div>
     </a>
@@ -208,7 +208,7 @@ const ProjectTile = memo((project) => {
         alt=""
         sizes="(max-width: 768px) 100vw, 42vw"
       />
-      <div className="flex flex-col p-5 md:p-6">
+      <div className="flex flex-col p-6 md:p-8">
         <ProjectCopy {...project} />
       </div>
     </a>
@@ -229,7 +229,7 @@ const ProjectsGrid = ({ projects = PINNED_FALLBACK }) => {
       aria-labelledby="work-heading"
     >
       <div className="site-shell">
-        <Reveal className="copy-veil mb-14 max-w-xl md:mb-20">
+        <Reveal className="copy-veil mb-10 max-w-xl md:mb-12">
           <h2 id="work-heading">Selected work</h2>
           <p className="mt-4 text-base leading-8 text-fog">
             Interfaces, dashboards, and tools shipped for real use. Source
@@ -253,13 +253,13 @@ const ProjectsGrid = ({ projects = PINNED_FALLBACK }) => {
         </Reveal>
 
         {featuredProject ? (
-          <div className="flex flex-col gap-16 md:gap-20">
+          <div className="flex flex-col gap-6 md:gap-8">
             <Reveal>
               <FeaturedProjectCard {...featuredProject} />
             </Reveal>
 
             {remainingProjects.length > 0 ? (
-              <ul className="grid grid-cols-1 gap-12 md:grid-cols-2 md:gap-x-10 md:gap-y-16">
+              <ul className="grid grid-cols-1 gap-6 md:grid-cols-2 md:gap-8">
                 {remainingProjects.map((project) => (
                   <li
                     key={project.name ?? project.repoLink}
