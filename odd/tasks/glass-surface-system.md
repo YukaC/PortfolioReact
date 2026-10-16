@@ -72,3 +72,35 @@ Fallbacks: `prefers-reduced-transparency` (relleno sólido) y
 - L9 — **Conflicto detectado antes de rediseñar**: el estado commiteado (radio 2px, vidrio cobalto oscuro) *es* el faro según Engram obs 69 y `odd/tasks/archive/agency-bocanada-pass.md:14`, que marca `rounded-3xl` como parte del "segundo género" ajeno que se removió; `glass-identity-pass.md` fija "radio 2px". O sea: pasar a redondeado + hielo es un re-brief autorizado, no un fix de drift; y este repo ya pagó ese error una vez (re-theme del 9-oct en un mega-commit, revertido con `reset --hard`). Por eso se para y se pregunta el grado antes de tocar tokens.
 - L10 — **Audit de contraste real**: 71 corridas de texto con el backdrop compuesto medido (texto oculto, screenshot por corrida, peor píxel). El vidrio actual aguanta AA con margen — cuerpo en cards/panels 8.6–11.7:1, links del nav 7.5:1, footer 13.4:1. Bajo AA: h1 + acento ice del hero (techo físico del color ya documentado, mitigado por text-shadow), el wordmark decorativo (aria-hidden), "Get in Touch" 4.47 (es la línea del borde del rail dentro del box, no el texto), "View repository" 3.33 al peor píxel con p95 5.61 ✓, y la línea Bebop del footer 4.32 (real: va a fog/75).
 - L11 — **Herramientas de verificación**: Chrome por CDP (`design-taste-frontend/scripts/inspect.mjs`, 1440/768/390, screenshots + medición) y auditor de contraste propio. Playwright también disponible vía `uv run --with playwright==1.63.0` (chromium-1243 cacheado en `~/.cache/ms-playwright`).
+
+## RDD / review routing (2026-05-16)
+
+- **Disposición**: el user nunca dejó este candidato sin revisar (no hubo "no lo
+  revises" ni equivalente), así que aplica la ruta de review.
+- **`assess`**: `risk: unassessable` — "the review assess candidate has no
+  pending changes; already-committed work can be assessed by rerunning with
+  `--base-ref <commit>`". Plan resultante: tratado como high risk, verificación
+  independiente obligatoria.
+- **`inspect`**: `status: ready`, `action: start`, target
+  `sha256:1db21f40…`, proyección `base-diff:workspace`, `base-ref=ddbaa23`
+  (= **`main`**), `committed-only=true` → candidato = **rama entera**: 22
+  commits, 47 paths, +6265/−971. Mi rebanada de sesión: `78baa5e..HEAD` = 11
+  commits, 11 paths, +497/−252.
+- **START #1** (4 lentes) → `native-start-input-invalid` / `lenses-invalid`,
+  `lineage_created: false`, `mutation_performed: false`.
+- **START #2** (sin lentes, alcance del proveedor) → `lens_context_budget_exceeded`
+  (`phase: preflight`), `mutation_outcome: not_started`, `authority_applicability:
+  not_evaluated`, `next_action: stop`. Cause nativo: *"retrying this exact
+  candidate cannot succeed, so split it into a chained sequence of smaller
+  reviewable commits, each under the budget"*. Terminal para ese candidato.
+- **START #3** (baseRef `78baa5e…` + `committedOnly` para declarar la rebanada) →
+  error de controlador: *"Judgment Day graph-v1 START requires lineageId"*.
+  Ruteo, no validación: no produjo estado de autoridad.
+- **STATUS** sobre el linaje retenido → candidato **vacío** (`paths: []`,
+  proyección `current-changes`, target `sha256:0982420a…`),
+  `next_transition: collect / empty_candidate_base_ref_required`,
+  `collectBindings: []`. El proveedor pide un base ref para nombrar la
+  comparación.
+- **Resultado**: ninguna autoridad creada; nada que abandonar ni reparar.
+  Bloqueado esperando decisión del user sobre el alcance del review (ver
+  reporte). Sin cambios de código en este tramo.
