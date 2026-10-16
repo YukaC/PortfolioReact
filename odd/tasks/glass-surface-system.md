@@ -14,6 +14,15 @@ aprobada en `.glass-card`. No es un rebrand: extiende el sistema vigente
   el brief no pidió; tipografía Manrope/Space Grotesk; paleta ink→ice; motion
   desde `src/motion/config.js`; `prefers-reduced-motion` honrado; legibilidad
   AA sobre humo se mantiene (ganada en `glass-identity-pass`).
+- **S4** — "quiero algo más parecido a este estilo. segui este lineamiento para todos los componentes de la web:" + prompt de integración de 21st.dev `GlassCalendar` (`rounded-3xl`, `bg-black/20 backdrop-blur-xl border border-white/10`, texto blanco, `shadow-2xl`, glass anidado, tabs con pill sólida, gradiente `from-pink-500 to-orange-400`, divider `h-px bg-white/20`, deps `date-fns` + `lucide-react` + `framer-motion`, capa TS + `/components/ui` + `cn`).
+  Alcance según las palabras del user: **guía de estilo para todos los componentes de la web**, no la inserción del calendario.
+
+## Dirección vigente (re-brief S4, decisiones del user)
+
+- Radio: superficies 12px, controles 8px, rail full-bleed recto (el user descartó 2px y 24px).
+- Tinte: cobalto oscuro (el user descartó hielo claro). El "hielo" lo ponen el filo ice, el sheen y el escarchado del borde superior, no el relleno.
+- Humo: intacto. Si algo baja de AA, se compensa con scrim/text-shadow y se reporta con números.
+- Vidrio anidado (`.glass-nest`) para **agrupar controles**, no como decoración: tabs del nav, controles del carousel, acción de Contact.
 
 ## Direction (decidido, no preguntado)
 
@@ -37,14 +46,18 @@ Fallbacks: `prefers-reduced-transparency` (relleno sólido) y
 
 | ID | Spec | Task | Route | Commit |
 |----|------|------|-------|--------|
-| T1 | S1 S2 | Foundation: tokens `--glass-*` y primitivas `.glass-rail/.glass-panel/.glass-card/.glass-tile` en `globals.css` (`glass-blur` opt-in, fallbacks reduced-transparency y sin backdrop-filter); `.site-nav` pasa a ser una máquina de estado sobre los tokens del rail | inline | W1 |
-| T2 | S2 | Navbar: rail de vidrio cobalto (no banda negra) + drawer móvil de vidrio | inline | W1 |
-| T3 | S2 | Cards de trabajo: featured card y tiles sobre el sistema de vidrio | inline | W2 |
-| T4 | S2 | About (Experience) y Contact: panels de vidrio, separación por tono (no hairline) | inline | W3 |
-| T5 | S2 | Footer: cierre de vidrio diseñado | inline | W4 |
-| T6 | S3 | Legibilidad sobre humo: re-medir AA y retunear `copy-veil` donde el vidrio ya respalda | inline | W5 |
-| T7 | S3 | Verificación real: lint, build, browser 1440/768/390 con screenshots, contraste, overflow; iterar hasta limpio | inline | — |
-| T8 | — | Cierre: CHANGELOG, higiene de memoria (Engram/CodeGraph), reporte | inline | W6 |
+| T1 | S1 S2 | Foundation: tokens `--glass-*` y primitivas `.glass-rail/.glass-panel/.glass-card/.glass-tile` en `globals.css` (`glass-blur` opt-in, fallbacks reduced-transparency y sin backdrop-filter); `.site-nav` pasa a ser una máquina de estado sobre los tokens del rail | inline | `a70d751` |
+| T2 | S2 | Navbar: rail de vidrio cobalto (no banda negra) + drawer móvil de vidrio | inline | `a70d751` |
+| T3 | S2 | Cards de trabajo: featured card y tiles sobre el sistema de vidrio | inline | `c5661e3` |
+| T4 | S2 | About (Experience) y Contact: panels de vidrio, padding en vez de gap | inline | `1fce319` |
+| T5 | S2 | Footer: cierre de vidrio (rail con filo arriba) + línea Bebop legible | inline | `3e825cb` |
+| T6 | S3 | Legibilidad: `copy-veil` sin blur (el rectángulo), section rules fuera | inline | `7b29f29` |
+| T8 | S3 S4 | Re-tokens: radio 12px / controles 8px / altura única 44px, hielo en filo + sheen + escarchado | inline | `80f98d5` |
+| T9 | S2 | Geometría simétrica: About 6/6, featured 6/6, gaps y paddings de un solo paso | inline | `e62c6d6` |
+| T12 | S4 | Rasgos del reference adoptados: `.glass-nest` (agrupar controles + pill sólida del vivo) en nav, carousel y Contact; blur 20→24px | inline | `eb4d67a` |
+| T13 | S4 | **Bloqueada por decisión**: integrar `GlassCalendar` (implica `date-fns` + `lucide-react` + `framer-motion`, capa TS + `/components/ui` + `cn`) o tomarlo solo como guía de estilo | — | — |
+| T10 | S3 S4 | Re-verificar AA (audit de contraste por peor píxel), build, browser 1440/768/390 + drawer, foco y reduced-transparency sobre el vidrio final | inline | — |
+| T11 | — | Cierre: CHANGELOG, higiene de memoria (Engram obs 69 incluye el radio nuevo), reporte | inline | — |
 
 ## Log
 
@@ -54,3 +67,8 @@ Fallbacks: `prefers-reduced-transparency` (relleno sólido) y
 - L4 — Decisión de dirección: no se pregunta al user; el brief pide explícitamente que las superficies matcheen el vidrio existente. Se decide el sistema de 3 niveles y la política de `backdrop-filter` (arriba).
 - L5 — Baseline medido en browser real (`inspect.mjs`, 1440/768/390): la nav es una banda `ink` que corta el cobalto; la card del hero está a ~88% de opacidad (el humo no se lee a través); el `copy-veil` dibuja un rectángulo de bordes duros detrás del titular del hero (artefacto del `backdrop-filter: blur(7px)` sin máscara que llegue a cero en el borde).
 - L6 — **T1 + T2 done (W1)**: sistema de vidrio en `globals.css` (tokens `--glass-*`, primitivas rail/panel/tile, `glass-blur` opt-in, fallbacks) + nav adoptando `glass-rail glass-blur` y drawer `glass-panel`. `.glass-card` conserva su blur propio (es la superficie con más texto). Lint exit 0.
+- L7 — **W2–W5 commiteados**: `c5661e3` cards de trabajo, `1fce319` About+Contact como panels, `3e825cb` footer rail, `7b29f2c` copy-veil sin blur + section rules fuera + `.gitignore` con `.taste-skill/`. Lint exit 0; `pnpm build` exit 0 (3 páginas estáticas, 11.4s).
+- L8 — **Corrección del user (re-brief; gana por regla 1 del faro)**: "no tenes playwright instalado ni nada como para ver irl lo que estás haciendo no? se nota que nos desfasamos de la idea original de vidrio tip hielo con bordes redondeados y componentes simetricos bien estructurados y ajustados".
+- L9 — **Conflicto detectado antes de rediseñar**: el estado commiteado (radio 2px, vidrio cobalto oscuro) *es* el faro según Engram obs 69 y `odd/tasks/archive/agency-bocanada-pass.md:14`, que marca `rounded-3xl` como parte del "segundo género" ajeno que se removió; `glass-identity-pass.md` fija "radio 2px". O sea: pasar a redondeado + hielo es un re-brief autorizado, no un fix de drift; y este repo ya pagó ese error una vez (re-theme del 9-oct en un mega-commit, revertido con `reset --hard`). Por eso se para y se pregunta el grado antes de tocar tokens.
+- L10 — **Audit de contraste real**: 71 corridas de texto con el backdrop compuesto medido (texto oculto, screenshot por corrida, peor píxel). El vidrio actual aguanta AA con margen — cuerpo en cards/panels 8.6–11.7:1, links del nav 7.5:1, footer 13.4:1. Bajo AA: h1 + acento ice del hero (techo físico del color ya documentado, mitigado por text-shadow), el wordmark decorativo (aria-hidden), "Get in Touch" 4.47 (es la línea del borde del rail dentro del box, no el texto), "View repository" 3.33 al peor píxel con p95 5.61 ✓, y la línea Bebop del footer 4.32 (real: va a fog/75).
+- L11 — **Herramientas de verificación**: Chrome por CDP (`design-taste-frontend/scripts/inspect.mjs`, 1440/768/390, screenshots + medición) y auditor de contraste propio. Playwright también disponible vía `uv run --with playwright==1.63.0` (chromium-1243 cacheado en `~/.cache/ms-playwright`).
