@@ -241,6 +241,13 @@
     display: none;
   }
 
+  /* Rail with its lit edge at the top — the footer close books the page
+     against the nav rail. */
+  .glass-rail-top {
+    border-top: 1px solid var(--glass-bar-edge);
+    border-bottom: 0;
+  }
+
   /* Tile — grid cards: same recipe, lighter lift */
   .glass-tile {
     --glass-lift: var(--glass-lift-tile);
