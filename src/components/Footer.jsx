@@ -57,7 +57,7 @@ const Footer = () => {
                       href={link.href}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="link-underline focus-ring text-sm text-white/60 hover:text-white"
+                      className="link-underline focus-ring text-sm text-white/75 hover:text-white"
                     >
                       {link.name}
                       <span className="sr-only"> (opens in a new tab)</span>
@@ -67,7 +67,7 @@ const Footer = () => {
               </ul>
             </nav>
 
-            <p className="text-sm text-white/60">© {currentYear} Agustin Ciucani</p>
+            <p className="text-sm text-white/75">© {currentYear} Agustin Ciucani</p>
           </div>
 
           <p
