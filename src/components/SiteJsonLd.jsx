@@ -26,7 +26,7 @@ const SiteJsonLd = ({ projects = [] }) => {
       jobTitle: PERSON_JOB_TITLE,
       url: SITE_URL,
       email: `mailto:${CONTACT_EMAIL}`,
-      image: `${SITE_URL}/profilePic.webp`,
+      image: `${SITE_URL}/profile-hero.webp`,
       address: {
         "@type": "PostalAddress",
         addressLocality: PERSON_LOCALITY,
@@ -54,7 +54,7 @@ const SiteJsonLd = ({ projects = [] }) => {
       inLanguage: "en",
       isPartOf: { "@id": websiteId },
       about: { "@id": personId },
-      primaryImageOfPage: `${SITE_URL}/profilePic.webp`,
+      primaryImageOfPage: `${SITE_URL}/profile-hero.webp`,
     },
   ];
 

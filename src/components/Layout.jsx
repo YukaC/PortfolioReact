@@ -45,7 +45,7 @@ const Layout = ({
         <meta property="og:description" content={description} />
         <meta property="og:type" content="website" />
         <meta property="og:url" content={SITE_URL} />
-        <meta property="og:image" content={`${SITE_URL}/profilePic.webp`} />
+        <meta property="og:image" content={`${SITE_URL}/profile-hero.webp`} />
         <meta
           property="og:image:alt"
           content="Portrait of Agustin Ciucani, full-stack developer in Buenos Aires"
@@ -53,7 +53,7 @@ const Layout = ({
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content={title} />
         <meta name="twitter:description" content={description} />
-        <meta name="twitter:image" content={`${SITE_URL}/profilePic.webp`} />
+        <meta name="twitter:image" content={`${SITE_URL}/profile-hero.webp`} />
         <meta
           name="twitter:image:alt"
           content="Portrait of Agustin Ciucani, full-stack developer in Buenos Aires"
