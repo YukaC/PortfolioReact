@@ -39,7 +39,7 @@ export async function getStaticProps() {
 export default function Index({ projects }) {
   return (
     <Layout projects={projects}>
-      <HeroSection projects={projects} />
+      <HeroSection />
       <ProjectsGrid projects={projects} />
       <Experience />
       <Contact />

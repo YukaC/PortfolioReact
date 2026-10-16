@@ -143,8 +143,9 @@ Prefer **pnpm** (`packageManager`); `npm run …` works but locks/CI use pnpm.
 Bocanada (cobalt field, coral lattice, ice accent) is the north star. Shared
 layout is `.site-shell` (max 88rem, 24/48/64px inset) and `.section-y`.
 Glass is a frosted panel (`.glass-card`), not a second theme. Hero, work,
-about, and footer share `.site-shell`. The GitHub card in the hero has
-previous / next / pause controls and a live region. Motion lives in
+about, and footer share `.site-shell`. The profile card in the hero carries
+the photo, social links, a pointer-driven ice spotlight and a flip to the
+stack. Motion lives in
 `src/motion/config.js`. Task notes: `odd/tasks/agency-bocanada-pass.md`.
 
 Dark tokens live in `@theme` (`src/styles/globals.css`):
