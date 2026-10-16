@@ -224,7 +224,7 @@ const ProjectsGrid = ({ projects = PINNED_FALLBACK }) => {
 
   return (
     <section
-      className="section-rule section-y w-full"
+      className="section-y w-full"
       id="portfolio"
       aria-labelledby="work-heading"
     >

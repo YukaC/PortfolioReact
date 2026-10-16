@@ -613,30 +613,9 @@
   contain-intrinsic-size: 0 22rem;
 }
 
-.section-rule {
-  position: relative;
-  border-top: none;
-}
-
-.section-rule::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 50%;
-  width: min(88rem, calc(100% - 3rem));
-  height: 1px;
-  transform: translateX(-50%);
-  background: linear-gradient(
-    90deg,
-    transparent 0%,
-    color-mix(in srgb, var(--color-paper) 16%, transparent) 24%,
-    color-mix(in srgb, var(--color-paper) 26%, transparent) 50%,
-    color-mix(in srgb, var(--color-paper) 16%, transparent) 76%,
-    transparent 100%
-  );
-  pointer-events: none;
-}
-
+/* Section separators are gone: every section now carries its own glass
+   surface, so a floating hairline over the smoke only competed with the
+   edges of that glass. Separation comes from space and the surfaces. */
 .item-rule {
   border-top: none;
   background-image: linear-gradient(
@@ -656,6 +635,10 @@
   max-width: 100%;
 }
 
+/* A scrim, not a pane. There is deliberately no `backdrop-filter` here: the
+   blur box has hard edges, and blurring a smooth plume leaves a tonal step at
+   those edges, so the veil rendered as a visible rectangle. The feathered
+   radial keeps the contrast the blanket blur used to buy. */
 .copy-veil::before {
   content: "";
   position: absolute;
@@ -667,8 +650,6 @@
     rgba(2, 18, 45, 0.34) 55%,
     transparent 84%
   );
-  backdrop-filter: blur(7px);
-  -webkit-backdrop-filter: blur(7px);
   mask-image: radial-gradient(
     ellipse 96% 88% at 34% 44%,
     #000 30%,
@@ -684,8 +665,6 @@
 
 @media (prefers-reduced-transparency: reduce) {
   .copy-veil::before {
-    backdrop-filter: none;
-    -webkit-backdrop-filter: none;
     background: radial-gradient(
       ellipse 96% 88% at 34% 44%,
       rgba(2, 18, 45, 0.72),
