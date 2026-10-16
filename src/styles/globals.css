@@ -169,7 +169,21 @@
   --glass-edge-strong: rgb(255 255 255 / 0.28);
   --glass-lift: 0 25px 50px -12px rgb(0 0 0 / 0.25); /* shadow-2xl */
   --glass-sheet: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1); /* shadow-md */
-  --glass-blur: 24px; /* backdrop-blur-xl */
+  /* Frost. The reference reads frosted because a photograph sits behind it; a
+     smooth cobalt field gives `backdrop-blur` almost nothing to smear, so the
+     frost is built instead of inherited: a longer blur, a light lift, a white
+     wash down from the top edge, a 1px inner highlight, and a static grain
+     layer between the tint and the text. */
+  --glass-blur: 40px;
+  --glass-sat: 112%;
+  --glass-wash: linear-gradient(
+    180deg,
+    rgb(255 255 255 / 0.08),
+    rgb(255 255 255 / 0) 42%
+  );
+  --glass-highlight: inset 0 1px 0 rgb(255 255 255 / 0.16);
+  --glass-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='f'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23f)'/%3E%3C/svg%3E");
+  --glass-grain-opacity: 0.13;
 
   /* Nested pane — the reference's `bg-black/20` inside the surface, and the
      track its tabs sit in. It does not blur: only the outer card does. */
@@ -214,9 +228,28 @@
     border: 1px solid var(--glass-edge);
     border-radius: var(--glass-radius);
     background-color: var(--glass-tint);
-    box-shadow: var(--glass-lift);
-    backdrop-filter: blur(var(--glass-blur));
-    -webkit-backdrop-filter: blur(var(--glass-blur));
+    background-image: var(--glass-wash);
+    box-shadow: var(--glass-lift), var(--glass-highlight);
+    backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-sat));
+    -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-sat));
+  }
+
+  /* Frost grain, between the tint and the text: a negative index paints above
+     the surface's own background and below its in-flow content. */
+  .glass-rail::after,
+  .glass-panel::after,
+  .glass-card::after,
+  .glass-tile::after,
+  .glass-nest::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    border-radius: inherit;
+    background-image: var(--glass-grain);
+    opacity: var(--glass-grain-opacity);
+    mix-blend-mode: overlay;
+    pointer-events: none;
   }
 
   /* Rail — full-bleed bars: no radius, the same 1px white/10 edge, only on the
@@ -226,7 +259,7 @@
     border-top: 0;
     border-radius: 0;
     border-bottom: 1px solid var(--glass-edge);
-    box-shadow: none;
+    box-shadow: var(--glass-highlight);
   }
 
   /* Rail with its edge at the top — the footer close books the page against
@@ -239,9 +272,13 @@
   /* Nested pane: the reference's `bg-black/20` inside the surface, and the
      track its tabs sit in. It does not blur — only the outer card does. */
   .glass-nest {
+    position: relative;
+    isolation: isolate;
     border: 1px solid var(--glass-nest-edge);
     border-radius: var(--glass-nest-radius);
     background-color: var(--glass-nest);
+    background-image: var(--glass-wash);
+    --glass-grain-opacity: 0.09;
   }
 
   .glass-nest-item {
