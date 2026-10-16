@@ -19,7 +19,7 @@ const HeroSection = () => {
       className="relative w-full min-h-[100dvh] overflow-hidden"
       id="home"
     >
-      <div className="site-shell grid min-h-[100dvh] grid-cols-1 content-start gap-10 pt-24 pb-16 md:gap-12 md:pb-20 lg:grid-cols-12 lg:items-center lg:gap-x-16">
+      <div className="site-shell grid min-h-[100dvh] grid-cols-1 content-start gap-10 pt-24 pb-16 md:gap-12 md:pb-20 lg:grid-cols-12 lg:content-center lg:items-center lg:gap-x-16">
         <div className="copy-veil flex flex-col gap-6 lg:col-span-6">
           <h1
             data-intro
