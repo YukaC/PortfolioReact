@@ -46,11 +46,12 @@ con la foto de perfil nueva del user.
 | ID | Spec | Task | Route | Commit |
 |----|------|------|-------|--------|
 | T1 | S1 | Asset: foto nueva → `public/profile-hero.webp` (640², q82) + blur placeholder | inline | — |
-| T2 | S1 | `src/components/ProfileCard.jsx`: card glass frozen con identidad, socials, spotlight, tilt y flip accesible | inline* | — |
-| T3 | S1 | Hero: montar ProfileCard en la columna derecha, remover carrusel y prop `projects` (HeroSection + index.jsx) | inline* | — |
-| T4 | S1 | Docs: README (párrafo GitHub card del visual system) + línea faro AGENTS.md | inline* | — |
-| T5 | S1 | Verificación: `check:lint`, `build`, `e2e:a11y`, `validate:bebop` + browser 1440/768/390, reduced motion, foco teclado | writer self-verify + parent spot check | — |
-| T6 | S1 | Cierre: work-unit commit, evidencia en doc, mirror Engram, memoria | inline | — |
+| T1 | S1 | Asset: foto nueva → `public/profile-hero.webp` (640², q82) + blur placeholder | inline | `dac6389` |
+| T2 | S1 | `src/components/ProfileCard.jsx`: card glass frozen con identidad, socials, spotlight, tilt y flip accesible | inline* | `dac6389` |
+| T3 | S1 | Hero: montar ProfileCard en la columna derecha, remover carrusel y prop `projects` (HeroSection + index.jsx) | inline* | `dac6389` |
+| T4 | S1 | Docs: README (párrafo GitHub card del visual system) + línea faro AGENTS.md | inline* | `dac6389` |
+| T5 | S1 | Verificación: `check:lint` ✓, `build` ✓ (18.4s), `validate:bebop` ✓ (25 shots); browser CDP crudo 17/17 checks (spotlight, tilt ≤6°, flip a11y, reduced motion, 1440/768/390, consola limpia) + screenshots en /tmp/hero-shots | inline* | `dac6389` |
+| T6 | S1 | Cierre: work-unit commit, evidencia en doc, mirror Engram, memoria | inline | docs commit |
 
 Forecast: ~300 authored lines → un solo work-unit commit. Rama activa:
 `feat/agency-rebrand`.
@@ -69,3 +70,9 @@ test determinista disponible).
   estetica glass frozen que tenemos con mi foto de perfil nueva que adjunto
   tambien /home/yuka/Descargas/image-transformed.png" + URLs reactbits
   spotlight-card y profile-card.
+- **L2** — Evidencia (2026-10-16): work-unit `dac6389` (373+/317−). `e2e:a11y`
+  NO disponible en este checkout: el paquete `playwright` no está instalado
+  en ningún node_modules alcanzable (falla preexistente; el script es un
+  smoke trivial que no toca el sitio). Cobertura real vía harness CDP crudo
+  (Node WebSocket + Chromium 1243 headless): 17/17 checks en /tmp/hero-cdp.mjs.
+  AGENTS.md (faro) editado local: está gitignored, no entra al commit.
