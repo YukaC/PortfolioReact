@@ -53,7 +53,7 @@ const ProjectMedia = memo(({ imgSrc, alt, sizes, stretch = false }) => {
   }
 
   return (
-    <div className={`${frame} bg-mist/80`} aria-hidden="true">
+    <div className={`${frame} bg-white/10`} aria-hidden="true">
       <div data-card-media className="absolute inset-0 origin-center" />
     </div>
   );
@@ -133,22 +133,22 @@ function useProjectMediaMotion(cardRef) {
 const ProjectCopy = ({ title, problem, outcome, description, tags }) => (
   <>
     {problem ? (
-      <p className="mb-3 text-sm leading-6 text-fog">{problem}</p>
+      <p className="mb-3 text-sm leading-6 text-white/60">{problem}</p>
     ) : tags && tags.length > 0 ? (
-      <p className="mb-3 text-sm leading-6 text-fog">{tags.join(" · ")}</p>
+      <p className="mb-3 text-sm leading-6 text-white/60">{tags.join(" · ")}</p>
     ) : null}
 
     <h3 className="font-heading text-2xl font-semibold md:text-3xl">{title}</h3>
 
-    <p className="mt-4 max-w-md text-base leading-8 text-fog">
+    <p className="mt-4 max-w-md text-base leading-8 text-white/60">
       {outcome ?? description}
     </p>
 
     {problem && tags && tags.length > 0 ? (
-      <p className="mt-4 text-sm leading-6 text-ice">{tags.join(" · ")}</p>
+      <p className="mt-4 text-sm leading-6 text-white/70">{tags.join(" · ")}</p>
     ) : null}
 
-    <span className="mt-6 inline-flex items-center text-sm text-ice">
+    <span className="mt-6 inline-flex items-center text-sm text-white/70">
       View repository
       <Icon
         name="arrow_forward"
@@ -231,7 +231,7 @@ const ProjectsGrid = ({ projects = PINNED_FALLBACK }) => {
       <div className="site-shell">
         <Reveal className="copy-veil mb-10 max-w-xl md:mb-12">
           <h2 id="work-heading">Selected work</h2>
-          <p className="mt-4 text-base leading-8 text-fog">
+          <p className="mt-4 text-base leading-8 text-white/60">
             Interfaces, dashboards, and tools shipped for real use. Source
             for each.
           </p>
@@ -239,7 +239,7 @@ const ProjectsGrid = ({ projects = PINNED_FALLBACK }) => {
             href="https://github.com/YukaC"
             target="_blank"
             rel="noopener noreferrer"
-            className="link-underline focus-ring mt-5 inline-flex items-center text-sm text-fog hover:text-paper"
+            className="link-underline focus-ring mt-5 inline-flex items-center text-sm text-white/60 hover:text-white"
           >
             GitHub profile
             <span className="sr-only"> (opens in a new tab)</span>
@@ -274,7 +274,7 @@ const ProjectsGrid = ({ projects = PINNED_FALLBACK }) => {
             ) : null}
           </div>
         ) : (
-          <p className="text-base leading-8 text-fog">
+          <p className="text-base leading-8 text-white/60">
             Projects will show up here soon.
           </p>
         )}

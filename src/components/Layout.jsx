@@ -76,7 +76,7 @@ const Layout = ({
       </Head>
       <SiteJsonLd projects={projects} />
 
-      <div ref={rootRef} className="relative min-h-[100dvh] bg-[#02122d] text-paper">
+      <div ref={rootRef} className="relative min-h-[100dvh] bg-[#02122d] text-white">
         <a href="#main-content" className="skip-link">
           Skip to content
         </a>

@@ -57,7 +57,7 @@ const Footer = () => {
                       href={link.href}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="link-underline focus-ring text-sm text-fog hover:text-paper"
+                      className="link-underline focus-ring text-sm text-white/60 hover:text-white"
                     >
                       {link.name}
                       <span className="sr-only"> (opens in a new tab)</span>
@@ -67,14 +67,14 @@ const Footer = () => {
               </ul>
             </nav>
 
-            <p className="text-sm text-fog">© {currentYear} Agustin Ciucani</p>
+            <p className="text-sm text-white/60">© {currentYear} Agustin Ciucani</p>
           </div>
 
           <p
             ref={setTriggerRef}
             tabIndex={0}
             role="button"
-            className="relative z-10 mt-6 max-w-fit cursor-help py-1 font-mono text-xs text-fog/60 select-none touch-none transition-colors duration-200 ease-out hover:text-ice focus:outline-none focus-visible:text-ice focus-visible:ring-2 focus-visible:ring-ice"
+            className="relative z-10 mt-6 max-w-fit cursor-help py-1 font-mono text-xs text-white/70 select-none touch-none transition-colors duration-200 ease-out hover:text-white/70 focus:outline-none focus-visible:text-white/70 focus-visible:ring-2 focus-visible:ring-ice"
             title="Hold for 1.5 seconds..."
             aria-label="Hold for 1.5 seconds to play the easter egg"
             onMouseEnter={handleTriggerEnter}
