@@ -58,8 +58,8 @@ const NavLinks = ({ scrollToSection, isMobile = false }) => (
         data-menu-item={isMobile ? "" : undefined}
         className={`focus-ring ${
           isMobile
-            ? "link-underline inline-block py-4 font-heading text-3xl tracking-[0.01em] text-fog hover:text-paper"
-            : "glass-nest-item inline-block px-3.5 py-1.5 text-sm text-fog hover:text-paper"
+            ? "link-underline inline-block py-4 font-heading text-3xl tracking-[0.01em] text-white/60 hover:text-white"
+            : "glass-nest-item inline-block px-3.5 py-1.5 text-sm text-white/60 hover:text-white"
         }`}
         {...(isMobile && { role: "menuitem" })}
       >

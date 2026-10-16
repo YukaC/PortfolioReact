@@ -16,7 +16,7 @@ const Contact = () => (
           <h2 id="contact-heading" className="max-w-[14ch]">
             Tell me what you are building.
           </h2>
-          <p className="mt-5 max-w-md text-base leading-8 text-fog">
+          <p className="mt-5 max-w-md text-base leading-8 text-white/60">
             Freelance or full-time. Send the problem, the stack, and the
             timeline. I reply with next steps.
           </p>
@@ -27,13 +27,13 @@ const Contact = () => (
             <Magnetic className="w-full">
               <a
                 href={`mailto:${CONTACT_EMAIL}`}
-                className="focus-ring flex max-w-full items-center gap-2 font-heading text-[clamp(1.15rem,3.4vw,1.85rem)] font-semibold leading-tight tracking-tight text-paper hover:text-ice"
+                className="focus-ring flex max-w-full items-center gap-2 font-heading text-[clamp(1.15rem,3.4vw,1.85rem)] font-semibold leading-tight tracking-tight text-white hover:text-white/70"
               >
                 <span className="min-w-0 break-all">{CONTACT_EMAIL}</span>
                 <Icon
                   name="arrow_forward"
                   size={20}
-                  className="shrink-0 text-ice"
+                  className="shrink-0 text-white/70"
                 />
               </a>
             </Magnetic>

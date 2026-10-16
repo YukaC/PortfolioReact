@@ -87,6 +87,11 @@
 .mobile-menu-panel {
   pointer-events: none;
   visibility: hidden;
+  /* A full-screen menu sheet hides the page, it does not reveal it: at glass
+     translucency the hero's own copy sits behind the menu's own links and the
+     two collide. Near-opaque, square, still blurred. */
+  --glass-tint: rgb(0 0 0 / 0.9);
+  border-radius: 0;
 }
 
 @layer base {
@@ -155,40 +160,36 @@
    and shows almost nothing.
 --------------------------------------------------------------------------- */
 :root {
-  --glass-tint-top: color-mix(in srgb, #071426 80%, transparent);
-  --glass-tint-bottom: color-mix(in srgb, #062a5e 74%, transparent);
-  /* The ice reads from the edge and the frost, not from a lighter fill: a
-     lighter fill spends the AA margin the dark cobalt buys. */
-  --glass-edge: color-mix(in srgb, var(--color-ice) 58%, white 20%);
-  --glass-edge-strong: color-mix(in srgb, var(--color-ice) 84%, white 26%);
-  --glass-sheen: color-mix(in srgb, var(--color-ice) 60%, white 40%);
-  --glass-frost: inset 0 14px 26px -20px rgba(198, 228, 255, 0.34);
-  --glass-lift: 0 24px 60px -24px rgba(2, 18, 45, 0.72);
-  --glass-lift-tile: 0 18px 44px -28px rgba(2, 18, 45, 0.62);
-  --glass-inset: inset 0 1px 0 rgba(255, 255, 255, 0.18);
-  --glass-bar-top: color-mix(in srgb, #062240 74%, transparent);
-  --glass-bar-bottom: color-mix(in srgb, #083a72 66%, transparent);
-  --glass-bar-edge: color-mix(in srgb, var(--color-ice) 46%, transparent);
-  --glass-blur: 24px;
-  --glass-bar-blur: 14px;
-  --glass-saturate: 140%;
+  /* Reference 1:1 — 21st.dev `glass-calendar`.
+     bg-black/20 · backdrop-blur-xl · border-white/10 · shadow-2xl.
+     The tint is neutral black, not cobalt: the surface is transparent glass
+     and the field supplies the colour. */
+  --glass-tint: rgb(0 0 0 / 0.2);
+  --glass-edge: rgb(255 255 255 / 0.1);
+  --glass-edge-strong: rgb(255 255 255 / 0.28);
+  --glass-lift: 0 25px 50px -12px rgb(0 0 0 / 0.25); /* shadow-2xl */
+  --glass-sheet: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1); /* shadow-md */
+  --glass-blur: 24px; /* backdrop-blur-xl */
 
-  /* Nested pane — glass inside glass, for the segmented controls and the
-     action rows of the reference. It goes deeper, not lighter: a `black/20`
-     nest over the plume drops 12–14px text under AA (measured). */
-  --glass-nest: color-mix(in srgb, #02122d 46%, transparent);
-  --glass-nest-edge: color-mix(in srgb, white 12%, transparent);
-  --glass-nest-radius: 0.5rem;
+  /* Nested pane — the reference's `bg-black/20` inside the surface, and the
+     track its tabs sit in. It does not blur: only the outer card does. */
+  --glass-nest: rgb(0 0 0 / 0.2);
+  --glass-nest-edge: rgb(255 255 255 / 0.1);
+  --glass-nest-radius: 0.5rem; /* rounded-lg */
 
-  /* One radius scale: surfaces 12px, controls 8px, full-bleed rails square.
-     One control height, so every button in the bar is the same box. */
-  --glass-radius: 0.75rem;
-  --control-radius: 0.5rem;
+  /* Radius scale straight from the reference: surface rounded-3xl, track
+     rounded-lg, pill rounded-md, icon buttons rounded-full. */
+  --glass-radius: 1.5rem; /* rounded-3xl */
+  --control-radius: 0.375rem; /* rounded-md */
+  --control-round: 9999px; /* rounded-full */
   --control-h: 2.75rem;
 
+  /* The reference's only chromatic accent: the selected day. */
+  --accent-warm: linear-gradient(to bottom right, #ec4899, #fb923c);
+
   /* Solid fill for the reduced-transparency and no-backdrop-filter fallbacks */
-  --glass-fill-solid: #0b1a33;
-  --glass-bar-fill-solid: #061a35;
+  --glass-fill-solid: rgb(0 0 0 / 0.82);
+  --glass-bar-fill-solid: rgb(0 0 0 / 0.82);
 }
 
 @layer components {
@@ -202,7 +203,8 @@
   }
 
   /* Glass primitives — rail (bars), panel (large surfaces), tile (grid).
-     `.glass-card` stays as the hero's name for a blurred panel. */
+     Every one is the reference's card, 1:1: flat `bg-black/20` (flat, not a
+     gradient), 1px `border-white/10`, `backdrop-blur-xl`, `shadow-2xl`. */
   .glass-rail,
   .glass-panel,
   .glass-card,
@@ -211,112 +213,64 @@
     isolation: isolate;
     border: 1px solid var(--glass-edge);
     border-radius: var(--glass-radius);
-    background-image: linear-gradient(
-      160deg,
-      var(--glass-tint-top),
-      var(--glass-tint-bottom)
-    );
-    box-shadow: var(--glass-lift), var(--glass-frost), var(--glass-inset);
+    background-color: var(--glass-tint);
+    box-shadow: var(--glass-lift);
+    backdrop-filter: blur(var(--glass-blur));
+    -webkit-backdrop-filter: blur(var(--glass-blur));
   }
 
-  /* Top sheen — light catching the glass edge */
-  .glass-rail::before,
-  .glass-panel::before,
-  .glass-card::before,
-  .glass-tile::before {
-    content: "";
-    position: absolute;
-    inset: 0 12% auto 12%;
-    z-index: 1;
-    height: 1px;
-    background: linear-gradient(
-      90deg,
-      transparent,
-      var(--glass-sheen),
-      transparent
-    );
-    pointer-events: none;
-  }
-
-  /* Rail — full-bleed bars: no radius, one lit edge at the bottom */
+  /* Rail — full-bleed bars: no radius, the same 1px white/10 edge, only on the
+     side where the bar meets the page. */
   .glass-rail {
     border-inline: 0;
     border-top: 0;
     border-radius: 0;
-    border-bottom-color: var(--glass-bar-edge);
-    background-image: linear-gradient(
-      180deg,
-      var(--glass-bar-top),
-      var(--glass-bar-bottom)
-    );
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+    border-bottom: 1px solid var(--glass-edge);
+    box-shadow: none;
   }
 
-  .glass-rail::before {
-    display: none;
-  }
-
-  /* Rail with its lit edge at the top — the footer close books the page
-     against the nav rail. */
+  /* Rail with its edge at the top — the footer close books the page against
+     the nav rail. */
   .glass-rail-top {
-    border-top: 1px solid var(--glass-bar-edge);
+    border-top: 1px solid var(--glass-edge);
     border-bottom: 0;
   }
 
-  /* Tile — grid cards: same recipe, lighter lift */
-  .glass-tile {
-    --glass-lift: var(--glass-lift-tile);
-  }
-
-  /* Opt-in backdrop blur, only where the field behind is high frequency */
-  .glass-blur {
-    backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
-    -webkit-backdrop-filter: blur(var(--glass-blur))
-      saturate(var(--glass-saturate));
-  }
-
-  .glass-rail.glass-blur {
-    backdrop-filter: blur(var(--glass-bar-blur)) saturate(var(--glass-saturate));
-    -webkit-backdrop-filter: blur(var(--glass-bar-blur))
-      saturate(var(--glass-saturate));
-  }
-
-  /* The hero panel keeps its own blur — it holds the most copy of any surface */
-  .glass-card {
-    backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
-    -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
-  }
-
-  /* Nested pane: the track that holds a group of controls, and the pill that
-     marks the live one. The active pill is a solid fill — the reference's
-     weekly/monthly tabs, in Bocanada ice. */
+  /* Nested pane: the reference's `bg-black/20` inside the surface, and the
+     track its tabs sit in. It does not blur — only the outer card does. */
   .glass-nest {
     border: 1px solid var(--glass-nest-edge);
     border-radius: var(--glass-nest-radius);
     background-color: var(--glass-nest);
-    background-image: none;
   }
 
   .glass-nest-item {
-    border-radius: calc(var(--glass-nest-radius) - 0.125rem);
+    border-radius: var(--control-radius);
     transition:
       background-color 160ms cubic-bezier(0.23, 1, 0.32, 1),
-      color 160ms cubic-bezier(0.23, 1, 0.32, 1);
+      color 160ms cubic-bezier(0.23, 1, 0.32, 1),
+      box-shadow 160ms cubic-bezier(0.23, 1, 0.32, 1);
   }
 
+  /* The live item is a solid white pill with black text and shadow-md — the
+     reference's selected tab, exactly. */
   a.glass-nest-item.is-nav-active,
   .glass-nest-item[aria-current="true"] {
-    background-color: var(--color-ice);
-    color: var(--color-ink);
+    background-color: #fff;
+    color: #000;
+    font-weight: 700;
+    box-shadow: var(--glass-sheet);
   }
 
   @media (hover: hover) and (pointer: fine) {
     a.glass-nest-item:hover {
-      background-color: color-mix(in srgb, var(--color-ice) 22%, transparent);
+      background-color: rgb(255 255 255 / 0.2);
+      color: #fff;
     }
 
     a.glass-nest-item.is-nav-active:hover {
-      background-color: var(--color-paper);
+      background-color: #fff;
+      color: #000;
     }
   }
 
@@ -343,14 +297,6 @@
     }
   }
 
-  /* Film-grain noise layer for glass depth (static, GPU-cheap) */
-  .glass-noise {
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E");
-    mix-blend-mode: overlay;
-    pointer-events: none;
-  }
-
-  /* Rotating card content enters on swap */
   .repo-card-enter {
     animation: card-swap-in 0.45s cubic-bezier(0.22, 1, 0.36, 1) forwards;
   }
@@ -361,14 +307,16 @@
     justify-content: center;
     gap: 0.5rem;
     padding: 0.8rem 1.35rem;
-    background-color: var(--color-ice);
-    color: var(--color-ink);
-    font-size: 0.9375rem;
-    font-weight: 500;
+    /* The reference's solid white pill with black text. */
+    background-color: #fff;
+    color: #000;
+    font-size: 0.875rem;
+    font-weight: 700;
     letter-spacing: -0.01em;
     white-space: nowrap;
     min-height: var(--control-h);
-    border-radius: var(--control-radius);
+    border-radius: var(--glass-nest-radius);
+    box-shadow: var(--glass-sheet);
     transition:
       background-color 160ms cubic-bezier(0.23, 1, 0.32, 1),
       color 160ms cubic-bezier(0.23, 1, 0.32, 1),
@@ -384,14 +332,18 @@
     align-items: center;
     justify-content: center;
     padding: 0.45rem 1.05rem;
-    font-size: 0.875rem;
-    font-weight: 500;
+    font-size: 0.75rem;
+    font-weight: 700;
     letter-spacing: -0.01em;
     white-space: nowrap;
     min-height: var(--control-h);
-    color: var(--color-paper);
-    border: 1px solid color-mix(in srgb, var(--color-ice) 40%, transparent);
-    border-radius: var(--control-radius);
+    /* The reference's action row button: bg-black/20, white text,
+       border-white/10, shadow-md, rounded-lg. */
+    color: #fff;
+    background-color: rgb(0 0 0 / 0.2);
+    border: 1px solid var(--glass-nest-edge);
+    border-radius: var(--glass-nest-radius);
+    box-shadow: var(--glass-sheet);
     transition:
       background-color 160ms cubic-bezier(0.23, 1, 0.32, 1),
       color 160ms cubic-bezier(0.23, 1, 0.32, 1),
@@ -403,37 +355,39 @@
   }
 
   a.is-nav-active {
-    color: var(--color-ice);
+    color: #fff;
   }
 
   a.link-underline.is-nav-active {
     background-size: 100% 1px;
   }
 
+  /* The live action is the same solid white pill as the live tab. */
   .btn-nav.is-nav-active {
-    background-color: var(--color-ice);
-    color: var(--color-ink);
-    border-color: var(--color-ice);
+    background-color: #fff;
+    color: #000;
+    border-color: #fff;
   }
 
   /* Nav rail: the bar is a state machine over the shared rail tokens, so
-     scrolling changes the glass, not the background recipe. */
+     scrolling changes the glass density, not the recipe. */
   .site-nav.is-nav-scrolled {
-    --glass-bar-top: color-mix(in srgb, #051c3a 86%, transparent);
-    --glass-bar-bottom: color-mix(in srgb, #073262 78%, transparent);
-    --glass-bar-edge: color-mix(in srgb, var(--color-ice) 46%, transparent);
+    --glass-tint: rgb(0 0 0 / 0.34);
+    --glass-edge: rgb(255 255 255 / 0.16);
   }
 
+  /* The reference's icon button: no border, white/70 glyph, rounded-full,
+     hover:bg-black/20. */
   .btn-icon {
     display: inline-flex;
     align-items: center;
     justify-content: center;
     width: 2.75rem;
     height: 2.75rem;
-    color: var(--color-paper);
-    border: 1px solid color-mix(in srgb, var(--color-ice) 40%, transparent);
-    border-radius: var(--control-radius);
-    background-color: color-mix(in srgb, var(--color-ink) 35%, transparent);
+    color: rgb(255 255 255 / 0.7);
+    border: 0;
+    border-radius: var(--control-round);
+    background-color: transparent;
     transition:
       background-color 160ms cubic-bezier(0.23, 1, 0.32, 1),
       color 160ms cubic-bezier(0.23, 1, 0.32, 1),
@@ -449,10 +403,10 @@
     pointer-events: none;
   }
 
+  /* Pressed state is the same solid white pill as the live tab. */
   .btn-icon[aria-pressed="true"] {
-    background-color: var(--color-ice);
-    color: var(--color-ink);
-    border-color: var(--color-ice);
+    background-color: #fff;
+    color: #000;
   }
 
   .carousel-dot {
@@ -461,7 +415,7 @@
     justify-content: center;
     width: 2.75rem;
     height: 2.75rem;
-    border-radius: var(--control-radius);
+    border-radius: var(--control-round);
     background: transparent;
   }
 
@@ -469,61 +423,59 @@
     display: block;
     width: 0.5rem;
     height: 0.5rem;
-    border-radius: 999px;
-    border: 1px solid color-mix(in srgb, var(--color-ice) 40%, transparent);
-    background-color: transparent;
+    border-radius: var(--control-round);
+    border: 0;
+    background-color: rgb(255 255 255 / 0.2);
     transition:
       width 160ms cubic-bezier(0.23, 1, 0.32, 1),
       background-color 160ms cubic-bezier(0.23, 1, 0.32, 1),
       border-color 160ms cubic-bezier(0.23, 1, 0.32, 1);
   }
 
+  /* The current day in the reference: the warm gradient, and nothing else in
+     the page wears it. */
   .carousel-dot[aria-current="true"] .carousel-dot-pip {
     width: 1.25rem;
-    background-color: var(--color-ice);
-    border-color: var(--color-ice);
+    background-color: transparent;
+    background-image: var(--accent-warm);
+    border-color: transparent;
+    box-shadow: var(--glass-sheet);
   }
 
   @media (prefers-reduced-transparency: reduce) {
-    .glass-blur,
-    .glass-card {
-      backdrop-filter: none;
-      -webkit-backdrop-filter: none;
-    }
-
-    .glass-nest {
-      background-color: #02122d;
-    }
-
-    .glass-rail {
-      --glass-bar-top: transparent;
-      --glass-bar-bottom: transparent;
-      background-color: var(--glass-bar-fill-solid);
-      background-image: none;
-    }
-
+    .glass-rail,
     .glass-panel,
     .glass-card,
     .glass-tile {
+      backdrop-filter: none;
+      -webkit-backdrop-filter: none;
       background-color: var(--glass-fill-solid);
-      background-image: none;
+    }
+
+    .glass-nest {
+      background-color: rgb(0 0 0 / 0.45);
     }
   }
 
   @media (hover: hover) and (pointer: fine) {
     .btn-primary:hover {
-      background-color: var(--color-paper);
+      background-color: rgb(255 255 255 / 0.88);
     }
 
     .btn-nav:hover,
     .btn-icon:hover {
-      background-color: var(--color-ice);
-      color: var(--color-ink);
+      background-color: rgb(0 0 0 / 0.2);
+      color: #fff;
+    }
+
+    .btn-nav.is-nav-active:hover {
+      background-color: rgb(255 255 255 / 0.88);
+      color: #000;
     }
 
     .carousel-dot:hover .carousel-dot-pip {
-      border-color: var(--color-ice);
-      background-color: color-mix(in srgb, var(--color-ice) 35%, transparent);
+      background-color: rgb(255 255 255 / 0.4);
+      border-color: transparent;
     }
   }
 
@@ -604,10 +556,11 @@
   z-index: 70;
   padding: 0.65rem 1rem;
   background-color: var(--color-ice);
-  color: var(--color-ink);
+  background-color: #fff;
+  color: #000;
   font-size: 0.875rem;
-  font-weight: 500;
-  border-radius: var(--control-radius);
+  font-weight: 700;
+  border-radius: var(--glass-nest-radius);
 }
 
 .skip-link:focus {
@@ -692,11 +645,13 @@
 /* A scrim, not a pane. There is deliberately no `backdrop-filter` here: the
    blur box has hard edges, and blurring a smooth plume leaves a tonal step at
    those edges, so the veil rendered as a visible rectangle. The feathered
-   radial keeps the contrast the blanket blur used to buy. */
+   radial keeps the contrast the blanket blur used to buy. The inset is wide on
+   purpose: the plume is brightest behind the hero, and the fade has to land
+   outside the glyphs, not across them. */
 .copy-veil::before {
   content: "";
   position: absolute;
-  inset: -1.75rem -2.25rem;
+  inset: -2.5rem -3rem;
   z-index: -1;
   background: radial-gradient(
     ellipse 96% 88% at 34% 44%,

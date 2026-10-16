@@ -131,7 +131,7 @@ const HeroSection = ({ projects = [] }) => {
             <span className="headline-accent">Working Software</span>
           </h1>
 
-          <p data-intro className="max-w-md text-lg leading-relaxed text-fog">
+          <p data-intro className="max-w-md text-lg leading-relaxed text-white/60">
             Agustin Ciucani. Full-stack developer in Buenos Aires. I ship
             React and Next.js products people can actually use.
           </p>
@@ -157,11 +157,6 @@ const HeroSection = ({ projects = [] }) => {
             onFocus={() => setIsHoverPaused(true)}
             onBlur={handleCardBlur}
           >
-            <div
-              className="glass-noise pointer-events-none absolute inset-0 z-[1] opacity-25"
-              aria-hidden="true"
-            />
-
             {active.imgSrc ? (
               <div className="relative aspect-video overflow-hidden bg-deep">
                 <Image
@@ -182,10 +177,10 @@ const HeroSection = ({ projects = [] }) => {
 
             <div className="relative p-5 sm:p-6">
               <div className="flex items-center justify-between gap-3">
-                <p className="font-mono text-[0.65rem] uppercase tracking-[0.18em] text-fog">
+                <p className="font-mono text-[0.65rem] uppercase tracking-[0.18em] text-white/60">
                   Live from GitHub
                 </p>
-                <Icon name="github" size={18} className="text-fog" />
+                <Icon name="github" size={18} className="text-white/60" />
               </div>
 
               <div
@@ -211,7 +206,7 @@ const HeroSection = ({ projects = [] }) => {
                     href={active.repoLink}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="group/repo focus-ring inline-flex items-start gap-1.5 rounded-sm font-heading text-xl text-paper hover:text-ice sm:text-2xl"
+                    className="group/repo focus-ring inline-flex items-start gap-1.5 rounded-sm font-heading text-xl text-white hover:text-white/70 sm:text-2xl"
                   >
                     {active.title}
                     <Icon
@@ -220,12 +215,12 @@ const HeroSection = ({ projects = [] }) => {
                       className="mt-1 shrink-0 opacity-0 transition-transform duration-200 ease-out group-hover/repo:translate-x-0.5 group-hover/repo:opacity-100"
                     />
                   </a>
-                  <p className="mt-2 line-clamp-3 text-sm leading-relaxed text-fog">
+                  <p className="mt-2 line-clamp-3 text-sm leading-relaxed text-white/60">
                     {active.outcome ?? active.description}
                   </p>
                 </div>
 
-                <div className="mt-5 flex flex-col gap-3 border-t border-mist/60 pt-4">
+                <div className="mt-5 flex flex-col gap-3 border-t border-white/20 pt-4">
                   <div
                     className="glass-nest inline-flex flex-wrap items-center gap-1 p-1"
                     role="group"
@@ -300,7 +295,7 @@ const HeroSection = ({ projects = [] }) => {
                     href={`https://github.com/${GITHUB_USERNAME}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="link-underline focus-ring inline-flex items-center gap-1.5 rounded-sm text-sm text-fog hover:text-paper"
+                    className="link-underline focus-ring inline-flex items-center gap-1.5 rounded-sm text-sm text-white/60 hover:text-white"
                   >
                     github.com/{GITHUB_USERNAME}
                     <span className="sr-only"> (opens in a new tab)</span>
