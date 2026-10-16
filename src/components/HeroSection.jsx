@@ -151,7 +151,7 @@ const HeroSection = ({ projects = [] }) => {
 
         <div data-intro className="lg:col-span-5 lg:col-start-8">
           <div
-            className="glass-card overflow-hidden rounded-sm"
+            className="glass-card overflow-hidden"
             onMouseEnter={() => setIsHoverPaused(true)}
             onMouseLeave={() => setIsHoverPaused(false)}
             onFocus={() => setIsHoverPaused(true)}
