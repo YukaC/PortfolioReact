@@ -227,7 +227,7 @@ const HeroSection = ({ projects = [] }) => {
 
                 <div className="mt-5 flex flex-col gap-3 border-t border-mist/60 pt-4">
                   <div
-                    className="flex flex-wrap items-center gap-1"
+                    className="glass-nest inline-flex flex-wrap items-center gap-1 p-1"
                     role="group"
                     aria-label="Featured project controls"
                   >

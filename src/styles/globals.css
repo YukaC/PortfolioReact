@@ -169,9 +169,16 @@
   --glass-bar-top: color-mix(in srgb, #062240 74%, transparent);
   --glass-bar-bottom: color-mix(in srgb, #083a72 66%, transparent);
   --glass-bar-edge: color-mix(in srgb, var(--color-ice) 46%, transparent);
-  --glass-blur: 20px;
+  --glass-blur: 24px;
   --glass-bar-blur: 14px;
   --glass-saturate: 140%;
+
+  /* Nested pane — glass inside glass, for the segmented controls and the
+     action rows of the reference. It goes deeper, not lighter: a `black/20`
+     nest over the plume drops 12–14px text under AA (measured). */
+  --glass-nest: color-mix(in srgb, #02122d 46%, transparent);
+  --glass-nest-edge: color-mix(in srgb, white 12%, transparent);
+  --glass-nest-radius: 0.5rem;
 
   /* One radius scale: surfaces 12px, controls 8px, full-bleed rails square.
      One control height, so every button in the bar is the same box. */
@@ -278,6 +285,39 @@
   .glass-card {
     backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
     -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  }
+
+  /* Nested pane: the track that holds a group of controls, and the pill that
+     marks the live one. The active pill is a solid fill — the reference's
+     weekly/monthly tabs, in Bocanada ice. */
+  .glass-nest {
+    border: 1px solid var(--glass-nest-edge);
+    border-radius: var(--glass-nest-radius);
+    background-color: var(--glass-nest);
+    background-image: none;
+  }
+
+  .glass-nest-item {
+    border-radius: calc(var(--glass-nest-radius) - 0.125rem);
+    transition:
+      background-color 160ms cubic-bezier(0.23, 1, 0.32, 1),
+      color 160ms cubic-bezier(0.23, 1, 0.32, 1);
+  }
+
+  a.glass-nest-item.is-nav-active,
+  .glass-nest-item[aria-current="true"] {
+    background-color: var(--color-ice);
+    color: var(--color-ink);
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    a.glass-nest-item:hover {
+      background-color: color-mix(in srgb, var(--color-ice) 22%, transparent);
+    }
+
+    a.glass-nest-item.is-nav-active:hover {
+      background-color: var(--color-paper);
+    }
   }
 
   /* Live glass — the edge answers pointer and keyboard, no layout change */
@@ -449,6 +489,10 @@
     .glass-card {
       backdrop-filter: none;
       -webkit-backdrop-filter: none;
+    }
+
+    .glass-nest {
+      background-color: #02122d;
     }
 
     .glass-rail {

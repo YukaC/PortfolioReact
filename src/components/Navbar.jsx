@@ -56,10 +56,10 @@ const NavLinks = ({ scrollToSection, isMobile = false }) => (
         onClick={(e) => scrollToSection(e, link.href)}
         data-nav-href={link.href}
         data-menu-item={isMobile ? "" : undefined}
-        className={`inline-block text-fog hover:text-paper link-underline focus-ring ${
+        className={`focus-ring ${
           isMobile
-            ? "py-4 font-heading text-3xl tracking-[0.01em]"
-            : "text-sm"
+            ? "link-underline inline-block py-4 font-heading text-3xl tracking-[0.01em] text-fog hover:text-paper"
+            : "glass-nest-item inline-block px-3.5 py-1.5 text-sm text-fog hover:text-paper"
         }`}
         {...(isMobile && { role: "menuitem" })}
       >
@@ -265,8 +265,10 @@ const Navbar = () => {
           >
             <SiteLogo priority showStroke className="h-8 w-auto md:h-9" />
           </Link>
-          <div className="hidden items-center gap-8 md:flex">
-            <NavLinks scrollToSection={scrollToSection} />
+          <div className="hidden items-center gap-3 md:flex">
+            <div className="glass-nest flex items-center gap-1 p-1">
+              <NavLinks scrollToSection={scrollToSection} />
+            </div>
             <ContactButton scrollToSection={scrollToSection} />
           </div>
 
