@@ -23,6 +23,13 @@
   rectangle behind the hero headline. Section hairlines are gone.
 - The mobile drawer stays near-opaque on purpose: at glass translucency the
   hero's own copy sat behind the menu's own links.
+- The 1:1 tint cost real legibility, so contrast was bought back without
+  touching the frost: the neutral tint went black/20 to black/30, the top wash
+  from .08 to .05, and the muted text floor from white/60 to white/75. Worst
+  case-pixel AA failures fell from 38/68 to 13/68 at 1440px and from 39/62 to
+  3/62 at 390px, and the lowest p95 under real body copy rose from 3.11 to
+  4.77. On a phone the plume is proportionally denser behind the panels, so
+  under 640px the tint steps to black/42.
 
 ### Changed
 

@@ -104,3 +104,33 @@ Fallbacks: `prefers-reduced-transparency` (relleno sólido) y
 - **Resultado**: ninguna autoridad creada; nada que abandonar ni reparar.
   Bloqueado esperando decisión del user sobre el alcance del review (ver
   reporte). Sin cambios de código en este tramo.
+
+## Contraste comprado de vuelta (decisión tomada)
+
+Tras el pass 1:1 el p95 real del cuerpo había caído a 3.1–3.9. Se recuperó **sin
+tocar el frost** (el grano, el blur y el highlight quedan como estaban), moviendo
+solo parámetros del sistema:
+
+| parámetro | antes | después |
+|---|---|---|
+| `--glass-tint` | black/20 | black/30 (y black/42 bajo 640px) |
+| `--glass-wash` | .08 | .05 |
+| texto muted | white/60 | white/75 |
+
+| medición | antes | después |
+|---|---|---|
+| fallas AA al peor píxel @1440 | 38/68 | **13/68** |
+| fallas AA al peor píxel @390 | 39/62 | **3/62** |
+| p95 más bajo en cuerpo @1440 | 3.11 | **4.77** |
+| p95 más bajo en cuerpo @390 | 3.98 | **4.78** (acento 36px: 4.08, umbral 3.0 ✓) |
+
+Los 13 restantes a 1440 tienen **p95 entre 4.77 y 7.52**: el fondo real bajo las
+letras pasa AA; solo caen píxeles sueltos del peor caso, criterio más estricto que
+WCAG y que además excluye el `text-shadow` del sitio.
+
+Decisión de review: se deja RDD **activo**, sin tocar el switch y sin mergear nada
+por cuenta propia (merge/push son decisión del user). El review queda bloqueado por
+alcance: el candidato que el proveedor calcula es `main..HEAD` (22 commits,
++6265/−971) y excede su presupuesto de contexto; declarar la rebanada con `baseRef`
+cae en el error de ruteo graph-v1. Se desbloquea cuando la rama aterrice en
+rebanadas.

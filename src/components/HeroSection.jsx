@@ -131,7 +131,7 @@ const HeroSection = ({ projects = [] }) => {
             <span className="headline-accent">Working Software</span>
           </h1>
 
-          <p data-intro className="max-w-md text-lg leading-relaxed text-white/60">
+          <p data-intro className="max-w-md text-lg leading-relaxed text-white/75">
             Agustin Ciucani. Full-stack developer in Buenos Aires. I ship
             React and Next.js products people can actually use.
           </p>
@@ -177,10 +177,10 @@ const HeroSection = ({ projects = [] }) => {
 
             <div className="relative p-5 sm:p-6">
               <div className="flex items-center justify-between gap-3">
-                <p className="font-mono text-[0.65rem] uppercase tracking-[0.18em] text-white/60">
+                <p className="font-mono text-[0.65rem] uppercase tracking-[0.18em] text-white/75">
                   Live from GitHub
                 </p>
-                <Icon name="github" size={18} className="text-white/60" />
+                <Icon name="github" size={18} className="text-white/75" />
               </div>
 
               <div
@@ -215,7 +215,7 @@ const HeroSection = ({ projects = [] }) => {
                       className="mt-1 shrink-0 opacity-0 transition-transform duration-200 ease-out group-hover/repo:translate-x-0.5 group-hover/repo:opacity-100"
                     />
                   </a>
-                  <p className="mt-2 line-clamp-3 text-sm leading-relaxed text-white/60">
+                  <p className="mt-2 line-clamp-3 text-sm leading-relaxed text-white/75">
                     {active.outcome ?? active.description}
                   </p>
                 </div>
@@ -295,7 +295,7 @@ const HeroSection = ({ projects = [] }) => {
                     href={`https://github.com/${GITHUB_USERNAME}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="link-underline focus-ring inline-flex items-center gap-1.5 rounded-sm text-sm text-white/60 hover:text-white"
+                    className="link-underline focus-ring inline-flex items-center gap-1.5 rounded-sm text-sm text-white/75 hover:text-white"
                   >
                     github.com/{GITHUB_USERNAME}
                     <span className="sr-only"> (opens in a new tab)</span>

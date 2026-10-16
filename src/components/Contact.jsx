@@ -16,7 +16,7 @@ const Contact = () => (
           <h2 id="contact-heading" className="max-w-[14ch]">
             Tell me what you are building.
           </h2>
-          <p className="mt-5 max-w-md text-base leading-8 text-white/60">
+          <p className="mt-5 max-w-md text-base leading-8 text-white/75">
             Freelance or full-time. Send the problem, the stack, and the
             timeline. I reply with next steps.
           </p>
