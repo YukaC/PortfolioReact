@@ -101,7 +101,7 @@ const ProfileCard = () => {
         onPointerLeave={handlePointerLeave}
       >
         <div className="profile-card-inner">
-          <div className="profile-face flex flex-col items-center gap-5 p-6 text-center sm:p-7">
+          <div className="profile-face flex flex-col items-center gap-4 p-5 text-center sm:p-6">
             <Image
               src="/profile-hero.webp"
               alt={`${SITE_NAME} profile photo`}
@@ -112,7 +112,7 @@ const ProfileCard = () => {
               placeholder="blur"
               blurDataURL={PROFILE_BLUR}
               sizes="128px"
-              className="profile-avatar h-28 w-28 rounded-full object-cover"
+              className="profile-avatar h-24 w-24 rounded-full object-cover"
             />
 
             <div className="flex flex-col items-center gap-1">
@@ -158,7 +158,7 @@ const ProfileCard = () => {
             <button
               type="button"
               tabIndex={isFlipped ? -1 : 0}
-              className="btn-icon focus-ring"
+              className="btn-icon focus-ring absolute right-3 top-3"
               onClick={handleFlip}
               aria-pressed={isFlipped}
               aria-label="Show the stack"
@@ -168,7 +168,7 @@ const ProfileCard = () => {
           </div>
 
           <div
-            className="profile-face profile-face-back flex flex-col items-center gap-5 p-6 text-center sm:p-7"
+            className="profile-face profile-face-back flex flex-col items-center gap-4 p-5 text-center sm:p-6"
             aria-hidden={isFlipped ? undefined : "true"}
           >
             <p className="font-mono text-[0.65rem] uppercase tracking-[0.18em] text-white/75">
