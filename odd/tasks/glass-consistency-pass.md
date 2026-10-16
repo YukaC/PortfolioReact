@@ -31,12 +31,12 @@ sin cambios en el repo); lo retoma esta sesión.
 
 | ID | Spec | Task | Route | Commit |
 |----|------|------|-------|--------|
-| T1 | S1 | HeroSection: columna de texto en `.glass-card glass-live` (p-5/sm:p-6, gap-6), fuera `copy-veil` del hero (la clase queda para el header de work) | inline | — |
-| T2 | S2 | ProjectsGrid: `md:auto-rows-fr` en el ul (alturas iguales) + `Reveal className="h-full"` + tile huérfana (índice par/impar) con `md:col-span-2` | inline | — |
-| T3 | S3 | Footer: `.glass-rail glass-rail-top` → `.glass-card glass-live` dentro de site-shell (p-6/md:p-8); remover `.glass-rail-top` de globals.css (huérfano); beam y wordmark intactos | inline | — |
-| T4 | S1-S3 | Docs: línea del footer en AGENTS.md (faro local) | inline | — |
-| T5 | S1-S3 | Verificar: lint, build, harness CDP 17/17 + checks nuevos (copy card misma receta computada, tiles alturas iguales, huérfana full-width, footer card) | inline | — |
-| T6 | S5 | Commit work-unit + mirror + memoria | inline | — |
+| T1 | S1 | HeroSection: columna de texto en `.glass-card glass-live` (p-5/sm:p-6, gap-6), fuera `copy-veil` del hero (la clase queda para el header de work) | inline | `c19326b` |
+| T2 | S2 | ProjectsGrid: `md:auto-rows-fr` en el ul (alturas iguales) + `Reveal className="h-full"` + tile huérfana (índice par/impar) con `md:col-span-2` | inline | `c19326b` |
+| T3 | S3 | Footer: `.glass-rail glass-rail-top` → `.glass-card glass-live` dentro de site-shell (p-6/md:p-8); remover `.glass-rail-top` de globals.css (huérfano); beam y wordmark intactos | inline | `c19326b` |
+| T4 | S1-S3 | Docs: línea del footer en AGENTS.md (faro local) | inline | `c19326b` |
+| T5 | S1-S3 | Verificar: lint ✓, build ✓, harness CDP 17/17 ✓ + consistency 9/9 ✓ (dos .glass-card 24px/1px idénticas en hero, footer card radius 24px con trigger+wordmark intactos, grid 5 cápsulas filas [2,2,1] alturas iguales 989px, huérfana 1280px full row, consola limpia) | inline | `c19326b` |
+| T6 | S5 | Commit work-unit + mirror + memoria | inline | docs commit |
 
 Route: inline en toda la pasada (writer gentle-ai-worker inutilizable desde
 esta sesión: gate de lanzamiento + bootstrap requiere repo root del proyecto
@@ -49,3 +49,5 @@ de sesión; verificado dos veces en hero-profile-card).
 - **L3** — S4/S5: análisis request-logs-2026-10-16.json (445 reqs, ~485 MB;
   sesión flash devoradora; 429 en sesión glm-5.3 actual) y orden de terminar
   el trabajo cancelado de opencode (repo sin cambios).
+- **L4** — Evidencia (2026-10-16): work-unit `c19326b` (76+/22−). Verificado
+  17/17 + 9/9. Screenshots: /tmp/hero-shots/consistency-{hero,grid,footer}-1440.png.

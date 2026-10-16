@@ -81,3 +81,8 @@ test determinista disponible).
   medio descentrado verticalmente". Diagnóstico probable: grid con
   `content-start` (align-content top) + card ~500px alta → fila pegada arriba
   con hueco grande abajo. Fix en T7.
+- **L3-evidencia** (2026-10-16): medición CDP confirmó: card 440px,
+  contenido top-packed (hueco sup 96 vs inf ~300). Fix `797d81a`: card
+  340px (avatar 96px), `lg:content-center` → 1440x900 contentTop 288 /
+  bottomGap 272 (balanceado); hero 390 entra exacto en 100dvh (antes +100px
+  de overflow). Re-verificado: harness CDP 17/17, validate:bebop ✓, lint ✓.
