@@ -121,5 +121,8 @@ scripts/bebop-source-frames/
 # Local AI runtime state
 .atl/
 
+# design-taste-frontend inspector output (screenshots + report)
+.taste-skill/
+
 # Completed ODD task archive
 odd/tasks/archive/
