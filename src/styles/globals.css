@@ -157,19 +157,27 @@
 :root {
   --glass-tint-top: color-mix(in srgb, #071426 80%, transparent);
   --glass-tint-bottom: color-mix(in srgb, #062a5e 74%, transparent);
-  --glass-edge: color-mix(in srgb, var(--color-ice) 34%, white 10%);
-  --glass-edge-strong: color-mix(in srgb, var(--color-ice) 62%, white 16%);
-  --glass-sheen: rgba(255, 255, 255, 0.45);
+  /* The ice reads from the edge and the frost, not from a lighter fill: a
+     lighter fill spends the AA margin the dark cobalt buys. */
+  --glass-edge: color-mix(in srgb, var(--color-ice) 58%, white 20%);
+  --glass-edge-strong: color-mix(in srgb, var(--color-ice) 84%, white 26%);
+  --glass-sheen: color-mix(in srgb, var(--color-ice) 60%, white 40%);
+  --glass-frost: inset 0 14px 26px -20px rgba(198, 228, 255, 0.34);
   --glass-lift: 0 24px 60px -24px rgba(2, 18, 45, 0.72);
   --glass-lift-tile: 0 18px 44px -28px rgba(2, 18, 45, 0.62);
   --glass-inset: inset 0 1px 0 rgba(255, 255, 255, 0.18);
   --glass-bar-top: color-mix(in srgb, #062240 74%, transparent);
   --glass-bar-bottom: color-mix(in srgb, #083a72 66%, transparent);
-  --glass-bar-edge: color-mix(in srgb, var(--color-ice) 30%, transparent);
+  --glass-bar-edge: color-mix(in srgb, var(--color-ice) 46%, transparent);
   --glass-blur: 20px;
   --glass-bar-blur: 14px;
   --glass-saturate: 140%;
-  --glass-radius: 0.125rem;
+
+  /* One radius scale: surfaces 12px, controls 8px, full-bleed rails square.
+     One control height, so every button in the bar is the same box. */
+  --glass-radius: 0.75rem;
+  --control-radius: 0.5rem;
+  --control-h: 2.75rem;
 
   /* Solid fill for the reduced-transparency and no-backdrop-filter fallbacks */
   --glass-fill-solid: #0b1a33;
@@ -201,7 +209,7 @@
       var(--glass-tint-top),
       var(--glass-tint-bottom)
     );
-    box-shadow: var(--glass-lift), var(--glass-inset);
+    box-shadow: var(--glass-lift), var(--glass-frost), var(--glass-inset);
   }
 
   /* Top sheen — light catching the glass edge */
@@ -319,7 +327,8 @@
     font-weight: 500;
     letter-spacing: -0.01em;
     white-space: nowrap;
-    border-radius: 0.125rem;
+    min-height: var(--control-h);
+    border-radius: var(--control-radius);
     transition:
       background-color 160ms cubic-bezier(0.23, 1, 0.32, 1),
       color 160ms cubic-bezier(0.23, 1, 0.32, 1),
@@ -334,14 +343,15 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    padding: 0.45rem 0.9rem;
+    padding: 0.45rem 1.05rem;
     font-size: 0.875rem;
     font-weight: 500;
     letter-spacing: -0.01em;
     white-space: nowrap;
+    min-height: var(--control-h);
     color: var(--color-paper);
     border: 1px solid color-mix(in srgb, var(--color-ice) 40%, transparent);
-    border-radius: 0.125rem;
+    border-radius: var(--control-radius);
     transition:
       background-color 160ms cubic-bezier(0.23, 1, 0.32, 1),
       color 160ms cubic-bezier(0.23, 1, 0.32, 1),
@@ -382,7 +392,7 @@
     height: 2.75rem;
     color: var(--color-paper);
     border: 1px solid color-mix(in srgb, var(--color-ice) 40%, transparent);
-    border-radius: 0.125rem;
+    border-radius: var(--control-radius);
     background-color: color-mix(in srgb, var(--color-ink) 35%, transparent);
     transition:
       background-color 160ms cubic-bezier(0.23, 1, 0.32, 1),
@@ -411,7 +421,7 @@
     justify-content: center;
     width: 2.75rem;
     height: 2.75rem;
-    border-radius: 0.125rem;
+    border-radius: var(--control-radius);
     background: transparent;
   }
 
@@ -419,7 +429,7 @@
     display: block;
     width: 0.5rem;
     height: 0.5rem;
-    border-radius: 0.125rem;
+    border-radius: 999px;
     border: 1px solid color-mix(in srgb, var(--color-ice) 40%, transparent);
     background-color: transparent;
     transition:
@@ -553,7 +563,7 @@
   color: var(--color-ink);
   font-size: 0.875rem;
   font-weight: 500;
-  border-radius: 0.125rem;
+  border-radius: var(--control-radius);
 }
 
 .skip-link:focus {
