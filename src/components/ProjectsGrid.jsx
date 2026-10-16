@@ -25,22 +25,27 @@ function splitFeaturedProjects(projects) {
   return { featuredProject, remainingProjects };
 }
 
-const ProjectMedia = memo(({ imgSrc, alt, sizes }) => {
+const ProjectMedia = memo(({ imgSrc, alt, sizes, stretch = false }) => {
+  // `stretch` lets the featured card's media fill a column the copy column
+  // sizes; tiles keep the 16:9 frame and take it everywhere.
+  const frame = `relative overflow-hidden bg-deep ${
+    stretch ? "aspect-video lg:aspect-auto lg:h-full" : "aspect-video"
+  }`;
+
   if (imgSrc) {
     return (
-      <div className="overflow-hidden rounded-sm border border-mist/60 bg-deep">
-        <div data-card-media className="origin-center">
+      <div className={frame}>
+        <div data-card-media className="absolute inset-0 origin-center">
           <Image
             src={imgSrc}
             alt={alt}
-            width={1280}
-            height={720}
+            fill
             quality={70}
             loading="lazy"
             sizes={sizes}
             placeholder="blur"
             blurDataURL={PROJECT_BLUR}
-            className="aspect-video w-full scale-110 object-cover"
+            className="scale-110 object-cover"
           />
         </div>
       </div>
@@ -48,14 +53,8 @@ const ProjectMedia = memo(({ imgSrc, alt, sizes }) => {
   }
 
   return (
-    <div
-      className="overflow-hidden rounded-sm border border-mist/60 bg-deep"
-      aria-hidden="true"
-    >
-      <div
-        data-card-media
-        className="aspect-video w-full origin-center bg-mist/80"
-      />
+    <div className={`${frame} bg-mist/80`} aria-hidden="true">
+      <div data-card-media className="absolute inset-0 origin-center" />
     </div>
   );
 });
@@ -171,7 +170,7 @@ const FeaturedProjectCard = memo((project) => {
       href={project.repoLink}
       target="_blank"
       rel="noopener noreferrer"
-      className="group focus-ring grid grid-cols-1 items-center gap-6 rounded-sm lg:grid-cols-12 lg:gap-x-12 xl:gap-x-16"
+      className="group glass-panel glass-live focus-ring grid grid-cols-1 overflow-hidden lg:grid-cols-12"
       aria-label={`${project.title}, GitHub repository, opens in a new tab`}
     >
       <div className="lg:col-span-7">
@@ -179,9 +178,10 @@ const FeaturedProjectCard = memo((project) => {
           imgSrc={project.imgSrc}
           alt=""
           sizes="(max-width: 1024px) 100vw, 58vw"
+          stretch
         />
       </div>
-      <div className="copy-veil flex flex-col justify-center lg:col-span-5">
+      <div className="flex flex-col justify-center p-6 md:p-8 lg:col-span-5 lg:p-10">
         <ProjectCopy {...project} />
       </div>
     </a>
@@ -200,7 +200,7 @@ const ProjectTile = memo((project) => {
       href={project.repoLink}
       target="_blank"
       rel="noopener noreferrer"
-      className="group focus-ring flex flex-col gap-5 rounded-sm"
+      className="group glass-tile glass-live focus-ring flex h-full flex-col overflow-hidden"
       aria-label={`${project.title}, GitHub repository, opens in a new tab`}
     >
       <ProjectMedia
@@ -208,7 +208,7 @@ const ProjectTile = memo((project) => {
         alt=""
         sizes="(max-width: 768px) 100vw, 42vw"
       />
-      <div className="copy-veil flex flex-col">
+      <div className="flex flex-col p-5 md:p-6">
         <ProjectCopy {...project} />
       </div>
     </a>
