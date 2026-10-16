@@ -51,7 +51,8 @@ con la foto de perfil nueva del user.
 | T3 | S1 | Hero: montar ProfileCard en la columna derecha, remover carrusel y prop `projects` (HeroSection + index.jsx) | inline* | `dac6389` |
 | T4 | S1 | Docs: README (párrafo GitHub card del visual system) + línea faro AGENTS.md | inline* | `dac6389` |
 | T5 | S1 | Verificación: `check:lint` ✓, `build` ✓ (18.4s), `validate:bebop` ✓ (25 shots); browser CDP crudo 17/17 checks (spotlight, tilt ≤6°, flip a11y, reduced motion, 1440/768/390, consola limpia) + screenshots en /tmp/hero-shots | inline* | `dac6389` |
-| T6 | S1 | Cierre: work-unit commit, evidencia en doc, mirror Engram, memoria | inline | docs commit |
+| T6 | S1 | Cierre: work-unit commit, evidencia en doc, mirror Engram, memoria | inline | `c2de9a4` |
+| T7 | S1 + L3 | Re-balance hero: centrar fila verticalmente en lg (`content-center`) y compactar la card (avatar/gaps/padding/flip corner); re-medir geometría + harness | inline (writer inutilizable: bootstrap requiere repo root del proyecto de sesión) | `797d81a` |
 
 Forecast: ~300 authored lines → un solo work-unit commit. Rama activa:
 `feat/agency-rebrand`.
@@ -76,3 +77,7 @@ test determinista disponible).
   smoke trivial que no toca el sitio). Cobertura real vía harness CDP crudo
   (Node WebSocket + Chromium 1243 headless): 17/17 checks en /tmp/hero-cdp.mjs.
   AGENTS.md (faro) editado local: está gitignored, no entra al commit.
+- **L3** — Corrección del user (2026-10-16): "quedó medio alto todo el hero no?
+  medio descentrado verticalmente". Diagnóstico probable: grid con
+  `content-start` (align-content top) + card ~500px alta → fila pegada arriba
+  con hueco grande abajo. Fix en T7.

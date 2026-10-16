@@ -44,8 +44,8 @@ const Footer = () => {
 
       <div className="footer-beam" aria-hidden="true" />
 
-      <div className="glass-rail glass-rail-top relative">
-        <div className="site-shell py-8 md:py-10">
+      <div className="site-shell relative">
+        <div className="glass-card glass-live p-6 md:p-8">
           <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
             <SiteLogo className="h-8 w-auto opacity-80" />
 
