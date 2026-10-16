@@ -7,8 +7,8 @@ const Experience = () => (
     id="about"
     aria-labelledby="about-heading"
   >
-    <div className="site-shell grid grid-cols-1 gap-20 lg:grid-cols-12 lg:gap-16">
-      <Reveal className="copy-veil flex flex-col gap-8 lg:col-span-5">
+    <div className="site-shell grid grid-cols-1 gap-6 lg:grid-cols-12 lg:gap-8">
+      <Reveal className="glass-panel flex flex-col gap-8 p-6 md:p-8 lg:col-span-5 lg:p-10">
         <h2 id="about-heading">How I like to work</h2>
         <p className="max-w-md text-base leading-8 text-fog">
           I take on interfaces, dashboards, PWAs, and full-stack product work
@@ -31,7 +31,10 @@ const Experience = () => (
         </p>
       </Reveal>
 
-      <Reveal className="copy-veil lg:col-span-6 lg:col-start-7" delayMs={80}>
+      <Reveal
+        className="glass-panel p-6 md:p-8 lg:col-span-6 lg:col-start-7 lg:p-10"
+        delayMs={80}
+      >
         <h2 className="mb-8">Education</h2>
         <ol className="space-y-8" aria-label="Education timeline">
           {EDUCATION.map((item) => (
