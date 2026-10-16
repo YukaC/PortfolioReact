@@ -259,17 +259,22 @@ const ProjectsGrid = ({ projects = PINNED_FALLBACK }) => {
             </Reveal>
 
             {remainingProjects.length > 0 ? (
-              <ul className="grid grid-cols-1 gap-6 md:grid-cols-2 md:gap-8">
-                {remainingProjects.map((project) => (
-                  <li
-                    key={project.name ?? project.repoLink}
-                    className="work-card"
-                  >
-                    <Reveal>
-                      <ProjectTile {...project} />
-                    </Reveal>
-                  </li>
-                ))}
+              <ul className="grid grid-cols-1 gap-6 md:auto-rows-fr md:grid-cols-2 md:gap-8">
+                {remainingProjects.map((project, index) => {
+                  const spansRow =
+                    remainingProjects.length % 2 === 1 &&
+                    index === remainingProjects.length - 1;
+                  return (
+                    <li
+                      key={project.name ?? project.repoLink}
+                      className={`work-card${spansRow ? " md:col-span-2" : ""}`}
+                    >
+                      <Reveal className="h-full">
+                        <ProjectTile {...project} />
+                      </Reveal>
+                    </li>
+                  );
+                })}
               </ul>
             ) : null}
           </div>

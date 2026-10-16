@@ -259,13 +259,6 @@
     box-shadow: var(--glass-highlight);
   }
 
-  /* Rail with its edge at the top — the footer close books the page against
-     the nav rail. */
-  .glass-rail-top {
-    border-top: 1px solid var(--glass-edge);
-    border-bottom: 0;
-  }
-
   /* Nested pane: the reference's `bg-black/20` inside the surface, and the
      track its tabs sit in. It does not blur — only the outer card does. */
   .glass-nest {
