@@ -1,6 +1,7 @@
 import dynamic from "next/dynamic";
 import Layout from "@/components/Layout";
 import HeroSection from "@/components/HeroSection";
+import Marquee from "@/components/Marquee";
 import { fetchPinnedProjects } from "@/lib/fetch-pinned-projects";
 
 const sectionSkeleton = (minHeight) => (
@@ -40,6 +41,7 @@ export default function Index({ projects }) {
   return (
     <Layout projects={projects}>
       <HeroSection />
+      <Marquee />
       <ProjectsGrid projects={projects} />
       <Experience />
       <Contact />

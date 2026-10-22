@@ -1,4 +1,4 @@
-import { useState, useEffect, useId, useRef } from "react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
 import Link from "next/link";
 import Magnetic from "@/components/Magnetic";
 import SiteLogo from "@/components/SiteLogo";
@@ -56,11 +56,11 @@ const NavLinks = ({ scrollToSection, isMobile = false }) => (
         onClick={(e) => scrollToSection(e, link.href)}
         data-nav-href={link.href}
         data-menu-item={isMobile ? "" : undefined}
-        className={`focus-ring ${
+        className={
           isMobile
-            ? "link-underline inline-block py-4 font-heading text-3xl tracking-[0.01em] text-white/75 hover:text-white"
-            : "glass-nest-item inline-block px-3.5 py-1.5 text-sm text-white/75 hover:text-white"
-        }`}
+            ? "focus-ring block py-4 font-heading text-3xl tracking-[0.01em] text-white/75 hover:text-white"
+            : "nav-link focus-ring"
+        }
         {...(isMobile && { role: "menuitem" })}
       >
         {link.name}
@@ -76,7 +76,7 @@ const ContactButton = ({ scrollToSection, isMobile = false }) => (
       onClick={(e) => scrollToSection(e, "#contact")}
       data-nav-href="#contact"
       data-menu-item={isMobile ? "" : undefined}
-      className={`btn-nav focus-ring ${isMobile ? "mt-8 w-full py-3" : ""}`}
+      className={`nav-cta focus-ring ${isMobile ? "mt-8 w-full justify-center" : ""}`}
       {...(isMobile && { role: "menuitem" })}
     >
       Get in Touch
@@ -85,19 +85,32 @@ const ContactButton = ({ scrollToSection, isMobile = false }) => (
 );
 
 const MenuToggleIcon = ({ isOpen }) => (
-  <span className="menu-toggle" aria-hidden="true" data-open={isOpen ? "true" : "false"}>
+  <span
+    className="menu-toggle"
+    aria-hidden="true"
+    data-open={isOpen ? "true" : "false"}
+  >
     <span className="menu-toggle-bar menu-toggle-bar-top" />
     <span className="menu-toggle-bar menu-toggle-bar-bot" />
   </span>
 );
 
+/**
+ * Navbar - floating pill over the field.
+ *
+ * Transparent at rest and glass once the page moves, with a soft pill that
+ * slides under whatever link the pointer is on and returns to the section the
+ * reader is actually in.
+ */
 const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuId = useId();
   const panelRef = useRef(null);
-  const navRef = useRef(null);
-  const isMenuOpenRef = useRef(false);
-  const hasOpenedOnce = useRef(false);
+  const headerRef = useRef(null);
+  const linksRef = useRef(null);
+  const indicatorRef = useRef(null);
+  const isHoveringRef = useRef(false);
+  const activeHrefRef = useRef(null);
 
   const closeMenu = () => setIsMenuOpen(false);
 
@@ -111,9 +124,68 @@ const Navbar = () => {
     closeMenu();
   };
 
+  const placeIndicator = useCallback((anchor) => {
+    const indicator = indicatorRef.current;
+    if (!indicator) return;
+    if (!anchor) {
+      indicator.style.opacity = "0";
+      return;
+    }
+    indicator.style.width = `${anchor.offsetWidth}px`;
+    indicator.style.translate = `${anchor.offsetLeft}px 0`;
+    indicator.style.opacity = "1";
+  }, []);
+
+  const placeOnActive = useCallback(() => {
+    const links = linksRef.current;
+    placeIndicator(links?.querySelector(".nav-link.is-nav-active") ?? null);
+  }, [placeIndicator]);
+
   useEffect(() => {
-    isMenuOpenRef.current = isMenuOpen;
-  }, [isMenuOpen]);
+    const header = headerRef.current;
+    if (!header) return undefined;
+
+    registerMotion();
+
+    const syncSpy = () => {
+      syncNavSpy(document.querySelectorAll("[data-nav-href]"));
+      if (isHoveringRef.current) return;
+      const active =
+        linksRef.current?.querySelector(".nav-link.is-nav-active") ?? null;
+      const href = active?.getAttribute("data-nav-href") ?? null;
+      if (href === activeHrefRef.current) return;
+      activeHrefRef.current = href;
+      placeIndicator(active);
+    };
+
+    syncSpy();
+
+    const trigger = ScrollTrigger.create({
+      start: 0,
+      end: "max",
+      invalidateOnRefresh: true,
+      onRefresh: syncSpy,
+      onUpdate(self) {
+        header.classList.toggle("is-scrolled", self.scroll() > 24);
+        syncSpy();
+      },
+    });
+
+    ScrollTrigger.addEventListener("scrollEnd", syncSpy);
+
+    const onResize = () => placeIndicator(
+      linksRef.current?.querySelector(".nav-link.is-nav-active") ?? null,
+    );
+    window.addEventListener("resize", onResize);
+    if (document.fonts?.ready) document.fonts.ready.then(onResize);
+
+    return () => {
+      ScrollTrigger.removeEventListener("scrollEnd", syncSpy);
+      window.removeEventListener("resize", onResize);
+      trigger.kill();
+      gsap.killTweensOf(header);
+    };
+  }, [placeIndicator]);
 
   useEffect(() => {
     if (!isMenuOpen) return undefined;
@@ -140,48 +212,12 @@ const Navbar = () => {
   }, [isMenuOpen]);
 
   useEffect(() => {
-    const nav = navRef.current;
-    if (!nav) return undefined;
-
-    registerMotion();
-
-    const syncSpy = () =>
-      syncNavSpy(document.querySelectorAll("[data-nav-href]"));
-    syncSpy();
-
-    const trigger = ScrollTrigger.create({
-      start: 0,
-      end: "max",
-      invalidateOnRefresh: true,
-      onRefresh: syncSpy,
-      onUpdate(self) {
-        nav.classList.toggle("is-nav-scrolled", self.scroll() > 16);
-        syncSpy();
-      },
-    });
-
-    ScrollTrigger.addEventListener("scrollEnd", syncSpy);
-
-    return () => {
-      ScrollTrigger.removeEventListener("scrollEnd", syncSpy);
-      trigger.kill();
-      gsap.killTweensOf(nav);
-    };
-  }, []);
-
-  useEffect(() => {
     const panel = panelRef.current;
     if (!panel) return undefined;
 
     registerMotion();
     const items = panel.querySelectorAll("[data-menu-item]");
     const isReduced = prefersReducedMotion();
-
-    if (!hasOpenedOnce.current && !isMenuOpen) {
-      gsap.set(panel, { autoAlpha: 0, yPercent: -3, pointerEvents: "none" });
-      return undefined;
-    }
-    hasOpenedOnce.current = true;
 
     if (isReduced) {
       gsap.set(panel, {
@@ -251,25 +287,52 @@ const Navbar = () => {
 
   return (
     <>
-      <nav
-        ref={navRef}
-        className="site-nav glass-rail fixed inset-x-0 top-0 z-50"
-        aria-label="Main navigation"
-      >
-        <div className="site-shell flex h-16 items-center justify-between md:h-[4.5rem]">
+      <header ref={headerRef} className="site-header">
+        <div className="nav-pill">
           <Link
             href="#home"
-            className="focus-ring shrink-0 rounded-sm"
+            className="focus-ring rounded-sm"
             onClick={(e) => scrollToSection(e, "#home")}
             aria-label="Go to home section"
           >
             <SiteLogo priority showStroke className="h-8 w-auto md:h-9" />
           </Link>
-          <div className="hidden items-center gap-3 md:flex">
-            <div className="glass-nest flex items-center gap-1 p-1">
-              <NavLinks scrollToSection={scrollToSection} />
-            </div>
-            <ContactButton scrollToSection={scrollToSection} />
+
+          <div
+            className="hidden items-center md:flex"
+            onPointerLeave={() => {
+              isHoveringRef.current = false;
+              placeOnActive();
+            }}
+          >
+            <nav
+              ref={linksRef}
+              className="nav-links"
+              aria-label="Main navigation"
+              onPointerLeave={() => {
+                isHoveringRef.current = false;
+                placeOnActive();
+              }}
+            >
+              <i className="nav-ind" ref={indicatorRef} aria-hidden="true" />
+              {NAV_LINKS.map((link) => (
+                <a
+                  key={link.name}
+                  href={link.href}
+                  onClick={(e) => scrollToSection(e, link.href)}
+                  onPointerEnter={(e) => {
+                    isHoveringRef.current = true;
+                    placeIndicator(e.currentTarget);
+                  }}
+                  onFocus={(e) => placeIndicator(e.currentTarget)}
+                  data-nav-href={link.href}
+                  className="nav-link focus-ring"
+                >
+                  {link.name}
+                </a>
+              ))}
+              <ContactButton scrollToSection={scrollToSection} />
+            </nav>
           </div>
 
           <button
@@ -283,12 +346,12 @@ const Navbar = () => {
             <MenuToggleIcon isOpen={isMenuOpen} />
           </button>
         </div>
-      </nav>
+      </header>
 
       <div
         ref={panelRef}
         id={menuId}
-        className="mobile-menu-panel glass-panel fixed inset-0 z-40 md:hidden"
+        className="mobile-menu-panel fixed inset-0 z-40 md:hidden"
         role="menu"
         aria-hidden={!isMenuOpen}
       >
