@@ -222,9 +222,14 @@ const ProjectsGrid = ({ projects = PINNED_FALLBACK }) => {
   const { featuredProject, remainingProjects } =
     splitFeaturedProjects(pinnedProjects);
 
+  // The copy veil's scrim bleeds 3rem past the copy column (see
+  // .copy-veil::before in globals.css). On phones the column already ends at
+  // the shell padding, so that bleed lands past the viewport and becomes
+  // horizontal page scroll. Clip it at the section edge: the cut sits on the
+  // screen edge, where the scrim has already faded out, so it is invisible.
   return (
     <section
-      className="section-y w-full"
+      className="section-y w-full overflow-x-clip"
       id="portfolio"
       aria-labelledby="work-heading"
     >
