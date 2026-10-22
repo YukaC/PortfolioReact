@@ -12,7 +12,7 @@ const sectionSkeleton = (minHeight) => (
   />
 );
 
-const ProjectsGrid = dynamic(() => import("@/components/ProjectsGrid"), {
+const WorkList = dynamic(() => import("@/components/WorkList"), {
   ssr: true,
   loading: () => sectionSkeleton("28rem"),
 });
@@ -42,7 +42,7 @@ export default function Index({ projects }) {
     <Layout projects={projects}>
       <HeroSection />
       <Marquee />
-      <ProjectsGrid projects={projects} />
+      <WorkList projects={projects} />
       <Experience />
       <Contact />
     </Layout>
