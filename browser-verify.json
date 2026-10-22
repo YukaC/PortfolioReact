@@ -1,0 +1,29 @@
+{
+  "server": {
+    "command": "pnpm dev",
+    "port": 3000,
+    "path": "/",
+    "timeoutMs": 180000,
+    "reuse": true
+  },
+  "viewports": [
+    { "name": "desktop", "width": 1280, "height": 900 },
+    { "name": "mobile", "width": 390, "height": 844 }
+  ],
+  "pages": [
+    {
+      "path": "/",
+      "rules": [
+        { "rule": "document", "lang": "en" },
+        "h1",
+        "img-alt",
+        "anchors",
+        "console",
+        "first-tab",
+        "a11y-labels",
+        { "rule": "reduced-motion", "selector": "h1" },
+        { "rule": "no-overflow", "viewport": "all" }
+      ]
+    }
+  ]
+}

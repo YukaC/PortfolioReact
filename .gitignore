@@ -126,3 +126,6 @@ scripts/bebop-source-frames/
 
 # Completed ODD task archive
 odd/tasks/archive/
+
+# browser-verify artifacts (screenshots + report)
+.browser-verify/

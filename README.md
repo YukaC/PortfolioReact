@@ -60,7 +60,20 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 | `pnpm build`          | Create a production build           |
 | `pnpm start`          | Run the production build            |
 | `pnpm lint`           | Run ESLint                          |
+| `pnpm e2e:a11y`       | Browser check of the real site      |
 | `pnpm validate:bebop` | Validate Bebop easter egg invariants |
+
+`pnpm e2e:a11y` runs the house browser verifier (`~/.agents/scripts/browser-verify`) against
+the real site, using the rules declared in `browser-verify.json`: document metadata, a single
+`h1`, `alt` on every image, resolvable in-page anchors, no console errors, a usable first Tab
+stop, accessible names, a hero that survives `prefers-reduced-motion`, and no horizontal
+overflow. It reuses a dev server already running for this checkout, or starts one.
+
+```bash
+pnpm e2e:a11y                                      # uses browser-verify.json
+pnpm e2e:a11y -- --base-url http://localhost:3000  # reuse a specific server
+pnpm e2e:a11y -- --json --report .browser-verify/report.json
+```
 
 ## 📁 Project Structure
 
