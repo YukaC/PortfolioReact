@@ -1,47 +1,95 @@
-import Magnetic from "@/components/Magnetic";
+import { useEffect, useRef, useState } from "react";
 import Reveal from "@/components/Reveal";
-import Icon from "@/components/Icon";
+import SplitHeading from "@/components/SplitHeading";
+import SwapArrow from "@/components/SwapArrow";
 import { CONTACT_EMAIL } from "@/data/constants";
 
-const Contact = () => (
-  <Reveal
-    as="section"
-    id="contact"
-    className="w-full"
-    aria-labelledby="contact-heading"
-  >
-    <div className="site-shell section-y">
-      <div className="glass-panel grid grid-cols-1 items-center gap-6 p-6 md:p-8 lg:grid-cols-12 lg:gap-8 lg:p-10">
-        <div className="lg:col-span-6">
-          <h2 id="contact-heading" className="max-w-[14ch]">
-            Tell me what you are building.
-          </h2>
-          <p className="mt-5 max-w-md text-base leading-8 text-white/75">
-            Freelance or full-time. Send the problem, the stack, and the
-            timeline. I reply with next steps.
-          </p>
-        </div>
+const MAILTO = `mailto:${CONTACT_EMAIL}?subject=Project%20inquiry`;
 
-        <div className="lg:col-span-6 lg:col-start-7">
-          <div className="glass-nest w-fit max-w-full p-2 pl-4">
-            <Magnetic className="w-full">
-              <a
-                href={`mailto:${CONTACT_EMAIL}`}
-                className="focus-ring flex max-w-full items-center gap-2 font-heading text-[clamp(1.15rem,3.4vw,1.85rem)] font-semibold leading-tight tracking-tight text-white hover:text-white/70"
-              >
-                <span className="min-w-0 break-all">{CONTACT_EMAIL}</span>
-                <Icon
-                  name="arrow_forward"
-                  size={20}
-                  className="shrink-0 text-white/70"
-                />
-              </a>
-            </Magnetic>
+/**
+ * Contact - one address, offered plainly.
+ *
+ * The giant mail reads as the action; the copy button shadows it for readers
+ * who would rather paste than open a mail client. The confirmation is
+ * announced through a live region, not just by the label that rolls.
+ */
+const Contact = () => {
+  const [status, setStatus] = useState("idle");
+  const resetRef = useRef(0);
+
+  useEffect(() => () => window.clearTimeout(resetRef.current), []);
+
+  const copyAddress = async () => {
+    window.clearTimeout(resetRef.current);
+    try {
+      await navigator.clipboard.writeText(CONTACT_EMAIL);
+      setStatus("copied");
+    } catch {
+      setStatus("manual");
+    }
+    resetRef.current = window.setTimeout(() => setStatus("idle"), 1800);
+  };
+
+  const label =
+    status === "copied"
+      ? "Copied ✓"
+      : status === "manual"
+        ? "Select it above"
+        : "Copy address";
+
+  const announcement =
+    status === "copied"
+      ? "Address copied to the clipboard"
+      : status === "manual"
+        ? "Copy blocked. Select the address above."
+        : "";
+
+  return (
+    <section
+      id="contact"
+      className="section-y w-full"
+      aria-labelledby="contact-heading"
+    >
+      <div className="site-shell">
+        <Reveal className="eyebrow">Contact</Reveal>
+        <SplitHeading
+          as="h2"
+          id="contact-heading"
+          text="Tell me what you are building."
+          accent="building."
+          delayMs={80}
+        />
+        <Reveal as="p" className="lead" delayMs={160}>
+          Freelance or full-time. Send the problem, the stack, and the timeline.
+          I reply with next steps.
+        </Reveal>
+
+        <Reveal delayMs={220}>
+          <a className="bigmail focus-ring" href={MAILTO}>
+            <span>{CONTACT_EMAIL}</span>
+            <SwapArrow direction="d" size={28} />
+          </a>
+
+          <div className="contact-actions">
+            <button
+              id="copy-address"
+              type="button"
+              className={`btn focus-ring${status === "copied" ? " btn-ok" : ""}`}
+              onClick={copyAddress}
+            >
+              <span className="lb">
+                <span data-t={label}>{label}</span>
+              </span>
+            </button>
           </div>
-        </div>
+
+          <p className="sr-only" role="status">
+            {announcement}
+          </p>
+        </Reveal>
       </div>
-    </div>
-  </Reveal>
-);
+    </section>
+  );
+};
 
 export default Contact;

@@ -17,7 +17,7 @@ const WorkList = dynamic(() => import("@/components/WorkList"), {
   loading: () => sectionSkeleton("28rem"),
 });
 
-const Experience = dynamic(() => import("@/components/Experience"), {
+const About = dynamic(() => import("@/components/About"), {
   ssr: true,
   loading: () => sectionSkeleton("24rem"),
 });
@@ -43,7 +43,7 @@ export default function Index({ projects }) {
       <HeroSection />
       <Marquee />
       <WorkList projects={projects} />
-      <Experience />
+      <About />
       <Contact />
     </Layout>
   );
