@@ -81,7 +81,7 @@ const Layout = ({
           Skip to content
         </a>
         <AppBackground />
-        <div className="site-content relative z-10">
+        <div className="relative z-10">
           <Navbar />
           <main
             id="main-content"

@@ -253,7 +253,7 @@ const Navbar = () => {
     <>
       <nav
         ref={navRef}
-        className="site-nav glass-rail glass-blur fixed inset-x-0 top-0 z-50"
+        className="site-nav glass-rail fixed inset-x-0 top-0 z-50"
         aria-label="Main navigation"
       >
         <div className="site-shell flex h-16 items-center justify-between md:h-[4.5rem]">

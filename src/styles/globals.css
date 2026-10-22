@@ -78,17 +78,12 @@
   visibility: hidden;
   /* A full-screen menu sheet hides the page, it does not reveal it: at glass
      translucency the hero's own copy sits behind the menu's own links and the
-     two collide. Near-opaque, square, still blurred. */
-  --glass-tint: rgb(0 0 0 / 0.9);
+     two collide. Near-opaque, square, still blurred. This sheet is the one
+     surface allowed to leave the shared tint, because it is the one surface
+     whose job is to hide the field — and it takes the densest fill in the
+     system, so it is still cut from the field's ink. */
+  --glass-tint: var(--glass-fill-solid);
   border-radius: 0;
-}
-
-@media (max-width: 640px) {
-  :root {
-    /* On a phone the plume is proportionally denser behind the panels, so the
-       same tint measured a real p95 of 3.98-4.28. One parameter, same system. */
-    --glass-tint: rgb(0 0 0 / 0.42);
-  }
 }
 
 @layer base {
@@ -147,14 +142,12 @@
 
 /* ---------------------------------------------------------------------------
    Glass system tokens (Bocanada).
-   One recipe, three tiers: rail (bars), panel (large surfaces), tile (grid).
-   The tint, the ice edge and the top sheen are what read as glass — so they
-   are shared, not re-invented per component. The tint is cobalt and not
-   black, so a surface looks made of the same substance as the field, and it
-   is heavier at the top, where the field's plume is brightest, to hold AA.
-   `--glass-blur` is opt-in (`.glass-blur`): the field behind is low frequency,
-   where a 20px backdrop blur costs a full-screen backdrop read every frame
-   and shows almost nothing.
+   One recipe, four tiers: rail (bars), panel (large surfaces), card (single
+   object), tile (grid). The tint, the ice edge, the frost and the top sheen
+   are what read as glass — so they are shared, not re-invented per component.
+   The tint is neutral black at one density for every tier and every viewport:
+   the surface is glass, and the field behind it supplies the colour. The frost
+   is what keeps the field's lattice from punching through.
 --------------------------------------------------------------------------- */
 :root {
   /* Reference 1:1 — 21st.dev `glass-calendar`.
@@ -195,12 +188,10 @@
   --control-round: 9999px; /* rounded-full */
   --control-h: 2.75rem;
 
-  /* The reference's only chromatic accent: the selected day. */
-  --accent-warm: linear-gradient(to bottom right, #ec4899, #fb923c);
-
-  /* Solid fill for the reduced-transparency and no-backdrop-filter fallbacks */
-  --glass-fill-solid: rgb(0 0 0 / 0.82);
-  --glass-bar-fill-solid: rgb(0 0 0 / 0.82);
+  /* Solid fill for the reduced-transparency and no-backdrop-filter fallbacks.
+     It is the field's own ink, not black: a reader who cannot take the frost
+     still gets a surface cut from the same substance as everything else. */
+  --glass-fill-solid: rgb(2 18 45 / 0.94);
 }
 
 @layer components {
@@ -227,8 +218,11 @@
     background-color: var(--glass-tint);
     background-image: var(--glass-wash);
     box-shadow: var(--glass-lift), var(--glass-highlight);
+    /* Standard property only. Next's Lightning CSS pass collapsed the
+       `backdrop-filter` / `-webkit-backdrop-filter` pair down to the prefixed
+       declaration alone, and Chromium no longer implements the alias — every
+       panel silently lost its frost. Prefixes are left to the build. */
     backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-sat));
-    -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-sat));
   }
 
   /* Frost grain, between the tint and the text: a negative index paints above
@@ -236,8 +230,7 @@
   .glass-rail::after,
   .glass-panel::after,
   .glass-card::after,
-  .glass-tile::after,
-  .glass-nest::after {
+  .glass-tile::after {
     content: "";
     position: absolute;
     inset: 0;
@@ -260,7 +253,10 @@
   }
 
   /* Nested pane: the reference's `bg-black/20` inside the surface, and the
-     track its tabs sit in. It does not blur — only the outer card does. */
+     track its tabs sit in. It does not blur — only the outer card does — and
+     it carries no grain: the grain lifts a flat dark plate by ~14%, which ate
+     most of the recess and made small panes read as lighter plates than the
+     card they sit in. Recess comes from fill alone. */
   .glass-nest {
     position: relative;
     isolation: isolate;
@@ -268,7 +264,6 @@
     border-radius: var(--glass-nest-radius);
     background-color: var(--glass-nest);
     background-image: var(--glass-wash);
-    --glass-grain-opacity: 0.09;
   }
 
   .glass-nest-item {
@@ -280,24 +275,15 @@
   }
 
   /* The live item is a solid white pill with black text and shadow-md — the
-     reference's selected tab, exactly. */
-  a.glass-nest-item.is-nav-active,
-  .glass-nest-item[aria-current="true"] {
-    background-color: #fff;
-    color: #000;
-    font-weight: 700;
-    box-shadow: var(--glass-sheet);
-  }
+     reference's selected tab, exactly. Its color and fill live in the
+     `@layer utilities` block below: a utilities declaration always outranks
+     our components layer, and the `text-white/75` the links carry painted the
+     live label white over a white pill. */
 
   @media (hover: hover) and (pointer: fine) {
     a.glass-nest-item:hover {
       background-color: rgb(255 255 255 / 0.2);
       color: #fff;
-    }
-
-    a.glass-nest-item.is-nav-active:hover {
-      background-color: #fff;
-      color: #000;
     }
   }
 
@@ -312,15 +298,15 @@
     border-color: var(--glass-edge-strong);
   }
 
-  /* No blur support: keep the tint, lift it to a readable fill */
+  /* No frost available: the surface becomes solid field ink — the same fill a
+     reduced-transparency reader gets. One fallback, not two. */
   @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-    .glass-panel.glass-blur,
-    .glass-card {
-      background-image: linear-gradient(
-        160deg,
-        color-mix(in srgb, #071426 92%, transparent),
-        color-mix(in srgb, #062a5e 88%, transparent)
-      );
+    .glass-rail,
+    .glass-panel,
+    .glass-card,
+    .glass-tile {
+      background-image: none;
+      background-color: var(--glass-fill-solid);
     }
   }
 
@@ -468,7 +454,6 @@
   /* Nav rail: the bar is a state machine over the shared rail tokens, so
      scrolling changes the glass density, not the recipe. */
   .site-nav.is-nav-scrolled {
-    --glass-tint: rgb(0 0 0 / 0.34);
     --glass-edge: rgb(255 255 255 / 0.16);
   }
 
@@ -511,7 +496,6 @@
     .glass-card,
     .glass-tile {
       backdrop-filter: none;
-      -webkit-backdrop-filter: none;
       background-color: var(--glass-fill-solid);
     }
 
@@ -566,6 +550,21 @@
     animation: section-flash 0.9s ease-out;
   }
 
+}
+
+/* Live-surface state that must outrank a utility color. The nav links carry
+   `text-white/75` from the utilities layer, and a utilities declaration always
+   wins over our components layer — which painted the live pill's label white
+   over its white fill. Declared here so the reference's black label survives. */
+@layer utilities {
+  a.glass-nest-item.is-nav-active,
+  .glass-nest-item[aria-current="true"],
+  a.glass-nest-item.is-nav-active:hover {
+    background-color: #fff;
+    color: #000;
+    font-weight: 700;
+    box-shadow: var(--glass-sheet);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -640,32 +639,41 @@
   outline-offset: 3px;
 }
 
-.site-content {
+/* Field text: copy that stands directly on the animated field carries a dark
+   halo, so the plume can stay bright behind it. Copy that sits on a glass
+   surface does not — the frost already owns its contrast, and a 22px halo
+   inside a panel reads as haze on every glyph. */
+.site-nav,
+.copy-veil {
   text-shadow:
     0 1px 2px rgba(2, 18, 45, 0.88),
     0 0 22px rgba(2, 18, 45, 0.55);
 }
 
-.site-content h1,
-.site-content h2,
-.site-content h3 {
+.site-nav h1,
+.site-nav h2,
+.site-nav h3,
+.copy-veil h1,
+.copy-veil h2,
+.copy-veil h3 {
   text-shadow:
     0 1px 3px rgba(2, 18, 45, 0.92),
     0 6px 32px rgba(2, 18, 45, 0.58);
 }
 
-.site-content .btn-primary,
-.site-content .btn-nav,
-.site-content .btn-nav.is-nav-active,
-.site-content .btn-icon {
+/* Curtains are solid fills: a dark halo shows around their edges. */
+.site-nav .btn-primary,
+.site-nav .btn-nav,
+.site-nav .btn-nav.is-nav-active,
+.site-nav .btn-icon {
   text-shadow: none;
 }
 
 .headline-accent {
-  color: var(--color-ice);
-  text-shadow:
-    0 1px 2px rgba(2, 18, 45, 0.62),
-    0 0 18px rgba(2, 18, 45, 0.32);
+  /* Ice, lifted toward paper for display use: at full strength the accent
+     sits at 3.6:1 on the frosted panel in a phone — the headline's emphasis
+     read weaker than its own body copy. Same hue, text-safe weight. */
+  color: color-mix(in srgb, var(--color-ice) 68%, var(--color-paper));
 }
 
 .sr-only {
@@ -765,11 +773,15 @@
   padding-block: 5.5rem;
 }
 
-.label {
-  font-size: 0.75rem;
-  font-weight: 500;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
+/* Browser surfaces belong to the palette: the caret and text selection are
+   painted by the browser unless the design claims them. */
+::selection {
+  background-color: color-mix(in srgb, var(--color-ice) 84%, transparent);
+  color: #061020;
+}
+
+body {
+  caret-color: var(--color-ice);
 }
 
 .font-heading {
