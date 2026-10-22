@@ -74,7 +74,7 @@ const Footer = () => {
             ref={setTriggerRef}
             tabIndex={0}
             role="button"
-            className="relative z-10 mt-6 max-w-fit cursor-help py-1 font-mono text-xs text-white/70 select-none touch-none transition-colors duration-200 ease-out hover:text-white/70 focus:outline-none focus-visible:text-white/70 focus-visible:ring-2 focus-visible:ring-ice"
+            className="relative z-10 mt-6 max-w-fit cursor-help py-1 font-mono text-[0.8125rem] text-white/70 select-none touch-none transition-colors duration-200 ease-out hover:text-white/70 focus:outline-none focus-visible:text-white/70 focus-visible:ring-2 focus-visible:ring-ice"
             title="Hold for 1.5 seconds..."
             aria-label="Hold for 1.5 seconds to play the easter egg"
             onMouseEnter={handleTriggerEnter}

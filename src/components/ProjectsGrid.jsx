@@ -133,7 +133,7 @@ function useProjectMediaMotion(cardRef) {
 const ProjectCopy = ({ title, problem, outcome, description, tags }) => (
   <>
     {problem ? (
-      <p className="mb-3 text-sm leading-6 text-white/75">{problem}</p>
+      <p className="mb-3 text-base leading-6 text-white/75">{problem}</p>
     ) : tags && tags.length > 0 ? (
       <p className="mb-3 text-sm leading-6 text-white/75">{tags.join(" · ")}</p>
     ) : null}

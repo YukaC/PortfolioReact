@@ -378,7 +378,8 @@
     border-radius: var(--control-round);
     background-color: var(--glass-nest);
     padding: 0.4rem 0.8rem;
-    font-size: 0.75rem;
+    /* 13px floor: nothing meant to be read goes below it. */
+    font-size: 0.8125rem;
     line-height: 1;
     color: rgb(255 255 255 / 0.85);
   }
@@ -414,7 +415,8 @@
     align-items: center;
     justify-content: center;
     padding: 0.45rem 1.05rem;
-    font-size: 0.75rem;
+    /* 13px floor: nothing meant to be read goes below it. */
+    font-size: 0.8125rem;
     font-weight: 700;
     letter-spacing: -0.01em;
     white-space: nowrap;
