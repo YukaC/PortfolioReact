@@ -5,6 +5,9 @@ import Head from "next/head";
 import AppBackground from "./AppBackground";
 import SiteJsonLd from "./SiteJsonLd";
 import { useIntroTimeline } from "@/hooks/useIntroTimeline";
+import { useFieldMotion } from "@/hooks/useFieldMotion";
+import { usePointerLight } from "@/hooks/usePointerLight";
+import { useRevealOnEnter } from "@/hooks/useRevealOnEnter";
 import { useSmoothScroll } from "@/hooks/useSmoothScroll";
 import {
   PERSON_LOCALITY,
@@ -22,6 +25,9 @@ const Layout = ({
 }) => {
   const rootRef = useRef(null);
   useSmoothScroll();
+  useFieldMotion();
+  usePointerLight();
+  useRevealOnEnter();
   useIntroTimeline(rootRef);
 
   return (
@@ -72,11 +78,14 @@ const Layout = ({
           href="/apple-touch-icon.png?v=2"
         />
         <link rel="manifest" href="/site.webmanifest" />
-        <meta name="theme-color" content="#02122d" />
+        <meta name="theme-color" content="#060b1a" />
       </Head>
       <SiteJsonLd projects={projects} />
 
-      <div ref={rootRef} className="relative min-h-[100dvh] bg-[#02122d] text-white">
+      <div ref={rootRef} className="relative min-h-[100dvh] bg-[#060b1a] text-white">
+        <div className="field-progress" aria-hidden="true">
+          <span />
+        </div>
         <a href="#main-content" className="skip-link">
           Skip to content
         </a>

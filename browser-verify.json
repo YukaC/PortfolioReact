@@ -22,7 +22,14 @@
         "first-tab",
         "a11y-labels",
         { "rule": "reduced-motion", "selector": "h1" },
-        { "rule": "no-overflow", "viewport": "all" }
+        { "rule": "no-overflow", "viewport": "all" },
+        { "rule": "visible", "selector": ".field-progress" },
+        { "rule": "count", "selector": "[data-work-tab]", "min": 5 },
+        { "rule": "count", "selector": "[data-work-row]", "min": 5 },
+        { "rule": "text", "selector": ".marquee", "contains": "Next.js" },
+        { "rule": "text", "selector": "#contact .bigmail", "contains": "@" },
+        { "rule": "text", "selector": ".footer-mark", "contains": "CIUCANI" }
+
       ]
     }
   ]

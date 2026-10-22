@@ -1,6 +1,6 @@
 import "lenis/dist/lenis.css";
 import "@/styles/globals.css";
-import { Manrope, Space_Grotesk } from "next/font/google";
+import { Fraunces, Manrope, Space_Grotesk } from "next/font/google";
 
 const manrope = Manrope({
   subsets: ["latin"],
@@ -16,9 +16,19 @@ const spaceGrotesk = Space_Grotesk({
   display: "swap",
 });
 
+/** Display serif: the italic accent that carries the emphasis in headings. */
+const fraunces = Fraunces({
+  subsets: ["latin"],
+  variable: "--font-fraunces",
+  style: ["italic"],
+  display: "swap",
+});
+
 function MyApp({ Component, pageProps }) {
   return (
-    <div className={`${manrope.variable} ${spaceGrotesk.variable} root-layout`}>
+    <div
+      className={`${manrope.variable} ${spaceGrotesk.variable} ${fraunces.variable} root-layout`}
+    >
       <Component {...pageProps} />
     </div>
   );
