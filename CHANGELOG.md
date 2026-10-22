@@ -2,7 +2,51 @@
 
 ## Unreleased
 
-### Glass system
+### Field-first redesign (glass-motion reference)
+
+- The layout, the type and the micro-interactions now follow the
+  `portfolio-glass-motion` reference: a navy field, type as the hero, and glass
+  only where a surface has a job.
+- The field is retoned, not replaced. `#060b1a` base, a cobalt
+  `.bocanada-field` gradient, three blobs whose hue follows the reading progress,
+  the WebGL smoke and the coral 48px lattice with its spring flares (both drawn
+  in the `LiquidEther` shader), the cursor light, grain, and a 2px progress bar.
+  The smoke, the dots and the flares are untouched.
+- One motion channel: `useFieldMotion` runs a single rAF loop with inertia and
+  writes `--scy`, `--p`, `--hf`, `--px/--py`, `--mx/--my` on `:root`. Every layer
+  reads from it, so nothing snaps.
+- Fraunces italic joins Manrope and Space Grotesk as the display accent
+  (`.accent`, the footer tagline, the wordmark). The composite font stacks are
+  declared on `.root-layout`, the element that carries the next/font variables.
+- The hero lost its card. Status line, headline split word by word (with a slow
+  per-word parallax), lead, two CTAs and the stack line; the right side is a
+  floating depth cluster that answers the pointer and the scroll.
+- A technology band between hero and work: two rows travelling in opposite
+  directions, their speed following the scroll velocity and the band skewing as
+  it accelerates.
+- Work is a filtered list: tabs with a sliding indicator, rows that dim their
+  siblings and light the one under the cursor, a glass preview of that project's
+  cover following the pointer, and inline thumbnails on touch.
+- About lights its statement word by word with the scroll and draws the
+  education timeline down the rail; the portrait, socials and stack chips moved
+  here. Contact offers one giant mail with a gradient underline and a copy
+  button that reports through a live region. The footer closes with three
+  columns and the surname at scale, each letter lifting as the pointer passes.
+- Reveal is CSS: one page-wide observer adds `.is-in` to every `[data-r]`, and
+  `SplitHeading` clips each word in a `.w` box. `prefers-reduced-motion` settles
+  every one of them.
+- Copy that stands on the field carries a dark halo so a bloom of the plume
+  cannot swallow it; solid fills reset it. Measured with the smoke stirred:
+  status p50 6.36 / worst 6.18, headline p50 12.99 / worst 3.79, lead p50 8.60 /
+  worst 3.21, stack line p50 7.16 / worst 1.84. Median and p95 clear AA
+  everywhere; a small fraction of the pixels under body and meta copy can still
+  dip when the reader drags a bright plume onto them, which is the trade the
+  live field asks for.
+- Removed: `ProfileCard`, `ProjectsGrid`, `Experience`, `useInView`, the four
+  glass tiers, the copy veil, the footer beam and the footer wordmark's
+  Space Grotesk recipe.
+
+### Glass system (superseded by the field-first redesign above)
 
 - Every surface over the Bocanada field — nav rail, mobile drawer, hero card,
   work cards, About, Contact, footer close — comes from one glass system in

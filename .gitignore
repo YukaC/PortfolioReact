@@ -108,6 +108,9 @@ refBebop.md
 *.original.png
 scripts/bebop-source-frames/
 
+# Python bytecode from the RA check tooling
+__pycache__/
+
 # CodeGraph local index
 .codegraph/
 
