@@ -1,12 +1,17 @@
 import Magnetic from "@/components/Magnetic";
-import ProfileCard from "@/components/ProfileCard";
+import SplitHeading from "@/components/SplitHeading";
+import SwapArrow from "@/components/SwapArrow";
 import { scrollToSectionByHash } from "@/utils/scroll-to-section";
 
+const STACK = ["React", "Next.js", "Tailwind", "Python", "PostgreSQL"];
+
 /**
- * HeroSection - practice landing hero.
+ * HeroSection - the practice statement, carried by type.
  *
- * Copy + one work CTA on the left; the profile card (photo, socials,
- * pointer spotlight, stack flip) on the right.
+ * No card: a status line, the headline split word by word, the lead, two CTAs
+ * and the stack line. The depth cluster on the right is ornament only — it
+ * answers the pointer and the scroll in layers, so the page still breathes
+ * without a panel cutting the welcome in half.
  */
 const HeroSection = () => {
   const handleCtaClick = (e, href) => {
@@ -15,40 +20,63 @@ const HeroSection = () => {
   };
 
   return (
-    <section
-      className="relative w-full min-h-[100dvh] overflow-hidden"
-      id="home"
-    >
-      <div className="site-shell grid min-h-[100dvh] grid-cols-1 content-start gap-10 pt-24 pb-16 md:gap-12 md:pb-20 lg:grid-cols-12 lg:content-center lg:items-center lg:gap-x-16">
-        <div className="glass-card glass-live flex flex-col gap-6 p-6 md:p-8 lg:col-span-7 lg:p-10">
-          <h1
-            data-intro
-            className="text-balance text-[clamp(2rem,4.4vw,3.4rem)] leading-[1.14]"
-          >
-            Turning Real Problems Into{" "}
-            <span className="headline-accent">Working Software</span>
-          </h1>
+    <section id="home" className="hero">
+      <div className="site-shell">
+        <div className="hero-copy">
+          <span className="status" data-r="">
+            <i aria-hidden="true" />
+            Open to freelance &amp; full-time
+          </span>
 
-          <p data-intro className="max-w-md text-lg leading-relaxed text-white/75">
-            Agustin Ciucani. Full-stack developer in Buenos Aires. I ship
-            React and Next.js products people can actually use.
+          <SplitHeading
+            as="h1"
+            className="hero-title"
+            text="Turning real problems into working software"
+            accent="working"
+            parallax
+            delayMs={120}
+          />
+
+          <p className="lead" data-r="" style={{ "--d": "520ms" }}>
+            Agustin Ciucani. Full-stack developer in Buenos Aires. I ship React
+            and Next.js products people can actually use.
           </p>
 
-          <div data-intro className="mt-2">
-            <Magnetic>
-              <a
-                href="#portfolio"
-                className="btn-primary focus-ring"
-                onClick={(e) => handleCtaClick(e, "#portfolio")}
-              >
-                See work
-              </a>
-            </Magnetic>
-          </div>
-        </div>
+          <div className="hero-foot">
+            <div>
+              <div className="hero-actions" data-r="" style={{ "--d": "640ms" }}>
+                <Magnetic>
+                  <a
+                    href="#portfolio"
+                    className="btn btn-solid focus-ring"
+                    onClick={(e) => handleCtaClick(e, "#portfolio")}
+                  >
+                    See work
+                    <SwapArrow direction="r" />
+                  </a>
+                </Magnetic>
+                <a
+                  href="#contact"
+                  className="btn focus-ring"
+                  onClick={(e) => handleCtaClick(e, "#contact")}
+                >
+                  Get in touch
+                </a>
+              </div>
 
-        <div data-intro className="lg:col-span-4 lg:col-start-9">
-          <ProfileCard />
+              <p className="stackline" data-r="" style={{ "--d": "760ms" }}>
+                {STACK.map((item) => (
+                  <span key={item}>{item}</span>
+                ))}
+              </p>
+            </div>
+
+            <div className="hero-ornament" aria-hidden="true">
+              <i className="orn orn-orb" style={{ "--od": "1.6" }} />
+              <i className="orn orn-ring" style={{ "--od": "-0.9" }} />
+              <i className="orn orn-spark" style={{ "--od": "2.6" }} />
+            </div>
+          </div>
         </div>
       </div>
     </section>
