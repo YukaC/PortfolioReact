@@ -84,19 +84,22 @@ PortfolioReact/
 │   │   ├── Layout.jsx
 │   │   ├── Navbar.jsx
 │   │   ├── HeroSection.jsx
-│   │   ├── ProjectsGrid.jsx
-│   │   ├── Experience.jsx
+│   │   ├── Marquee.jsx
+│   │   ├── WorkList.jsx
+│   │   ├── About.jsx
 │   │   ├── Contact.jsx
 │   │   ├── Footer.jsx
-│   │   ├── Reveal.jsx
+│   │   ├── AppBackground.jsx
+│   │   ├── LiquidEther.jsx
+│   │   ├── Reveal.jsx        # + SplitHeading, RollingLabel, SwapArrow
 │   │   ├── Icon.jsx
 │   │   ├── BebopAnimation.jsx
 │   │   ├── BebopShip.jsx
 │   │   └── bebop/            # R3F scene, ship, halftone, CSS module
 │   ├── pages/                # Next.js Pages Router
-│   ├── styles/               # globals.css (Tailwind v4 @theme)
+│   ├── styles/               # globals.css (Tailwind v4 @theme static)
 │   ├── data/                 # constants, projects, bebop-timings, bebopShip, bebopShots
-│   ├── hooks/                # useBebopAnimation, useInView
+│   ├── hooks/                # useFieldMotion, useRevealOnEnter, usePointerLight, useBebopAnimation
 │   └── utils/                # scroll-to-section
 ├── public/                   # Static assets (WebP, bebop GLTF), robots.txt, sitemap
 ├── scripts/                  # validate-bebop-timing, bebop-ship-meta
@@ -153,25 +156,34 @@ Prefer **pnpm** (`packageManager`); `npm run …` works but locks/CI use pnpm.
 
 ## Visual system
 
-Bocanada (cobalt field, coral lattice, ice accent) is the north star. Shared
-layout is `.site-shell` (max 88rem, 24/48/64px inset) and `.section-y`.
-Glass is a frosted panel (`.glass-card`), not a second theme. Hero, work,
-about, and footer share `.site-shell`. The profile card in the hero carries
-the photo, social links, a pointer-driven ice spotlight and a flip to the
-stack. Motion lives in
-`src/motion/config.js`. Task notes: `odd/tasks/agency-bocanada-pass.md`.
+Bocanada is the north star, retoned for a navy field: the smoke, the coral
+lattice and its spring flares are the only things allowed to move on their own.
+Shared layout is `.site-shell` (max 80rem, 44–128px inset) and `.section-y`
+(top padding only — sections breathe through space, not borders).
 
-Dark tokens live in `@theme` (`src/styles/globals.css`):
+One motion channel feeds every layer: `useFieldMotion` writes `--scy`, `--p`,
+`--hf`, `--px/--py` and `--mx/--my` on `:root` from a single rAF loop with
+inertia; About and Footer own `--tlp` and `--fp` through ScrollTrigger scrubs.
+Text stands directly on the field and carries a dark halo; glass (`.glass`) is
+used only where a surface has a job — the scrolled nav pill, the work preview
+and its tag. Motion presets live in `src/motion/config.js`. Task notes:
+`odd/tasks/glass-motion-rebrand.md`.
+
+Dark tokens live in `@theme static` (`src/styles/globals.css`):
 
 ```css
-@theme {
-  --color-ink: #0a0f1c;
-  --color-night: #0e1626;
-  --color-deep: #131d33;
-  --color-mist: #1b2742;
-  --color-fog: #d0dceb;
-  --color-paper: #e6ecf5;
-  --color-ice: #8fb4e8;
+@theme static {
+  --color-ink: #060b1a;
+  --color-night: #0a1226;
+  --color-deep: #0e1830;
+  --color-mist: #16233d;
+  --color-fog: #c9d6ea;
+  --color-paper: #eef2ff;
+  --color-mut: #a9b6d3;
+  --color-dim: #93a2ba;
+  --color-sky: #8fcbff;   /* ice accent */
+  --color-warm: #f3b7a1;  /* serif accent */
+  --color-coral: #e2727f; /* field lattice */
 }
 ```
 
