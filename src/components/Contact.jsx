@@ -23,7 +23,7 @@ const Contact = () => (
         </div>
 
         <div className="lg:col-span-6 lg:col-start-7">
-          <div className="glass-nest p-2 pl-4">
+          <div className="glass-nest w-fit max-w-full p-2 pl-4">
             <Magnetic className="w-full">
               <a
                 href={`mailto:${CONTACT_EMAIL}`}
