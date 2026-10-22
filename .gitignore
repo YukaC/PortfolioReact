@@ -129,3 +129,6 @@ odd/tasks/archive/
 
 # browser-verify artifacts (screenshots + report)
 .browser-verify/
+
+# Playwright MCP session artifacts (console log + page snapshot)
+.playwright-mcp/
