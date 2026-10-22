@@ -100,8 +100,7 @@ export const PROJECT_OVERRIDES = {
 /**
  * Used when the public profile scrape fails.
  * Keep in sync with current profile pins when possible.
- */
-export const PINNED_FALLBACK = [
+ */export const PINNED_FALLBACK = [
   {
     name: "PortfolioReact",
     title: "Professional Portfolio",
@@ -197,3 +196,32 @@ export const PINNED_FALLBACK = [
     isFeatured: false,
   },
 ];
+
+/** Work filters: a project joins a group when its tags or repo name match. */
+export const WORK_FILTERS = [
+  { id: "all", label: "All" },
+  { id: "react", label: "React" },
+  { id: "python", label: "Python" },
+  { id: "systems", label: "Systems" },
+  { id: "pwa", label: "PWA" },
+];
+
+const CATEGORY_MATCHERS = {
+  react: /^(react|next\.?js|typescript|javascript|node|express)$/i,
+  python: /^(python|flask|django)$/i,
+  systems: /^(c|shell|bash|linux|grub|btrfs|ext4|windows)$/i,
+  pwa: /^pwa$/i,
+};
+
+/** Groups a project belongs to, derived from its tags and repo name. */
+export function projectCategories(project) {
+  const terms = [project.name ?? "", ...(project.tags ?? [])];
+  return Object.entries(CATEGORY_MATCHERS)
+    .filter(([, matcher]) => terms.some((term) => matcher.test(term)))
+    .map(([id]) => id);
+}
+
+/** Single-letter monogram for a project with no screenshot. */
+export function projectMonogram(project) {
+  return (project.title ?? project.name ?? "?").trim().charAt(0).toUpperCase();
+}
