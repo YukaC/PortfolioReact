@@ -1,89 +1,73 @@
 @import "tailwindcss";
 
-@theme {
-  --color-ink: #0a0f1c;
-  --color-night: #0e1626;
-  --color-deep: #131d33;
-  --color-mist: #1b2742;
-  --color-fog: #d0dceb;
-  --color-paper: #e6ecf5;
-  --color-ice: #8fb4e8;
+/* ---------------------------------------------------------------------------
+   Tokens. The field is the page: a navy cobalt sky (Bocanada) that the smoke,
+   the coral lattice and its spring flares live on. Every surface here is cut
+   from that sky — there is no white plate anywhere in the system.
+--------------------------------------------------------------------------- */
+@theme static {
+  --color-ink: #060b1a;
+  --color-night: #0a1226;
+  --color-deep: #0e1830;
+  --color-mist: #16233d;
+  --color-fog: #c9d6ea;
+  --color-paper: #eef2ff;
+  --color-mut: #a9b6d3;
+  --color-dim: #93a2ba;
+  --color-sky: #8fcbff;
+  --color-warm: #f3b7a1;
+  --color-ice: #8fcbff;
+  --color-coral: #e2727f;
 
   /* Aliases so leftover utilities and Bebop-adjacent chrome still resolve */
-  --color-primary: #8fb4e8;
-  --color-secondary: #1b2742;
-  --color-bg: #0a0f1c;
-  --color-bg-main: #0a0f1c;
-  --color-bg-light: #0e1626;
-  --color-surface: #131d33;
-  --color-text: #e6ecf5;
-  --color-text-muted: #d0dceb;
-  --color-border: #1b2742;
-  --color-amber-glow: #8fb4e8;
-  --color-available: #8fb4e8;
+  --color-primary: #8fcbff;
+  --color-secondary: #16233d;
+  --color-bg: #060b1a;
+  --color-bg-main: #060b1a;
+  --color-bg-light: #0a1226;
+  --color-surface: #0e1830;
+  --color-text: #eef2ff;
+  --color-text-muted: #a9b6d3;
+  --color-border: #16233d;
+  --color-amber-glow: #8fcbff;
+  --color-available: #8fcbff;
 
   --font-display: var(--font-manrope), ui-sans-serif, system-ui, sans-serif;
   --font-heading: var(--font-space-grotesk), ui-sans-serif, system-ui, sans-serif;
+  --font-serif: var(--font-fraunces), Georgia, "Times New Roman", serif;
   --font-mono: ui-monospace, "Cascadia Mono", "Segoe UI Mono", monospace;
 }
 
-@keyframes section-flash {
-  0% { color: var(--color-paper); }
-  40% { color: var(--color-ice); }
-  100% { color: var(--color-paper); }
+/* The composite stacks resolve their `var()` at the element that declares
+   them, so they have to live on the element that carries the next/font
+   variables — the wrapper `_app` renders. Declared on `:root` they would be
+   invalid at computed-value time and inherit as empty, which silently drops
+   every heading to the browser's sans. */
+.root-layout {
+  --font-display: var(--font-manrope), ui-sans-serif, system-ui, sans-serif;
+  --font-heading: var(--font-space-grotesk), ui-sans-serif, system-ui, sans-serif;
+  --font-serif: var(--font-fraunces), Georgia, "Times New Roman", serif;
 }
 
-@keyframes footer-beam-drift {
-  from {
-    transform: translate3d(-8%, -6%, 0);
-  }
-  to {
-    transform: translate3d(8%, 6%, 0);
-  }
-}
+:root {
+  /* Field + surface grammar */
+  --field-ink: #060b1a;
+  --shell: 80rem;
+  --line: rgb(255 255 255 / 0.09);
+  --glass: rgb(255 255 255 / 0.05);
+  --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
 
-.menu-toggle {
-  position: relative;
-  display: block;
-  width: 1.35rem;
-  height: 0.85rem;
-}
-
-.menu-toggle-bar {
-  position: absolute;
-  left: 0;
-  right: 0;
-  height: 1px;
-  background-color: currentColor;
-  transition:
-    transform 0.36s cubic-bezier(0.32, 0.72, 0, 1),
-    opacity 0.22s cubic-bezier(0.32, 0.72, 0, 1);
-}
-
-.menu-toggle-bar-top { top: 0; }
-.menu-toggle-bar-bot { bottom: 0; }
-
-.menu-toggle[data-open="true"] .menu-toggle-bar-top {
-  top: 50%;
-  transform: translateY(-50%) rotate(45deg);
-}
-
-.menu-toggle[data-open="true"] .menu-toggle-bar-bot {
-  bottom: 50%;
-  transform: translateY(50%) rotate(-45deg);
-}
-
-.mobile-menu-panel {
-  pointer-events: none;
-  visibility: hidden;
-  /* A full-screen menu sheet hides the page, it does not reveal it: at glass
-     translucency the hero's own copy sits behind the menu's own links and the
-     two collide. Near-opaque, square, still blurred. This sheet is the one
-     surface allowed to leave the shared tint, because it is the one surface
-     whose job is to hide the field — and it takes the densest fill in the
-     system, so it is still cut from the field's ink. */
-  --glass-tint: var(--glass-fill-solid);
-  border-radius: 0;
+  /* Motion channel, written by useFieldMotion / ScrollTriggers. Defaults are
+     the settled state, so a reader with no JS still gets a composed page. */
+  --p: 0;
+  --scy: 0;
+  --hf: 1;
+  --px: 0;
+  --py: 0;
+  --mx: -999;
+  --my: -999;
+  --tlp: 0;
+  --fp: 1;
 }
 
 @layer base {
@@ -91,46 +75,63 @@
     scroll-behavior: auto;
     scrollbar-gutter: stable;
     color-scheme: dark;
-    background-color: #02122d;
+    background-color: var(--field-ink);
   }
 
   body {
     background-color: transparent;
-    color: var(--color-paper);
-    overflow-x: hidden;
-    line-height: 1.7;
-  }
-
-  #__next > div,
-  .root-layout {
     font-family: var(--font-manrope), ui-sans-serif, system-ui, sans-serif;
+    color: var(--color-paper);
+    font-size: 1rem;
+    line-height: 1.7;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
   }
 
-  h1, h2, h3, h4, h5, h6 {
-    font-family: var(--font-space-grotesk), ui-sans-serif, system-ui, sans-serif;
-    font-weight: 600;
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-family: var(--font-heading), ui-sans-serif, system-ui, sans-serif;
+    font-weight: 500;
+    letter-spacing: -0.035em;
     color: var(--color-paper);
-    letter-spacing: -0.02em;
+    line-height: 1.06;
   }
 
   h1 {
-    font-size: clamp(2.5rem, 6.2vw, 4.75rem);
-    line-height: 1.12;
+    font-size: clamp(2.6rem, 7.6vw, 7rem);
+    line-height: 1.02;
+    letter-spacing: -0.04em;
+    text-wrap: balance;
   }
 
   h2 {
-    font-size: clamp(1.75rem, 3.2vw, 2.6rem);
-    line-height: 1.2;
+    font-size: clamp(2.125rem, 4.6vw, 3.75rem);
+    margin-top: 1.125rem;
+    max-width: 18ch;
   }
 
   h3 {
-    font-size: clamp(1.25rem, 2vw, 1.7rem);
+    font-size: clamp(1.25rem, 2vw, 1.6rem);
     line-height: 1.3;
+    letter-spacing: -0.025em;
   }
 
   a {
     color: inherit;
     text-decoration: none;
+  }
+
+  button {
+    font-family: inherit;
+    color: inherit;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-sky);
+    outline-offset: 4px;
+    border-radius: 6px;
   }
 
   #__next,
@@ -140,327 +141,1317 @@
   }
 }
 
-/* ---------------------------------------------------------------------------
-   Glass system tokens (Bocanada).
-   One recipe, four tiers: rail (bars), panel (large surfaces), card (single
-   object), tile (grid). The tint, the ice edge, the frost and the top sheen
-   are what read as glass — so they are shared, not re-invented per component.
-   The tint is neutral black at one density for every tier and every viewport:
-   the surface is glass, and the field behind it supplies the colour. The frost
-   is what keeps the field's lattice from punching through.
---------------------------------------------------------------------------- */
-:root {
-  /* Reference 1:1 — 21st.dev `glass-calendar`.
-     bg-black/20 · backdrop-blur-xl · border-white/10 · shadow-2xl.
-     The tint is neutral black, not cobalt: the surface is transparent glass
-     and the field supplies the colour. */
-  --glass-tint: rgb(0 0 0 / 0.3);
-  --glass-edge: rgb(255 255 255 / 0.1);
-  --glass-edge-strong: rgb(255 255 255 / 0.28);
-  --glass-lift: 0 25px 50px -12px rgb(0 0 0 / 0.25); /* shadow-2xl */
-  --glass-sheet: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1); /* shadow-md */
-  /* Frost. The reference reads frosted because a photograph sits behind it; a
-     smooth cobalt field gives `backdrop-blur` almost nothing to smear, so the
-     frost is built instead of inherited: a longer blur, a light lift, a white
-     wash down from the top edge, a 1px inner highlight, and a static grain
-     layer between the tint and the text. */
-  --glass-blur: 40px;
-  --glass-sat: 112%;
-  --glass-wash: linear-gradient(
-    180deg,
-    rgb(255 255 255 / 0.05),
-    rgb(255 255 255 / 0) 42%
-  );
-  --glass-highlight: inset 0 1px 0 rgb(255 255 255 / 0.16);
-  --glass-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='f'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23f)'/%3E%3C/svg%3E");
-  --glass-grain-opacity: 0.13;
-
-  /* Nested pane — the reference's `bg-black/20` inside the surface, and the
-     track its tabs sit in. It does not blur: only the outer card does. */
-  --glass-nest: rgb(0 0 0 / 0.2);
-  --glass-nest-edge: rgb(255 255 255 / 0.1);
-  --glass-nest-radius: 0.5rem; /* rounded-lg */
-
-  /* Radius scale straight from the reference: surface rounded-3xl, track
-     rounded-lg, pill rounded-md, icon buttons rounded-full. */
-  --glass-radius: 1.5rem; /* rounded-3xl */
-  --control-radius: 0.375rem; /* rounded-md */
-  --control-round: 9999px; /* rounded-full */
-  --control-h: 2.75rem;
-
-  /* Solid fill for the reduced-transparency and no-backdrop-filter fallbacks.
-     It is the field's own ink, not black: a reader who cannot take the frost
-     still gets a surface cut from the same substance as everything else. */
-  --glass-fill-solid: rgb(2 18 45 / 0.94);
-}
-
 @layer components {
-  .focus-ring {
-    outline: none;
+  /* --- field -------------------------------------------------------------- */
+  .bocanada-field {
+    background-color: var(--field-ink);
+    background-image:
+      radial-gradient(ellipse 70% 48% at 50% 6%, rgb(150 210 255 / 0.15), transparent 58%),
+      radial-gradient(ellipse 88% 66% at 72% 40%, rgb(2 60 140 / 0.55), transparent 64%),
+      linear-gradient(180deg, #081430 0%, #050d20 54%, #04091a 100%);
   }
 
-  .focus-ring:focus-visible {
-    outline: 2px solid var(--color-ice);
-    outline-offset: 3px;
+  /* Blobs answer the reading progress: hue shifts, height falls away. */
+  .field-blob {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(110px);
+    will-change: transform;
   }
 
-  /* Glass primitives — rail (bars), panel (large surfaces), tile (grid).
-     Every one is the reference's card, 1:1: flat `bg-black/20` (flat, not a
-     gradient), 1px `border-white/10`, `backdrop-blur-xl`, `shadow-2xl`. */
-  .glass-rail,
-  .glass-panel,
-  .glass-card,
-  .glass-tile {
-    position: relative;
-    isolation: isolate;
-    border: 1px solid var(--glass-edge);
-    border-radius: var(--glass-radius);
-    background-color: var(--glass-tint);
-    background-image: var(--glass-wash);
-    box-shadow: var(--glass-lift), var(--glass-highlight);
-    /* Standard property only. Next's Lightning CSS pass collapsed the
-       `backdrop-filter` / `-webkit-backdrop-filter` pair down to the prefixed
-       declaration alone, and Chromium no longer implements the alias — every
-       panel silently lost its frost. Prefixes are left to the build. */
-    backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-sat));
+  .field-blob-1 {
+    width: 64vw;
+    height: 64vw;
+    left: -18vw;
+    top: -22vw;
+    background: radial-gradient(
+      circle,
+      hsl(calc(214 + var(--p) * 70) 88% 52% / 0.42),
+      transparent 68%
+    );
+    translate: calc(var(--px) * 30px) calc(var(--p) * -30vh + var(--py) * 20px);
   }
 
-  /* Frost grain, between the tint and the text: a negative index paints above
-     the surface's own background and below its in-flow content. */
-  .glass-rail::after,
-  .glass-panel::after,
-  .glass-card::after,
-  .glass-tile::after {
-    content: "";
+  .field-blob-2 {
+    width: 48vw;
+    height: 48vw;
+    right: -14vw;
+    top: 26vh;
+    background: radial-gradient(
+      circle,
+      hsl(calc(262 - var(--p) * 60) 78% 58% / 0.26),
+      transparent 68%
+    );
+    translate: calc(var(--px) * -40px) calc(var(--p) * -55vh);
+  }
+
+  .field-blob-3 {
+    width: 42vw;
+    height: 42vw;
+    left: 20vw;
+    top: 76vh;
+    background: radial-gradient(
+      circle,
+      hsl(calc(22 + var(--p) * 170) 90% 62% / 0.12),
+      transparent 68%
+    );
+    translate: calc(var(--px) * 24px) calc(var(--p) * -70vh);
+  }
+
+  /* Cursor light. Coarse pointers get nothing to chase. */
+  .field-glow {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 40rem;
+    height: 40rem;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgb(143 203 255 / 0.11), transparent 62%);
+    translate: calc(var(--mx) * 1px - 20rem) calc(var(--my) * 1px - 20rem);
+  }
+
+  .field-grain {
     position: absolute;
     inset: 0;
-    z-index: -1;
-    border-radius: inherit;
-    background-image: var(--glass-grain);
-    opacity: var(--glass-grain-opacity);
+    opacity: 0.06;
     mix-blend-mode: overlay;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+
+  .field-progress {
+    position: fixed;
+    inset-inline: 0;
+    top: 0;
+    height: 2px;
+    z-index: 60;
     pointer-events: none;
   }
 
-  /* Rail — full-bleed bars: no radius, the same 1px white/10 edge, only on the
-     side where the bar meets the page. */
-  .glass-rail {
-    border-inline: 0;
-    border-top: 0;
-    border-radius: 0;
-    border-bottom: 1px solid var(--glass-edge);
-    box-shadow: var(--glass-highlight);
+  .field-progress > span {
+    display: block;
+    height: 100%;
+    transform-origin: left;
+    transform: scaleX(var(--p));
+    background: linear-gradient(90deg, var(--color-sky), var(--color-warm));
   }
 
-  /* Nested pane: the reference's `bg-black/20` inside the surface, and the
-     track its tabs sit in. It does not blur — only the outer card does — and
-     it carries no grain: the grain lifts a flat dark plate by ~14%, which ate
-     most of the recess and made small panes read as lighter plates than the
-     card they sit in. Recess comes from fill alone. */
-  .glass-nest {
+  /* Reduced-motion / no-WebGL stand-in for the shader lattice. */
+  .bocanada-sparks {
+    background-image:
+      radial-gradient(circle 2px at 50% 50%, rgb(255 226 228 / 0.9), transparent 100%),
+      radial-gradient(#e2727f 1.5px, transparent 1.7px);
+    background-size:
+      192px 192px,
+      48px 48px;
+    opacity: 0.55;
+  }
+
+  /* --- layout ------------------------------------------------------------- */
+  .site-shell {
+    width: min(var(--shell), 100% - clamp(2.75rem, 6vw, 8rem));
+    margin-inline: auto;
+  }
+
+  .section-y {
+    padding-top: clamp(5.5rem, 11vw, 10.5rem);
+  }
+
+  .eyebrow {
+    display: flex;
+    align-items: center;
+    gap: 0.875rem;
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    font-weight: 500;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--color-sky);
+  }
+
+  .eyebrow::after {
+    content: "";
+    height: 1px;
+    width: 3.5rem;
+    background: linear-gradient(90deg, var(--color-sky), transparent);
+    opacity: 0.6;
+  }
+
+  /* The serif italic: one accent, used for the emphasised word of a heading,
+     the wordmark and the footer tagline. */
+  .accent {
+    font-family: var(--font-serif), Georgia, "Times New Roman", serif;
+    font-style: italic;
+    font-weight: 400;
+    letter-spacing: -0.02em;
+    color: var(--color-warm);
+  }
+
+  .lead {
+    color: var(--color-mut);
+    font-size: clamp(1.0625rem, 1.5vw, 1.25rem);
+    line-height: 1.7;
+    max-width: 46ch;
+  }
+
+  .status {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.625rem;
+    font-size: 0.8125rem;
+    color: var(--color-mut);
+  }
+
+  .status i {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #4ade80;
+    animation: ping 2.4s infinite;
+  }
+  .stackline {
+    display: flex;
+    flex-wrap: wrap;
+    row-gap: 0.25rem;
+    margin-top: 2.875rem;
+    font-family: var(--font-mono);
+    font-size: 0.8125rem;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    color: var(--color-dim);
+  }
+
+  .stackline span + span::before {
+    content: "·";
+    margin: 0 0.625rem;
+  }
+
+  /* --- glass: one recipe, used only where it does a job ------------------- */
+  .glass {
+    background-color: var(--glass);
+    border: 1px solid var(--line);
+    backdrop-filter: blur(26px) saturate(150%);
+    box-shadow:
+      0 24px 60px -24px rgb(0 0 0 / 0.6),
+      inset 0 1px 0 rgb(255 255 255 / 0.1);
+  }
+
+  /* --- buttons ------------------------------------------------------------ */
+  .btn {
     position: relative;
     isolation: isolate;
-    border: 1px solid var(--glass-nest-edge);
-    border-radius: var(--glass-nest-radius);
-    background-color: var(--glass-nest);
-    background-image: var(--glass-wash);
-  }
-
-  .glass-nest-item {
-    border-radius: var(--control-radius);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.625rem;
+    padding: 0.875rem 1.625rem;
+    border-radius: 999px;
+    border: 1px solid var(--line);
+    background-color: transparent;
+    font-family: inherit;
+    font-size: 0.9375rem;
+    font-weight: 500;
+    cursor: pointer;
     transition:
-      background-color 160ms cubic-bezier(0.23, 1, 0.32, 1),
-      color 160ms cubic-bezier(0.23, 1, 0.32, 1),
-      box-shadow 160ms cubic-bezier(0.23, 1, 0.32, 1);
+      background-color 0.5s var(--ease),
+      border-color 0.5s var(--ease),
+      box-shadow 0.5s var(--ease),
+      scale 0.3s var(--ease);
   }
 
-  /* The live item is a solid white pill with black text and shadow-md — the
-     reference's selected tab, exactly. Its color and fill live in the
-     `@layer utilities` block below: a utilities declaration always outranks
-     our components layer, and the `text-white/75` the links carry painted the
-     live label white over a white pill. */
-
-  @media (hover: hover) and (pointer: fine) {
-    a.glass-nest-item:hover {
-      background-color: rgb(255 255 255 / 0.2);
-      color: #fff;
-    }
-  }
-
-  /* Live glass — the edge answers pointer and keyboard, no layout change */
-  @media (hover: hover) and (pointer: fine) {
-    .glass-live:hover {
-      border-color: var(--glass-edge-strong);
-    }
-  }
-
-  .glass-live:focus-visible {
-    border-color: var(--glass-edge-strong);
-  }
-
-  /* No frost available: the surface becomes solid field ink — the same fill a
-     reduced-transparency reader gets. One fallback, not two. */
-  @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-    .glass-rail,
-    .glass-panel,
-    .glass-card,
-    .glass-tile {
-      background-image: none;
-      background-color: var(--glass-fill-solid);
-    }
-  }
-
-  /* Profile card — React Bits SpotlightCard + ProfileCard, adapted to the
-     glass system: the frosted surface stays, a pointer-driven ice spotlight
-     and a subtle tilt make it feel held, and the card flips to a stack face.
-     All of it is decorative: reduced motion keeps the card still and the
-     flip instant. */
-  .profile-stage {
-    perspective: 1200px;
-  }
-
-  .profile-card {
-    transform: rotateX(0deg) rotateY(0deg);
-    transition: transform 220ms cubic-bezier(0.23, 1, 0.32, 1);
-  }
-
-  /* Ice spotlight under the grain, above the tint: follows the pointer. */
-  .profile-card::before {
+  /* Light that follows the pointer inside the button. */
+  .btn::before {
     content: "";
     position: absolute;
     inset: 0;
-    z-index: -1;
     border-radius: inherit;
+    z-index: -1;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.5s var(--ease);
     background: radial-gradient(
-      circle 15rem at var(--spot-x, 50%) var(--spot-y, 50%),
-      rgb(143 180 232 / 0.3),
-      rgb(143 180 232 / 0.08) 45%,
+      150px circle at var(--bx, 50%) var(--by, 50%),
+      rgb(255 255 255 / 0.16),
       transparent 70%
     );
-    opacity: 0;
-    transition: opacity 240ms ease;
-    pointer-events: none;
   }
 
-  .profile-card.is-live::before {
+  /* The edge that lights up: a 1px ring masked out of a radial gradient. */
+  .btn::after {
+    content: "";
+    position: absolute;
+    inset: -1px;
+    border-radius: inherit;
+    padding: 1px;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.5s var(--ease);
+    background: radial-gradient(
+      110px circle at var(--bx, 50%) var(--by, 50%),
+      var(--color-sky),
+      transparent 70%
+    );
+    mask:
+      linear-gradient(#000 0 0) content-box,
+      linear-gradient(#000 0 0);
+    mask-composite: exclude;
+  }
+
+  .btn-solid {
+    background-color: #fff;
+    color: #07102a;
+    border-color: transparent;
+    font-weight: 600;
+  }
+
+  .btn-solid::before {
+    background: radial-gradient(
+      170px circle at var(--bx, 50%) var(--by, 50%),
+      rgb(143 203 255 / 0.75),
+      transparent 70%
+    );
+  }
+
+  .btn-solid::after {
+    display: none;
+  }
+
+  .btn:active {
+    scale: 0.965;
+  }
+
+  .btn-ok {
+    border-color: rgb(74 222 128 / 0.55);
+    background-color: rgb(74 222 128 / 0.1);
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .btn:hover::before,
+    .btn:hover::after {
+      opacity: 1;
+    }
+
+    .btn:hover {
+      background-color: rgb(255 255 255 / 0.04);
+      border-color: rgb(255 255 255 / 0.2);
+    }
+
+    .btn-solid:hover {
+      background-color: #fff;
+      border-color: transparent;
+      box-shadow: 0 16px 44px -14px rgb(143 203 255 / 0.8);
+    }
+  }
+
+  .btn:focus-visible::before,
+  .btn:focus-visible::after {
     opacity: 1;
   }
 
-  .profile-card-inner {
-    display: grid;
-    transform-style: preserve-3d;
-    transition: transform 480ms cubic-bezier(0.77, 0, 0.175, 1);
+  /* The label rolls: the text leaves upward and its copy enters. */
+  .lb {
+    display: inline-block;
+    overflow: hidden;
+    height: 1.35em;
+    line-height: 1.35em;
+    vertical-align: top;
+    white-space: nowrap;
   }
 
-  .profile-card.is-flipped .profile-card-inner {
-    transform: rotateY(180deg);
+  .lb > span {
+    display: block;
+    position: relative;
+    transition: transform 0.6s var(--ease);
   }
 
-  .profile-face {
+  .lb > span::after {
+    content: attr(data-t);
+    position: absolute;
+    left: 0;
+    top: 100%;
+  }
+
+  /* The arrow leaves and its copy enters from the other side. */
+  .ar {
+    --dx: 150%;
+    --dy: 0%;
+    display: inline-grid;
+    overflow: hidden;
+    width: 1rem;
+    height: 1rem;
+    flex: none;
+  }
+
+  .ar-diag {
+    --dx: 130%;
+    --dy: -130%;
+  }
+
+  .ar > svg {
     grid-area: 1 / 1;
-    backface-visibility: hidden;
-    -webkit-backface-visibility: hidden;
+    width: 100%;
+    height: 100%;
+    transition: transform 0.6s var(--ease);
   }
 
-  .profile-face-back {
-    transform: rotateY(180deg);
+  .ar > svg + svg {
+    transform: translate(calc(var(--dx) * -1), calc(var(--dy) * -1));
   }
 
-  .profile-avatar {
+  .btn:focus-visible .lb > span,
+  .work-row:focus-within .lb > span,
+  .bigmail:focus-visible .lb > span {
+    transform: translateY(-100%);
+  }
+
+  .btn:focus-visible .ar > svg:first-child,
+  .work-row:focus-within .ar > svg:first-child {
+    transform: translate(var(--dx), var(--dy));
+  }
+
+  .btn:focus-visible .ar > svg + svg,
+  .work-row:focus-within .ar > svg + svg {
+    transform: none;
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .btn:hover .lb > span,
+    .bigmail:hover .lb > span,
+    .work-row:hover .lb > span {
+      transform: translateY(-100%);
+    }
+
+    .btn:hover .ar > svg:first-child,
+    .bigmail:hover .ar > svg:first-child,
+    .work-row:hover .ar > svg:first-child {
+      transform: translate(var(--dx), var(--dy));
+    }
+
+    .btn:hover .ar > svg + svg,
+    .bigmail:hover .ar > svg + svg,
+    .work-row:hover .ar > svg + svg {
+      transform: none;
+    }
+  }
+
+  /* --- reveal + word split ------------------------------------------------ */
+  [data-r] {
+    opacity: 0;
+    transform: translateY(28px);
+    filter: blur(6px);
+    transition:
+      opacity 1.1s var(--ease),
+      transform 1.1s var(--ease),
+      filter 1.1s var(--ease);
+    transition-delay: var(--d, 0ms);
+  }
+
+  [data-r].is-in {
+    opacity: 1;
+    transform: none;
+    filter: none;
+  }
+
+  .w {
+    display: inline-block;
+    overflow: hidden;
+    vertical-align: top;
+    padding: 0 0.06em 0.14em;
+    margin: 0 -0.06em -0.14em;
+    translate: 0 calc(var(--scy) * var(--k, 0) * 1px);
+  }
+
+  .w > span {
+    display: inline-block;
+    transform: translateY(112%);
+    transition: transform 1.1s var(--ease);
+    transition-delay: calc(var(--d, 0ms) + var(--i) * 70ms);
+  }
+
+  .is-in .w > span {
+    transform: none;
+  }
+
+  /* --- nav ---------------------------------------------------------------- */
+  .site-header {
+    position: fixed;
+    inset-inline: 0;
+    top: 0;
+    z-index: 50;
+    padding: 1rem 0;
+    pointer-events: none;
+  }
+
+  .nav-pill {
+    width: min(calc(var(--shell) + 1rem), 100% - 1.5rem);
+    margin-inline: auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.5rem 0.5rem 0.5rem 1.25rem;
+    border-radius: 999px;
+    border: 1px solid transparent;
+    pointer-events: auto;
+    transition:
+      background-color 0.5s var(--ease),
+      border-color 0.5s var(--ease),
+      box-shadow 0.5s var(--ease);
+  }
+
+  .site-header.is-scrolled .nav-pill {
+    background-color: var(--glass);
+    border-color: var(--line);
+    backdrop-filter: blur(26px) saturate(150%);
+    box-shadow: 0 18px 44px -20px rgb(0 0 0 / 0.6);
+  }
+
+  .nav-links {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 0.125rem;
+  }
+
+  .nav-link {
+    position: relative;
+    z-index: 1;
+    padding: 0.5625rem 1rem;
+    border-radius: 999px;
+    color: var(--color-mut);
+    font-size: 0.875rem;
+    transition: color 0.3s var(--ease);
+  }
+
+  .nav-link:hover,
+  .nav-link.is-nav-active {
+    color: #fff;
+  }
+
+  .nav-ind {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 0;
+    border-radius: 999px;
+    background-color: rgb(255 255 255 / 0.1);
+    opacity: 0;
+    z-index: 0;
+    transition:
+      translate 0.5s var(--ease),
+      width 0.5s var(--ease),
+      opacity 0.3s var(--ease);
+  }
+
+  .nav-cta {
+    display: inline-flex;
+    align-items: center;
+    margin-left: 0.5rem;
+    padding: 0.6875rem 1rem;
+    border-radius: 999px;
+    background-color: #fff;
+    color: #07102a;
+    font-size: 0.875rem;
+    font-weight: 600;
+    transition: box-shadow 0.4s var(--ease);
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .nav-cta:hover {
+      box-shadow: 0 10px 30px -10px rgb(143 203 255 / 0.7);
+    }
+  }
+
+  /* --- hero --------------------------------------------------------------- */
+  .hero {
+    position: relative;
+    min-height: 100svh;
+    display: flex;
+    align-items: center;
+    padding: 8.125rem 0 4.375rem;
+  }
+
+  .hero-copy {
+    translate: 0 calc(var(--scy) * 0.1px);
+    opacity: var(--hf);
+  }
+
+  .hero-title {
+    margin: 1.625rem 0 1.5rem;
+    max-width: 22ch;
+  }
+
+  .hero-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-top: 2.375rem;
+  }
+
+  .hero-foot {
+    position: relative;
+    margin-top: 2.5rem;
+  }
+
+  /* Depth cluster: three floating layers instead of a card. They answer the
+     pointer and the scroll at their own speed (`--d`). */
+  .hero-ornament {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    width: min(32%, 24rem);
+    height: 18rem;
+    pointer-events: none;
+  }
+
+  .orn {
+    position: absolute;
+    border-radius: 50%;
+    translate: calc(var(--px) * var(--od, 1) * 46px)
+      calc(var(--py) * var(--od, 1) * 46px + var(--scy) * var(--od, 1) * -0.05px);
+    animation: orn-in 1.15s var(--ease) both;
+  }
+
+  .orn-orb {
+    width: 7rem;
+    height: 7rem;
+    top: 0;
+    right: 0;
+    background: linear-gradient(135deg, rgb(255 255 255 / 0.17), rgb(255 255 255 / 0.03));
+    border: 1px solid rgb(255 255 255 / 0.2);
+    backdrop-filter: blur(14px);
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.25),
+      0 20px 40px -18px rgb(0 0 0 / 0.5);
+  }
+
+  .orn-ring {
+    width: 13rem;
+    height: 13rem;
+    bottom: -1rem;
+    left: 0;
+    border: 1px solid rgb(143 203 255 / 0.28);
+    background: radial-gradient(circle at 30% 30%, rgb(143 203 255 / 0.16), transparent 65%);
+    animation-delay: 0.12s;
+  }
+
+  .orn-spark {
+    width: 1rem;
+    height: 1rem;
+    top: 44%;
+    left: 36%;
+    background: radial-gradient(circle at 35% 30%, #fff, var(--color-sky) 55%, rgb(143 203 255 / 0.2));
+    box-shadow: 0 0 30px 6px rgb(143 203 255 / 0.45);
+    animation-delay: 0.24s;
+  }
+
+  /* --- marquee ------------------------------------------------------------ */
+  .marquee {
+    width: 100%;
+    margin-top: clamp(4.375rem, 10vw, 8.75rem);
+    overflow: hidden;
+    padding: 0.5rem 0;
+    mask-image: linear-gradient(90deg, transparent, #000 14%, #000 86%, transparent);
+  }
+
+  .marquee-inner {
+    will-change: transform;
+  }
+
+  .mq {
+    display: flex;
+    width: max-content;
+    will-change: transform;
+  }
+
+  .mq-track {
+    display: flex;
+    align-items: center;
+    flex: none;
+  }
+
+  .mq span {
+    position: relative;
+    font-family: var(--font-heading);
+    font-weight: 500;
+    font-size: clamp(3.375rem, 9.5vw, 8.5rem);
+    line-height: 1.12;
+    letter-spacing: -0.04em;
+    white-space: nowrap;
+    padding-right: 0.5em;
+  }
+
+  .mq span::after {
+    content: "";
+    position: absolute;
+    right: 0.2em;
+    top: 52%;
+    width: 0.12em;
+    height: 0.12em;
+    border-radius: 50%;
+    background-color: rgb(255 255 255 / 0.32);
+  }
+
+  .mq-outline span {
+    color: transparent;
+    -webkit-text-stroke: 1px rgb(255 255 255 / 0.26);
+  }
+
+  .mq-serif span {
+    font-family: var(--font-serif), Georgia, serif;
+    font-style: italic;
+    font-weight: 400;
+    letter-spacing: -0.03em;
+    background: linear-gradient(90deg, var(--color-sky), var(--color-warm));
+    background-clip: text;
+    color: transparent;
+    opacity: 0.6;
+  }
+
+  /* --- work --------------------------------------------------------------- */
+  .section-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+  }
+
+  .work-tabs {
+    position: relative;
+    display: flex;
+    width: fit-content;
+    max-width: 100%;
+    gap: 0.125rem;
+    padding: 0.3125rem;
+    margin: 2.75rem 0 0.375rem;
+    border-radius: 999px;
+    background-color: var(--glass);
+    border: 1px solid var(--line);
+  }
+
+  .work-tab {
+    position: relative;
+    z-index: 1;
+    background: none;
+    border: 0;
+    padding: 0.5rem 1.125rem;
+    border-radius: 999px;
+    font-size: 0.875rem;
+    color: var(--color-dim);
+    cursor: pointer;
+    transition:
+      color 0.35s var(--ease),
+      scale 0.3s var(--ease);
+  }
+
+  .work-tab:hover,
+  .work-tab[aria-pressed="true"] {
+    color: #fff;
+  }
+
+  .work-tab:active {
+    scale: 0.94;
+  }
+
+  .work-tab-ind {
+    position: absolute;
+    left: 0;
+    top: 0.3125rem;
+    bottom: 0.3125rem;
+    width: 0;
+    border-radius: 999px;
+    background-color: rgb(255 255 255 / 0.13);
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.15);
+    transition:
+      translate 0.6s var(--ease),
+      width 0.6s var(--ease);
+  }
+
+  .work-list {
+    list-style: none;
+    padding: 0;
+    margin: 0.5rem 0 0;
+    border-top: 1px solid var(--line);
+  }
+
+  .work-row {
+    display: grid;
+    grid-template-columns: 3.5rem minmax(0, 1fr) auto;
+    gap: 1.25rem;
+    align-items: center;
+    padding: 2.125rem 0.375rem;
+    border-bottom: 1px solid var(--line);
+    position: relative;
+    will-change: opacity, transform;
+  }
+
+  /* Spotlight carried by the pointer. */
+  .work-row::before {
+    content: "";
+    position: absolute;
+    inset: 0 -1.125rem;
+    border-radius: 1.125rem;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.5s var(--ease);
+    background: radial-gradient(
+      520px circle at var(--rx, 30%) var(--ry, 50%),
+      rgb(255 255 255 / 0.075),
+      transparent 62%
+    );
+  }
+
+  .work-row > .work-num,
+  .work-row > .work-body,
+  .work-row > .work-go {
+    opacity: var(--o, 1);
+  }
+
+  .work-body {
+    min-width: 0;
+  }
+
+  .work-num {
+    font-family: var(--font-mono);
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: var(--color-dim);
+    transition:
+      opacity 0.5s var(--ease),
+      color 0.5s var(--ease);
+  }
+
+  .work-row h3 {
+    font-size: clamp(1.625rem, 3.4vw, 2.5rem);
+    line-height: 1.1;
+    letter-spacing: -0.03em;
+    transition: translate 0.7s var(--ease);
+  }
+
+  .work-problem {
+    margin-top: 0.5rem;
+    max-width: 50ch;
+    font-size: 0.9375rem;
+    color: var(--color-mut);
+    transition: translate 0.7s var(--ease);
+  }
+
+  .work-tags {
+    margin-top: 0.75rem;
+    font-family: var(--font-mono);
+    font-size: 0.8125rem;
+    letter-spacing: 0.03em;
+    color: var(--color-dim);
+    transition: translate 0.7s var(--ease);
+  }
+
+  .work-go {
+    position: relative;
+    overflow: hidden;
+    width: 2.875rem;
+    height: 2.875rem;
+    border-radius: 50%;
+    border: 1px solid var(--line);
+    display: grid;
+    place-items: center;
+    color: var(--color-mut);
+    transition:
+      opacity 0.5s var(--ease),
+      color 0.5s var(--ease),
+      border-color 0.5s var(--ease);
+  }
+
+  .work-go::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    background-color: #fff;
+    transform: scale(0);
+    transition: transform 0.6s var(--ease);
+  }
+
+  .work-go .ar {
+    position: relative;
+    z-index: 1;
+  }
+
+  .work-thumb {
+    display: none;
+  }
+
+  .work-hit {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+  }
+
+  /* Preview that follows the pointer over the list. */
+  .work-preview {
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: 20rem;
+    aspect-ratio: 4 / 3;
+    border-radius: 1.25rem;
+    overflow: hidden;
+    z-index: 40;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.4s var(--ease);
+    box-shadow: 0 30px 70px -20px rgb(0 0 0 / 0.7);
+    border: 1px solid rgb(255 255 255 / 0.14);
+    will-change: transform;
+  }
+
+  .work-preview.is-on {
+    opacity: 1;
+  }
+
+  .work-preview-layer {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    transition: opacity 0.5s var(--ease);
+  }
+
+  .work-preview-layer.is-on {
+    opacity: 1;
+  }
+
+  .work-preview-tag {
+    position: absolute;
+    left: 0.75rem;
+    bottom: 0.75rem;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.4375rem 0.75rem 0.4375rem 0.875rem;
+    border-radius: 999px;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    background-color: rgb(6 11 26 / 0.55);
+    backdrop-filter: blur(14px);
+    border: 1px solid rgb(255 255 255 / 0.16);
+  }
+
+  /* Generated cover for a project with no screenshot. */
+  .work-art {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    background:
+      radial-gradient(120% 120% at 0% 0%, hsl(var(--h) 90% 58% / 0.65), transparent 62%),
+      radial-gradient(110% 110% at 100% 100%, hsl(calc(var(--h) + 60) 85% 58% / 0.5), transparent 62%),
+      #0a1128;
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .work-list:has(.work-row:hover) .work-row:not(:hover) {
+      --o: 0.32;
+    }
+
+    .work-row:hover::before {
+      opacity: 1;
+    }
+
+    .work-row:hover .work-body > * {
+      translate: 12px 0;
+    }
+
+    .work-row:hover .work-num {
+      color: var(--color-sky);
+    }
+
+    .work-row:hover .work-go {
+      color: #07102a;
+      border-color: #fff;
+    }
+
+    .work-row:hover .work-go::before {
+      transform: scale(1);
+    }
+  }
+
+  @media (hover: none), (max-width: 900px) {
+    .work-preview {
+      display: none;
+    }
+  }
+
+  /* --- about -------------------------------------------------------------- */
+  .about-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: clamp(2.5rem, 8vw, 6.875rem);
+    margin-top: 3.5rem;
+  }
+
+  .about-h3 {
+    margin-bottom: 1.625rem;
+    font-family: var(--font-mono);
+    font-size: 0.8125rem;
+    font-weight: 500;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--color-sky);
+  }
+
+  .about-copy p {
+    color: var(--color-mut);
+    font-size: 1.0625rem;
+    max-width: 46ch;
+  }
+
+  .about-copy p + p {
+    margin-top: 1.125rem;
+  }
+
+  .about-copy strong {
+    color: var(--color-paper);
+    font-weight: 600;
+  }
+
+  .about-portrait {
+    display: flex;
+    align-items: center;
+    gap: 0.875rem;
+    margin-bottom: 1.875rem;
+  }
+
+  .about-portrait img {
+    width: 3.5rem;
+    height: 3.5rem;
+    border-radius: 50%;
+    object-fit: cover;
     box-shadow: 0 0 0 1px rgb(255 255 255 / 0.22);
   }
 
-  .profile-chip {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.375rem;
-    border: 1px solid var(--glass-nest-edge);
-    border-radius: var(--control-round);
-    background-color: var(--glass-nest);
-    padding: 0.4rem 0.8rem;
-    /* 13px floor: nothing meant to be read goes below it. */
-    font-size: 0.8125rem;
-    line-height: 1;
-    color: rgb(255 255 255 / 0.85);
+  .about-portrait-name {
+    font-family: var(--font-heading);
+    font-size: 1.0625rem;
+    line-height: 1.3;
+    color: var(--color-paper);
   }
 
-  .btn-primary {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
+  .about-portrait-role {
+    font-size: 0.8125rem;
+    color: var(--color-mut);
+  }
+
+  .about-socials {
+    display: flex;
     gap: 0.5rem;
-    padding: 0.8rem 1.35rem;
-    /* The reference's solid white pill with black text. */
-    background-color: #fff;
-    color: #000;
-    font-size: 0.875rem;
-    font-weight: 700;
-    letter-spacing: -0.01em;
-    white-space: nowrap;
-    min-height: var(--control-h);
-    border-radius: var(--glass-nest-radius);
-    box-shadow: var(--glass-sheet);
+    margin-left: 0.75rem;
+  }
+
+  .about-socials a {
+    display: grid;
+    place-items: center;
+    width: 2.25rem;
+    height: 2.25rem;
+    border-radius: 50%;
+    border: 1px solid var(--line);
+    color: var(--color-mut);
     transition:
-      background-color 160ms cubic-bezier(0.23, 1, 0.32, 1),
-      color 160ms cubic-bezier(0.23, 1, 0.32, 1),
-      transform 160ms cubic-bezier(0.23, 1, 0.32, 1);
+      color 0.3s var(--ease),
+      border-color 0.3s var(--ease);
   }
 
-  .btn-primary:active {
-    transform: scale(0.97);
+  .statement {
+    margin-top: 2.875rem;
+    max-width: 30ch;
+    font-family: var(--font-heading);
+    font-weight: 500;
+    font-size: clamp(1.625rem, 3.9vw, 3rem);
+    line-height: 1.16;
+    letter-spacing: -0.03em;
+    color: var(--color-paper);
   }
 
-  .btn-nav {
+  .statement .sw {
+    opacity: 0.16;
+  }
+
+  .skill-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.625rem;
+    margin: 1.875rem 0;
+    font-family: var(--font-mono);
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: var(--color-paper);
+  }
+
+  .skill-chips span {
+    padding: 0.3125rem 0.75rem;
+    border-radius: 999px;
+    background-color: rgb(255 255 255 / 0.05);
+    border: 1px solid var(--line);
+    transition:
+      background-color 0.4s var(--ease),
+      border-color 0.4s var(--ease);
+  }
+
+  .timeline {
+    position: relative;
+    padding-left: 1.875rem;
+    list-style: none;
+    margin: 0;
+  }
+
+  .timeline::before,
+  .timeline::after {
+    content: "";
+    position: absolute;
+    left: 0.3125rem;
+    top: 0.5rem;
+    bottom: 0.5rem;
+    width: 1px;
+  }
+
+  .timeline::before {
+    background-color: rgb(255 255 255 / 0.08);
+  }
+
+  .timeline::after {
+    background: linear-gradient(var(--color-sky), var(--color-warm));
+    transform-origin: top;
+    transform: scaleY(var(--tlp));
+  }
+
+  .timeline-item {
+    position: relative;
+    padding-bottom: 2.625rem;
+  }
+
+  .timeline-item:last-child {
+    padding-bottom: 0;
+  }
+
+  .timeline-item::before {
+    content: "";
+    position: absolute;
+    left: -1.875rem;
+    top: 0.5rem;
+    width: 0.6875rem;
+    height: 0.6875rem;
+    border-radius: 50%;
+    background-color: var(--field-ink);
+    border: 1px solid var(--color-dim);
+    transition: 0.6s var(--ease);
+  }
+
+  .timeline-item.is-on::before {
+    border-color: var(--color-sky);
+    background-color: var(--color-sky);
+    box-shadow: 0 0 0 6px rgb(143 203 255 / 0.14);
+  }
+
+  .timeline-period {
+    font-family: var(--font-mono);
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: var(--color-sky);
+  }
+
+  .timeline-title {
+    margin: 0.5rem 0 0.25rem;
+    font-family: var(--font-heading);
+    font-size: 1.375rem;
+    font-weight: 500;
+    line-height: 1.25;
+    letter-spacing: -0.025em;
+    color: var(--color-paper);
+  }
+
+  .timeline-org {
+    display: block;
+    font-size: 0.875rem;
+    color: var(--color-dim);
+  }
+
+  .timeline-desc {
+    margin-top: 0.625rem;
+    font-size: 0.9375rem;
+    color: var(--color-mut);
+    max-width: 46ch;
+  }
+
+  /* --- contact ------------------------------------------------------------ */
+  .bigmail {
+    position: relative;
     display: inline-flex;
     align-items: center;
-    justify-content: center;
-    padding: 0.45rem 1.05rem;
-    /* 13px floor: nothing meant to be read goes below it. */
-    font-size: 0.8125rem;
-    font-weight: 700;
-    letter-spacing: -0.01em;
-    white-space: nowrap;
-    min-height: var(--control-h);
-    /* The reference's action row button: bg-black/20, white text,
-       border-white/10, shadow-md, rounded-lg. */
-    color: #fff;
-    background-color: rgb(0 0 0 / 0.2);
-    border: 1px solid var(--glass-nest-edge);
-    border-radius: var(--glass-nest-radius);
-    box-shadow: var(--glass-sheet);
+    gap: 1.25rem;
+    margin-top: 2.5rem;
+    padding-bottom: 0.5rem;
+    font-family: var(--font-heading);
+    font-weight: 500;
+    font-size: clamp(1.75rem, 6.2vw, 4.75rem);
+    line-height: 1.1;
+    letter-spacing: -0.04em;
+    word-break: break-word;
+  }
+
+  .bigmail::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 2px;
+    background: linear-gradient(90deg, var(--color-sky), var(--color-warm));
+    transform-origin: left;
+    transform: scaleX(0.18);
+    transition: transform 0.9s var(--ease);
+  }
+
+  .bigmail:hover::after,
+  .bigmail:focus-visible::after {
+    transform: scaleX(1);
+  }
+
+  .contact-actions {
+    display: flex;
+    gap: 0.75rem;
+    margin-top: 2.375rem;
+    flex-wrap: wrap;
+  }
+
+  /* --- footer ------------------------------------------------------------- */
+  .site-footer {
+    position: relative;
+    overflow: hidden;
+    padding-top: clamp(4rem, 12vw, 9.375rem);
+  }
+
+  .footer-row {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    gap: 1.5rem;
+    align-items: start;
+    padding-top: 1.75rem;
+    border-top: 1px solid var(--line);
+  }
+
+  .footer-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.75rem;
+    font-size: 0.875rem;
+    color: var(--color-mut);
+  }
+
+  .footer-links a {
+    padding-bottom: 3px;
+    background-image: linear-gradient(currentColor, currentColor);
+    background-position: 0 100%;
+    background-repeat: no-repeat;
+    background-size: 0 1px;
     transition:
-      background-color 160ms cubic-bezier(0.23, 1, 0.32, 1),
-      color 160ms cubic-bezier(0.23, 1, 0.32, 1),
-      transform 160ms cubic-bezier(0.23, 1, 0.32, 1);
+      color 0.3s var(--ease),
+      background-size 0.6s var(--ease);
   }
 
-  .btn-nav:active {
-    transform: scale(0.97);
-  }
-
-  a.is-nav-active {
+  .footer-links a:hover,
+  .footer-links a:focus-visible {
     color: #fff;
-  }
-
-  a.link-underline.is-nav-active {
     background-size: 100% 1px;
   }
 
-  /* The live action is the same solid white pill as the live tab. */
-  .btn-nav.is-nav-active {
-    background-color: #fff;
-    color: #000;
-    border-color: #fff;
+  .footer-copy {
+    text-align: right;
+    font-size: 0.875rem;
+    color: var(--color-dim);
   }
 
-  /* Nav rail: the bar is a state machine over the shared rail tokens, so
-     scrolling changes the glass density, not the recipe. */
-  .site-nav.is-nav-scrolled {
-    --glass-edge: rgb(255 255 255 / 0.16);
+  .tagline {
+    margin-top: 0.625rem;
+    font-family: var(--font-serif), Georgia, serif;
+    font-style: italic;
+    font-size: 0.9375rem;
+    color: var(--color-dim);
   }
 
-  /* The reference's icon button: no border, white/70 glyph, rounded-full,
-     hover:bg-black/20. */
+  .footer-mark {
+    margin-top: 3.125rem;
+    padding-bottom: 0.06em;
+    font-family: var(--font-serif), Georgia, serif;
+    font-style: italic;
+    font-weight: 400;
+    font-size: clamp(5.5rem, 23vw, 20.5rem);
+    line-height: 0.78;
+    letter-spacing: -0.06em;
+    text-align: center;
+    white-space: nowrap;
+    user-select: none;
+    pointer-events: none;
+    opacity: var(--fp);
+    translate: 0 calc((1 - var(--fp)) * 70px);
+  }
+
+  .footer-mark-ch {
+    display: inline-block;
+    padding: 0 0.09em;
+    margin: 0 -0.09em;
+    background: linear-gradient(
+      180deg,
+      rgb(255 255 255 / calc(0.34 + var(--b, 0) * 0.5)),
+      rgb(143 203 255 / calc(0.12 + var(--b, 0) * 0.28)) 70%,
+      transparent
+    );
+    background-clip: text;
+    color: transparent;
+  }
+
+  /* --- chrome ------------------------------------------------------------- */
+  .menu-toggle {
+    position: relative;
+    display: block;
+    width: 1.35rem;
+    height: 0.85rem;
+  }
+
+  .menu-toggle-bar {
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background-color: currentColor;
+    transition:
+      transform 0.36s cubic-bezier(0.32, 0.72, 0, 1),
+      opacity 0.22s cubic-bezier(0.32, 0.72, 0, 1);
+  }
+
+  .menu-toggle-bar-top {
+    top: 0;
+  }
+
+  .menu-toggle-bar-bot {
+    bottom: 0;
+  }
+
+  .menu-toggle[data-open="true"] .menu-toggle-bar-top {
+    top: 50%;
+    transform: translateY(-50%) rotate(45deg);
+  }
+
+  .menu-toggle[data-open="true"] .menu-toggle-bar-bot {
+    bottom: 50%;
+    transform: translateY(50%) rotate(-45deg);
+  }
+
+  .mobile-menu-panel {
+    pointer-events: none;
+    visibility: hidden;
+    border-radius: 0;
+    background-color: rgb(6 11 26 / 0.97);
+    backdrop-filter: blur(20px);
+  }
+
   .btn-icon {
     display: inline-flex;
     align-items: center;
@@ -469,7 +1460,7 @@
     height: 2.75rem;
     color: rgb(255 255 255 / 0.7);
     border: 0;
-    border-radius: var(--control-round);
+    border-radius: 9999px;
     background-color: transparent;
     transition:
       background-color 160ms cubic-bezier(0.23, 1, 0.32, 1),
@@ -481,91 +1472,220 @@
     transform: scale(0.97);
   }
 
-  .btn-icon:disabled {
-    opacity: 0.4;
-    pointer-events: none;
-  }
-
-  /* Pressed state is the same solid white pill as the live tab. */
-  .btn-icon[aria-pressed="true"] {
-    background-color: #fff;
-    color: #000;
-  }
-
-  @media (prefers-reduced-transparency: reduce) {
-    .glass-rail,
-    .glass-panel,
-    .glass-card,
-    .glass-tile {
-      backdrop-filter: none;
-      background-color: var(--glass-fill-solid);
-    }
-
-    .glass-nest {
-      background-color: rgb(0 0 0 / 0.45);
-    }
-  }
-
   @media (hover: hover) and (pointer: fine) {
-    .btn-primary:hover {
-      background-color: rgb(255 255 255 / 0.88);
-    }
-
-    .btn-nav:hover,
     .btn-icon:hover {
-      background-color: rgb(0 0 0 / 0.2);
+      background-color: rgb(255 255 255 / 0.1);
       color: #fff;
     }
-
-    .btn-nav.is-nav-active:hover {
-      background-color: rgb(255 255 255 / 0.88);
-      color: #000;
-    }
   }
 
-  .reveal,
-  [data-intro] {
-    opacity: 0;
+  .skip-link {
+    position: absolute;
+    left: 1rem;
+    top: -5rem;
+    z-index: 70;
+    padding: 0.65rem 1rem;
+    background-color: #fff;
+    color: #000;
+    font-size: 0.875rem;
+    font-weight: 700;
+    border-radius: 0.375rem;
   }
 
-  .link-underline {
-    background-image: linear-gradient(currentColor, currentColor);
-    background-position: 0 100%;
-    background-repeat: no-repeat;
-    background-size: 0 1px;
-    transition:
-      background-size 200ms cubic-bezier(0.23, 1, 0.32, 1),
-      color 200ms cubic-bezier(0.23, 1, 0.32, 1);
-  }
-
-  .link-underline:focus-visible {
-    background-size: 100% 1px;
-  }
-
-  @media (hover: hover) and (pointer: fine) {
-    .link-underline:hover {
-      background-size: 100% 1px;
-    }
-  }
-
+  /* Nav CTA and hero CTAs land on a section: the heading answers with one
+     short colour flash so the reader sees where they arrived. */
   .section-flash {
     animation: section-flash 0.9s ease-out;
   }
+  /* Copy that stands directly on the animated field carries a dark halo: the
+     plume can bloom white behind a line of text, and the halo is what keeps
+     the glyph readable without dimming the field the reader came for. Solid
+     fills (curtains, pills, the wordmark's gradient text) take no halo — it
+     would show around their edges or double the mark. */
+  .hero-copy,
+  .section-y .site-shell,
+  .site-footer .site-shell,
+  .nav-pill {
+    text-shadow:
+      0 1px 2px rgb(3 8 22 / 0.9),
+      0 0 24px rgb(3 8 22 / 0.6);
+  }
 
+  .btn,
+  .nav-cta,
+  .nav-ind,
+  .work-go,
+  .glass,
+  .mobile-menu-panel,
+  .footer-mark,
+  .footer-mark-ch,
+  .work-art {
+    text-shadow: none;
+  }
+
+  .skip-link:focus {
+    top: 1rem;
+  }
+
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
 }
 
-/* Live-surface state that must outrank a utility color. The nav links carry
-   `text-white/75` from the utilities layer, and a utilities declaration always
-   wins over our components layer — which painted the live pill's label white
-   over its white fill. Declared here so the reference's black label survives. */
+@keyframes section-flash {
+  0% {
+    color: var(--color-paper);
+  }
+  40% {
+    color: var(--color-sky);
+  }
+  100% {
+    color: var(--color-paper);
+  }
+}
+
+@keyframes ping {
+  0% {
+    box-shadow: 0 0 0 0 rgb(74 222 128 / 0.4);
+  }
+  70%,
+  100% {
+    box-shadow: 0 0 0 7px rgb(74 222 128 / 0);
+  }
+}
+
+@keyframes orn-in {
+  from {
+    opacity: 0;
+    transform: scale(0.5);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
 @layer utilities {
-  a.glass-nest-item.is-nav-active,
-  .glass-nest-item[aria-current="true"],
-  a.glass-nest-item.is-nav-active:hover {
-    background-color: #fff;
-    color: #000;
-    font-weight: 700;
-    box-shadow: var(--glass-sheet);
+  body {
+    caret-color: var(--color-sky);
+  }
+
+  ::selection {
+    background-color: color-mix(in srgb, var(--color-sky) 84%, transparent);
+    color: #061020;
+  }
+
+  body::-webkit-scrollbar {
+    width: 6px;
+    background-color: var(--color-ink);
+  }
+
+  body::-webkit-scrollbar-thumb {
+    background-color: var(--color-mist);
+  }
+}
+
+@media (max-width: 900px) {
+  .hero-foot,
+  .about-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .about-socials {
+    width: 100%;
+    margin-left: 0;
+  }
+
+  .bigmail {
+    font-size: clamp(1.375rem, 5.8vw, 4.75rem);
+  }
+
+  .bigmail > .ar {
+    display: none;
+  }
+
+  .footer-mark {
+    font-size: clamp(3.75rem, 20vw, 20.5rem);
+  }
+
+  .hero-ornament {
+    display: none;
+  }
+
+  .hero-copy {
+    translate: none;
+  }
+
+  .work-row {
+    grid-template-columns: 2.25rem minmax(0, 1fr) 2.5rem;
+    gap: 0.875rem;
+    padding: 1.75rem 0;
+  }
+
+  .work-thumb {
+    display: block;
+    grid-column: 1 / -1;
+    order: -1;
+    aspect-ratio: 16 / 9;
+    border-radius: 1rem;
+    overflow: hidden;
+    position: relative;
+    background-color: var(--color-deep);
+  }
+
+  .work-go {
+    width: 2.5rem;
+    height: 2.5rem;
+  }
+
+  .footer-row {
+    grid-template-columns: 1fr;
+  }
+
+  .footer-copy {
+    text-align: left;
+  }
+
+  .work-tab {
+    padding: 0.5rem 0.8125rem;
+  }
+}
+
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .glass,
+  .site-header.is-scrolled .nav-pill,
+  .mobile-menu-panel,
+  .work-preview-tag {
+    background-color: rgb(6 11 26 / 0.94);
+    backdrop-filter: none;
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .glass,
+  .site-header.is-scrolled .nav-pill,
+  .mobile-menu-panel,
+  .work-preview-tag {
+    backdrop-filter: none;
+    background-color: rgb(6 11 26 / 0.96);
+  }
+
+  .orn-orb {
+    backdrop-filter: none;
+  }
+}
+
+@media (hover: none) {
+  .field-glow {
+    display: none;
   }
 }
 
@@ -574,275 +1694,62 @@
     scroll-behavior: auto;
   }
 
-  .menu-toggle-bar {
-    transition: none;
-  }
-
-  .reveal,
-  [data-intro] {
+  [data-r],
+  .statement .sw {
     opacity: 1;
     transform: none;
+    filter: none;
   }
 
-  .link-underline {
+  .w > span {
+    transform: none;
     transition: none;
+  }
+
+  .w,
+  .hero-copy {
+    translate: none;
+  }
+
+  .field-blob,
+  .field-glow,
+  .orn,
+  .footer-mark {
+    translate: none;
+  }
+
+  .orn {
+    animation: none;
+  }
+
+  .status i {
+    animation: none;
   }
 
   .section-flash {
     animation: none;
   }
 
-  .footer-beam {
-    opacity: 1;
-    transform: none;
-    animation: none;
-  }
-
-  .profile-card {
-    transform: none;
+  .btn,
+  .lb > span,
+  .ar > svg,
+  .bigmail::after,
+  .nav-ind,
+  .work-tab-ind,
+  .work-body > *,
+  .footer-mark-ch {
     transition: none;
   }
 
-  .profile-card::before {
-    opacity: 0;
-    transition: none;
+  .work-preview {
+    display: none;
   }
 
-  .profile-card-inner {
-    transition: none;
-  }
-}
-
-.bocanada-field {
-  background-color: #02122d;
-  background-image:
-    radial-gradient(ellipse 70% 50% at 50% 12%, rgba(212, 240, 255, 0.22), transparent 55%),
-    radial-gradient(ellipse 90% 70% at 72% 42%, rgba(1, 94, 195, 0.55), transparent 62%),
-    linear-gradient(180deg, #0053bd 0%, #015ec3 42%, #02122d 100%);
-}
-
-.skip-link {
-  position: absolute;
-  left: 1rem;
-  top: -5rem;
-  z-index: 70;
-  padding: 0.65rem 1rem;
-  background-color: var(--color-ice);
-  background-color: #fff;
-  color: #000;
-  font-size: 0.875rem;
-  font-weight: 700;
-  border-radius: var(--glass-nest-radius);
-}
-
-.skip-link:focus {
-  top: 1rem;
-  outline: 2px solid var(--color-paper);
-  outline-offset: 3px;
-}
-
-/* Field text: copy that stands directly on the animated field carries a dark
-   halo, so the plume can stay bright behind it. Copy that sits on a glass
-   surface does not — the frost already owns its contrast, and a 22px halo
-   inside a panel reads as haze on every glyph. */
-.site-nav,
-.copy-veil {
-  text-shadow:
-    0 1px 2px rgba(2, 18, 45, 0.88),
-    0 0 22px rgba(2, 18, 45, 0.55);
-}
-
-.site-nav h1,
-.site-nav h2,
-.site-nav h3,
-.copy-veil h1,
-.copy-veil h2,
-.copy-veil h3 {
-  text-shadow:
-    0 1px 3px rgba(2, 18, 45, 0.92),
-    0 6px 32px rgba(2, 18, 45, 0.58);
-}
-
-/* Curtains are solid fills: a dark halo shows around their edges. */
-.site-nav .btn-primary,
-.site-nav .btn-nav,
-.site-nav .btn-nav.is-nav-active,
-.site-nav .btn-icon {
-  text-shadow: none;
-}
-
-.headline-accent {
-  /* Ice, lifted toward paper for display use: at full strength the accent
-     sits at 3.6:1 on the frosted panel in a phone — the headline's emphasis
-     read weaker than its own body copy. Same hue, text-safe weight. */
-  color: color-mix(in srgb, var(--color-ice) 68%, var(--color-paper));
-}
-
-.sr-only {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border: 0;
-}
-
-.bocanada-sparks {
-  background-image: radial-gradient(#e2727f 1.5px, transparent 1.7px);
-  background-size: 48px 48px;
-  opacity: 0.55;
-}
-
-.work-card {
-  content-visibility: auto;
-  contain-intrinsic-size: 0 22rem;
-}
-
-/* Section separators are gone: every section now carries its own glass
-   surface, so a floating hairline over the smoke only competed with the
-   edges of that glass. Separation comes from space and the surfaces. */
-.item-rule {
-  border-top: none;
-  background-image: linear-gradient(
-    90deg,
-    color-mix(in srgb, var(--color-paper) 22%, transparent),
-    transparent 78%
-  );
-  background-repeat: no-repeat;
-  background-size: 100% 1px;
-  background-position: 0 0;
-}
-
-.copy-veil {
-  position: relative;
-  z-index: 0;
-  width: fit-content;
-  max-width: 100%;
-}
-
-/* A scrim, not a pane. There is deliberately no `backdrop-filter` here: the
-   blur box has hard edges, and blurring a smooth plume leaves a tonal step at
-   those edges, so the veil rendered as a visible rectangle. The feathered
-   radial keeps the contrast the blanket blur used to buy. The inset is wide on
-   purpose: the plume is brightest behind the hero, and the fade has to land
-   outside the glyphs, not across them. */
-.copy-veil::before {
-  content: "";
-  position: absolute;
-  inset: -2.5rem -3rem;
-  z-index: -1;
-  background: radial-gradient(
-    ellipse 96% 88% at 34% 44%,
-    rgba(2, 18, 45, 0.56),
-    rgba(2, 18, 45, 0.34) 55%,
-    transparent 84%
-  );
-  mask-image: radial-gradient(
-    ellipse 96% 88% at 34% 44%,
-    #000 30%,
-    transparent 88%
-  );
-  -webkit-mask-image: radial-gradient(
-    ellipse 96% 88% at 34% 44%,
-    #000 30%,
-    transparent 88%
-  );
-  pointer-events: none;
-}
-
-@media (prefers-reduced-transparency: reduce) {
-  .copy-veil::before {
-    background: radial-gradient(
-      ellipse 96% 88% at 34% 44%,
-      rgba(2, 18, 45, 0.72),
-      rgba(2, 18, 45, 0.46) 55%,
-      transparent 84%
-    );
-  }
-}
-
-.site-shell {
-  width: 100%;
-  max-width: 88rem;
-  margin-inline: auto;
-  padding-inline: 1.5rem;
-}
-
-.section-y {
-  padding-block: 5.5rem;
-}
-
-/* Browser surfaces belong to the palette: the caret and text selection are
-   painted by the browser unless the design claims them. */
-::selection {
-  background-color: color-mix(in srgb, var(--color-ice) 84%, transparent);
-  color: #061020;
-}
-
-body {
-  caret-color: var(--color-ice);
-}
-
-.font-heading {
-  font-family: var(--font-space-grotesk), ui-sans-serif, system-ui, sans-serif;
-}
-
-.footer-beam {
-  position: absolute;
-  inset: -20% -10%;
-  pointer-events: none;
-  background: linear-gradient(
-    118deg,
-    transparent 36%,
-    color-mix(in srgb, var(--color-ice) 26%, transparent) 50%,
-    transparent 64%
-  );
-  opacity: 0.7;
-  animation: footer-beam-drift 22s linear infinite alternate;
-}
-
-.footer-wordmark {
-  font-family: var(--font-space-grotesk), ui-sans-serif, system-ui, sans-serif;
-  font-size: clamp(4.5rem, 18vw, 13rem);
-  font-weight: 600;
-  line-height: 0.72;
-  letter-spacing: -0.06em;
-  color: color-mix(in srgb, var(--color-paper) 14%, transparent);
-  transform: translateY(22%);
-  user-select: none;
-  pointer-events: none;
-}
-
-@media (min-width: 768px) {
-  .site-shell {
-    padding-inline: 3rem;
+  .timeline::after {
+    transform: scaleY(1);
   }
 
-  .section-y {
-    padding-block: 7.5rem;
-  }
-}
-
-@media (min-width: 1024px) {
-  .site-shell {
-    padding-inline: 4rem;
-  }
-
-  .section-y {
-    padding-block: 8.5rem;
-  }
-}
-
-@layer utilities {
-  body::-webkit-scrollbar {
-    width: 6px;
-    background-color: var(--color-ink);
-  }
-
-  body::-webkit-scrollbar-thumb {
-    background-color: var(--color-mist);
+  html {
+    --p: 0;
   }
 }
