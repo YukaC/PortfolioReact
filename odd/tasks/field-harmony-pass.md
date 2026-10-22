@@ -86,3 +86,51 @@ eran placas negras planas con el lattice coral y el humo nítidos por encima.
   previos; este pass agrega tres unidades chicas en la punta (`9bb0de1`
   sistema de superficies, `f83cbbd` alineación de paneles, `067aa3c`
   higiene de artefactos) más este doc.
+
+---
+
+## Pass 2 — taste gate (2026-10-22)
+
+Segunda pasada sobre el mismo pedido, esta vez con el gate de `design-taste-frontend`
+(`lint.mjs` + `inspect.mjs`). El gate se corre con `--allow` para los dispositivos que
+son identidad del mundo vigente, no descuido:
+
+- `gradient` (el campo Bocanada y los hairlines de `item-rule`), `glass` (los cuatro
+  tiers), `shadow` / `text-shadow` / `button-fx` / `outlined-box` (la receta de vidrio
+  y el halo del texto sobre el campo), `hairline` (el borde inferior del rail),
+  `mono` (una línea: el trigger del easter egg, que es la señal de terminal de Bebop),
+  `font-count` / `size-count` (Space Grotesk + Manrope son las caras del faro),
+  `no-footage` (la imagen en movimiento es el canvas WebGL vivo, no un clip).
+
+### Specs
+
+- **S11 (medido)** — titular de 3 líneas a 1440 y 4 a 390; el gate lo prohíbe en
+  cualquier viewport.
+- **S12 (medido)** — "body 14px": el texto corrido de educación y de proyectos estaba
+  en 14. Las leyes piden 16–20 para lectura.
+- **S13 (medido)** — 4 bloques bajo 13px (12px en `profile-chip` y `btn-nav`, 10.4px en
+  la etiqueta "Stack", 12px en el trigger) y 3 usos de mono fuera de código.
+- **S14** — el mundo vigente manda: ningún `--allow` cambia la identidad; solo se
+  arreglan tamaño, medida y lectura.
+
+### Tasks
+
+| ID | Spec | Task | Commit |
+|----|------|------|--------|
+| T13 | S11 | Hero: card de copy a `lg:col-span-7`, profile a `lg:col-start-9 lg:col-span-4` (mide 720/384, misma card) → titular 2 líneas a 1440 y 768 | `polish(hero): two-line headline measure` |
+| T14 | S11 | Titular: piso del clamp 2.25rem → 2rem (390: 36px/4 líneas → 32px/3 líneas) | idem |
+| T15 | S12 | `Experience` descripción y `ProjectsGrid` problem a `text-base` | idem |
+| T16 | S13 | `profile-chip` y `btn-nav` a 13px; etiqueta "Stack" → `sr-only`; handle de GitHub a la cara de texto; trigger del egg a 13px | idem |
+| T17 | S11–S14 | Verificar con el gate: 0 FAIL / 0 WARN con los `--allow` de identidad (queda 1 FAIL en 390: el titular pide 3 líneas) | gate |
+
+### Log
+
+- **L9** — gate corrido: `lint.mjs src` → 43 FAIL / 16 WARN (todos identidad salvo
+  mono, body-size, small-text, headline-lines). `inspect.mjs` con
+  `CHROME_PATH=/usr/bin/brave` (el script no encuentra Chrome solo).
+- **L10** — medición antes/después: titular 3→2 líneas a 1440 y 2 a 768 (antes 2 con
+  36px); 390: 4→3 líneas (32px). `body 14px` → `16px`. Tamaños en uso 11 → 9.
+- **L11** — el único FAIL restante es el titular a 390 (3 líneas). No se toca la copia
+  del user: para 2 líneas hace falta ≤32 caracteres ("Real problems, working software"
+  = 31). Decisión suya.
+- **L12** — `pnpm lint` ✓ · `pnpm e2e:a11y` 10 OK / 0 FALLA · `pnpm build` ✓.
