@@ -120,7 +120,7 @@ const ProfileCard = () => {
                 {SITE_NAME}
               </p>
               <p className="text-sm text-white/75">{PERSON_JOB_TITLE}</p>
-              <p className="text-xs text-white/55">
+              <p className="text-sm text-white/55">
                 {PERSON_LOCALITY}, Argentina
               </p>
             </div>
@@ -148,7 +148,7 @@ const ProfileCard = () => {
               href={`https://github.com/${GITHUB_USERNAME}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="link-underline focus-ring inline-flex items-center gap-1.5 rounded-sm font-mono text-xs text-white/75 hover:text-white"
+              className="link-underline focus-ring inline-flex items-center gap-1.5 rounded-sm text-sm text-white/75 hover:text-white"
             >
               github.com/{GITHUB_USERNAME}
               <span className="sr-only"> (opens in a new tab)</span>
@@ -171,9 +171,7 @@ const ProfileCard = () => {
             className="profile-face profile-face-back flex flex-col items-center gap-4 p-6 text-center md:p-8 lg:p-10"
             aria-hidden={isFlipped ? undefined : "true"}
           >
-            <p className="font-mono text-[0.65rem] uppercase tracking-[0.18em] text-white/75">
-              Stack
-            </p>
+            <h3 className="sr-only">Stack</h3>
 
             <ul className="flex flex-wrap items-center justify-center gap-2">
               {SKILLS.map((skill) => (

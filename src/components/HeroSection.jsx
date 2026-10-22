@@ -20,10 +20,10 @@ const HeroSection = () => {
       id="home"
     >
       <div className="site-shell grid min-h-[100dvh] grid-cols-1 content-start gap-10 pt-24 pb-16 md:gap-12 md:pb-20 lg:grid-cols-12 lg:content-center lg:items-center lg:gap-x-16">
-        <div className="glass-card glass-live flex flex-col gap-6 p-6 md:p-8 lg:col-span-6 lg:p-10">
+        <div className="glass-card glass-live flex flex-col gap-6 p-6 md:p-8 lg:col-span-7 lg:p-10">
           <h1
             data-intro
-            className="text-balance text-[clamp(2.25rem,4.4vw,3.4rem)] leading-[1.14]"
+            className="text-balance text-[clamp(2rem,4.4vw,3.4rem)] leading-[1.14]"
           >
             Turning Real Problems Into{" "}
             <span className="headline-accent">Working Software</span>
@@ -47,7 +47,7 @@ const HeroSection = () => {
           </div>
         </div>
 
-        <div data-intro className="lg:col-span-5 lg:col-start-8">
+        <div data-intro className="lg:col-span-4 lg:col-start-9">
           <ProfileCard />
         </div>
       </div>
