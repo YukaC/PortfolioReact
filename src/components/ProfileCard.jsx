@@ -93,7 +93,7 @@ const ProfileCard = () => {
   };
 
   return (
-    <div className="profile-stage mx-auto w-full max-w-sm">
+    <div className="profile-stage mx-auto w-full max-w-sm lg:mx-0 lg:ml-auto">
       <div
         ref={cardRef}
         className={`profile-card glass-card${isFlipped ? " is-flipped" : ""}`}
@@ -101,7 +101,7 @@ const ProfileCard = () => {
         onPointerLeave={handlePointerLeave}
       >
         <div className="profile-card-inner">
-          <div className="profile-face flex flex-col items-center gap-4 p-5 text-center sm:p-6">
+          <div className="profile-face flex flex-col items-center gap-4 p-6 text-center md:p-8 lg:p-10">
             <Image
               src="/profile-hero.webp"
               alt={`${SITE_NAME} profile photo`}
@@ -168,7 +168,7 @@ const ProfileCard = () => {
           </div>
 
           <div
-            className="profile-face profile-face-back flex flex-col items-center gap-4 p-5 text-center sm:p-6"
+            className="profile-face profile-face-back flex flex-col items-center gap-4 p-6 text-center md:p-8 lg:p-10"
             aria-hidden={isFlipped ? undefined : "true"}
           >
             <p className="font-mono text-[0.65rem] uppercase tracking-[0.18em] text-white/75">
