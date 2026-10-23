@@ -293,6 +293,12 @@
     max-width: 46ch;
   }
 
+  /* A lead that follows a section heading needs its own air. In the work header
+     the lead is a flex item pinned to the end, so a top margin stays inert. */
+  .section-y h2 + .lead {
+    margin-top: 1.5rem;
+  }
+
   .status {
     display: inline-flex;
     align-items: center;
@@ -308,21 +314,25 @@
     background: #4ade80;
     animation: ping 2.4s infinite;
   }
+
+  /* Inline flow, not flex: the separator has to be able to wrap with the item
+     it belongs to, otherwise a narrow viewport opens the line with "·". */
   .stackline {
-    display: flex;
-    flex-wrap: wrap;
-    row-gap: 0.25rem;
     margin-top: 2.875rem;
     font-family: var(--font-mono);
     font-size: 0.8125rem;
     font-weight: 500;
+    line-height: 1.6;
     letter-spacing: 0.04em;
     color: var(--color-dim);
+    text-wrap: pretty;
   }
 
+  /* The space inside the separator is what buys the line-break opportunity:
+     it sits after the dot, so a wrapped line can never open with "·". */
   .stackline span + span::before {
-    content: "·";
-    margin: 0 0.625rem;
+    content: "· ";
+    margin: 0 0.3125rem 0 0.625rem;
   }
 
   /* --- glass: one recipe, used only where it does a job ------------------- */
@@ -1630,12 +1640,11 @@
   }
 
   .about-socials {
-    width: 100%;
     margin-left: 0;
   }
 
   .bigmail {
-    font-size: clamp(1.375rem, 5.8vw, 4.75rem);
+    font-size: clamp(1.75rem, 6.2vw, 4.75rem);
   }
 
   .bigmail > .ar {
@@ -1686,6 +1695,27 @@
 
   .work-tab {
     padding: 0.5rem 0.8125rem;
+  }
+}
+
+/* Narrow phones: the identity row cannot hold avatar, name and three socials on
+   one line without breaking the role into a three-line column. Socials drop to
+   their own line, aligned under the name. */
+@media (max-width: 560px) {
+  .about-portrait {
+    flex-wrap: wrap;
+    row-gap: 1rem;
+  }
+
+  .about-portrait > div:first-of-type {
+    flex: 1 1 8rem;
+    min-width: 0;
+  }
+
+  .about-socials {
+    flex-basis: 100%;
+    width: auto;
+    margin-left: 4.375rem;
   }
 }
 
