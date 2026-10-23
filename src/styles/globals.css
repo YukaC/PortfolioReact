@@ -660,6 +660,36 @@
     }
   }
 
+  /* Logo: the mark takes an ice glow and the dash underneath answers hover and
+     keyboard focus exactly like the footer's social links — drawn left to right
+     in white over 0.6s on the shared easing curve. `pathLength="1"` normalises
+     the curve, so the reveal needs no measured length. */
+  .site-logo-mark {
+    transition: filter 0.6s var(--ease);
+  }
+
+  .site-logo-dash {
+    color: #fff;
+  }
+
+  .site-logo-dash path {
+    stroke-dasharray: 1;
+    stroke-dashoffset: 1;
+    transition: stroke-dashoffset 0.6s var(--ease);
+  }
+
+  .logo-link:hover .site-logo-mark,
+  .logo-link:focus-visible .site-logo-mark {
+    filter: drop-shadow(0 0 4px rgb(143 203 255 / 0.95))
+      drop-shadow(0 0 14px rgb(143 203 255 / 0.6))
+      drop-shadow(0 0 30px rgb(143 203 255 / 0.35));
+  }
+
+  .logo-link:hover .site-logo-dash path,
+  .logo-link:focus-visible .site-logo-dash path {
+    stroke-dashoffset: 0;
+  }
+
   /* --- hero --------------------------------------------------------------- */
   .hero {
     position: relative;
@@ -1728,6 +1758,11 @@
 
   .section-flash {
     animation: none;
+  }
+
+  .site-logo-mark,
+  .site-logo-dash path {
+    transition: none;
   }
 
   .btn,
