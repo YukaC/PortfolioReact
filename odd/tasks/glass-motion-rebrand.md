@@ -116,3 +116,14 @@ deja de montar la card de perfil para que el texto tome el protagonismo.
   hasta el último, porque el sistema nuevo reemplaza al viejo en bloque.
 - **L12** — el dev server del usuario quedó levantado de nuevo en :3000 después
   del build de producción (el build comparte `.next` con `next dev`).
+- **L13** — revisión nativa (RDD on) sobre el candidato de rama
+  `sha256:9e94dbae…` (base `ddbaa23` → HEAD, 29 archivos / 3231+1520 líneas):
+  `inspect` ofreció `review.start`; la selección de lentes del agente fue
+  rechazada dos veces con `lenses-invalid` (array y lista separada por comas,
+  3 y 4 lentes) y el tercer intento —sin lentes, la ruta "neither" que el
+  contrato permite— llegó al bloqueo real: `lens_context_budget_exceeded` en
+  preflight. `mutation_outcome: not_started`, `lineage_created: false`, sin
+  autoridad creada: nada que abandonar, reparar o reintentar. Continuación
+  nativa: partir el cambio en una secuencia encadenada de candidatos más chicos
+  (cada work unit por separado) y volver a pedir la transición para el alcance
+  reducido, o `D`. Decisión pendiente del usuario.
