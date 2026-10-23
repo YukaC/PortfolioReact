@@ -11,12 +11,11 @@ export function useIntroTimeline(rootRef) {
 
     registerMotion();
     const ctx = gsap.context(() => {
-      const logoStroke = root.querySelector("[data-logo-stroke]");
       const introNodes = root.querySelectorAll("[data-intro]");
+      if (introNodes.length === 0) return;
 
       if (prefersReducedMotion()) {
         gsap.set(introNodes, { autoAlpha: 1, y: 0, scale: 1 });
-        if (logoStroke) gsap.set(logoStroke, { strokeDashoffset: 0 });
         return;
       }
 
@@ -43,24 +42,6 @@ export function useIntroTimeline(rootRef) {
         }),
         0,
       );
-
-      if (logoStroke) {
-        const length = logoStroke.getTotalLength();
-        gsap.set(logoStroke, {
-          strokeDasharray: length,
-          strokeDashoffset: length,
-        });
-        timeline.to(
-          logoStroke,
-          {
-            strokeDashoffset: 0,
-            duration: DURATION.logoStroke,
-            ease: EASE.soft,
-            overwrite: "auto",
-          },
-          0.12,
-        );
-      }
     }, root);
 
     return () => ctx.revert();

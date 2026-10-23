@@ -291,7 +291,7 @@ const Navbar = () => {
         <div className="nav-pill">
           <Link
             href="#home"
-            className="focus-ring rounded-sm"
+            className="logo-link focus-ring rounded-sm"
             onClick={(e) => scrollToSection(e, "#home")}
             aria-label="Go to home section"
           >
