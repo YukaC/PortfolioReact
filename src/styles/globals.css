@@ -866,6 +866,15 @@
     border-radius: 999px;
     background-color: var(--glass);
     border: 1px solid var(--line);
+    /* On the narrowest phones the row cannot shrink to the shell: let it scroll
+       instead of losing the last filter behind the section's clip. */
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+  }
+
+  .work-tabs::-webkit-scrollbar {
+    display: none;
   }
 
   .work-tab {
@@ -1212,6 +1221,14 @@
 
   .statement .sw {
     opacity: 0.16;
+  }
+
+  /* The words are lit by a scroll trigger; with no script nothing would ever
+     light them, so the statement stays fully readable instead. */
+  @media (scripting: none) {
+    .statement .sw {
+      opacity: 1;
+    }
   }
 
   .skill-chips {
