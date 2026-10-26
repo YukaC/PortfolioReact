@@ -23,11 +23,26 @@ const FIELD_INK = "#060b1a";
    odd/tasks/mobile-field-parity.md. */
 const SIM_QUALITY = { resolution: 0.32, iterationsPoisson: 12 };
 
+/* A phone on 3G would spend 181 KB of `three` to mount a field whose first frame
+   it cannot paint anyway: the CSS field below already covers those seconds, and
+   it is the same field the page shows until the chunk lands. So the live dye
+   waits for a connection that can afford it, and mounts later if the connection
+   improves. No NetworkInformation API means no guessing: the field mounts. */
+const SLOW_EFFECTIVE_TYPES = new Set(["slow-2g", "2g", "3g"]);
+
+function getConnection() {
+  return typeof navigator === "undefined" ? null : navigator.connection;
+}
+
 function getSimQuality() {
-  if (typeof navigator !== "undefined" && navigator.connection?.saveData) {
+  const connection = getConnection();
+  if (!connection) {
+    return SIM_QUALITY;
+  }
+  if (connection.saveData) {
     return null;
   }
-  return SIM_QUALITY;
+  return SLOW_EFFECTIVE_TYPES.has(connection.effectiveType) ? null : SIM_QUALITY;
 }
 
 /**
@@ -68,7 +83,23 @@ const AppBackground = () => {
       setSimQuality(getSimQuality());
     };
     applyMotionPreference(prefersReducedMotion());
-    return subscribeReducedMotion(applyMotionPreference);
+    const offMotion = subscribeReducedMotion(applyMotionPreference);
+
+    // The connection is re-read rather than sampled once: a phone that walks out
+    // of a dead zone should get the live field without a reload.
+    const connection = getConnection();
+    const applyConnection = () => {
+      if (prefersReducedMotion()) return;
+      const next = getSimQuality();
+      setSimQuality(next);
+      if (!next) setCanUseWebgl(false);
+    };
+    connection?.addEventListener?.("change", applyConnection);
+
+    return () => {
+      offMotion();
+      connection?.removeEventListener?.("change", applyConnection);
+    };
   }, []);
 
   useEffect(() => {
