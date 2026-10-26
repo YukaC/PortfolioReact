@@ -8,10 +8,15 @@ const nextConfig = {
   poweredByHeader: false,
   // Allow LAN / alternate localhost hosts to hit HMR + /_next/* in `next dev`
   // (avoids blocked cross-origin + noisy allowedDevOrigins warnings).
+  // 100.120.254.30 + yuka.tail901e3b.ts.net are this machine over Tailscale, for
+  // opening the dev server on a phone; update them if the tailnet name changes.
   allowedDevOrigins: [
     "127.0.0.1",
     "localhost",
     "192.168.0.233",
+    "192.168.0.234",
+    "100.120.254.30",
+    "yuka.tail901e3b.ts.net",
   ],
   images: {
     formats: ["image/avif", "image/webp"],
