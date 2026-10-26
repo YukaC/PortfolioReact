@@ -16,7 +16,7 @@ const spaceGrotesk = Space_Grotesk({
   display: "swap",
 });
 
-/** Display serif: the italic accent that carries the emphasis in headings. */
+/** Display serif: the surname wordmark in the footer, and nothing else. */
 const fraunces = Fraunces({
   subsets: ["latin"],
   variable: "--font-fraunces",

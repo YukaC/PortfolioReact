@@ -14,27 +14,58 @@ const isValidHash = (href) => typeof href === "string" && /^#[\w-]+$/.test(href)
 
 const SPY_SECTION_IDS = ["portfolio", "about", "contact"];
 
-function syncNavSpy(linkNodes) {
-  const spyY = Math.max(120, Math.round(window.innerHeight * 0.33));
+/**
+ * Scroll-spy geometry, in document coordinates.
+ *
+ * Reading a section rect inside the scroll handler forces layout on every
+ * frame, so the geometry is measured once per layout change and the active
+ * section is then resolved against the scroll offset, which is a cached read.
+ */
+function measureNavSpy() {
+  const scrollY = window.scrollY;
+  const viewport = window.innerHeight;
+  const scrollRoot = document.scrollingElement ?? document.documentElement;
+  const sections = SPY_SECTION_IDS.map((id) => {
+    const section = document.getElementById(id);
+    return {
+      id,
+      top: section
+        ? section.getBoundingClientRect().top + scrollY
+        : Number.POSITIVE_INFINITY,
+    };
+  });
+  const contact = document.getElementById("contact");
+
+  return {
+    spyY: Math.max(120, Math.round(viewport * 0.33)),
+    viewport,
+    scrollHeight: scrollRoot.scrollHeight,
+    sections,
+    contactTop: contact ? contact.getBoundingClientRect().top + scrollY : null,
+  };
+}
+
+function resolveSpyId(geometry, scrollY) {
+  if (!geometry) return "";
+
   let activeId = "";
-  for (let i = 0; i < SPY_SECTION_IDS.length; i += 1) {
-    const section = document.getElementById(SPY_SECTION_IDS[i]);
-    if (section && section.getBoundingClientRect().top <= spyY) {
-      activeId = SPY_SECTION_IDS[i];
+  for (let i = 0; i < geometry.sections.length; i += 1) {
+    if (geometry.sections[i].top - scrollY <= geometry.spyY) {
+      activeId = geometry.sections[i].id;
     }
   }
 
-  const contact = document.getElementById("contact");
-  if (contact) {
-    const contactTop = contact.getBoundingClientRect().top;
-    const scrollRoot = document.scrollingElement ?? document.documentElement;
-    const remaining =
-      scrollRoot.scrollHeight - (scrollRoot.scrollTop + window.innerHeight);
-    if (contactTop <= spyY || remaining < 96) {
+  if (geometry.contactTop !== null) {
+    const remaining = geometry.scrollHeight - (scrollY + geometry.viewport);
+    if (geometry.contactTop - scrollY <= geometry.spyY || remaining < 96) {
       activeId = "contact";
     }
   }
 
+  return activeId;
+}
+
+function applySpyId(linkNodes, activeId) {
   for (let i = 0; i < linkNodes.length; i += 1) {
     const href = linkNodes[i].getAttribute("data-nav-href");
     const isActive = href === `#${activeId}`;
@@ -147,8 +178,23 @@ const Navbar = () => {
 
     registerMotion();
 
-    const syncSpy = () => {
-      syncNavSpy(document.querySelectorAll("[data-nav-href]"));
+    const linkNodes = document.querySelectorAll("[data-nav-href]");
+    let geometry = null;
+    let activeId = null; // last id written to the links
+    let isScrolled = null; // last header state written
+
+    const refreshGeometry = () => {
+      geometry = measureNavSpy();
+    };
+
+    // The links and the indicator are only touched when the active section
+    // actually changes, not once per scroll frame.
+    const syncSpy = (scrollY = window.scrollY) => {
+      const nextId = resolveSpyId(geometry, scrollY);
+      if (nextId === activeId) return;
+      activeId = nextId;
+      applySpyId(linkNodes, nextId);
+
       if (isHoveringRef.current) return;
       const active =
         linksRef.current?.querySelector(".nav-link.is-nav-active") ?? null;
@@ -158,29 +204,49 @@ const Navbar = () => {
       placeIndicator(active);
     };
 
+    const syncFromScroll = () => syncSpy(window.scrollY);
+
+    refreshGeometry();
     syncSpy();
 
     const trigger = ScrollTrigger.create({
       start: 0,
       end: "max",
       invalidateOnRefresh: true,
-      onRefresh: syncSpy,
+      onRefresh() {
+        refreshGeometry();
+        syncFromScroll();
+      },
       onUpdate(self) {
-        header.classList.toggle("is-scrolled", self.scroll() > 24);
-        syncSpy();
+        const scrolled = self.scroll() > 24;
+        if (scrolled !== isScrolled) {
+          isScrolled = scrolled;
+          header.classList.toggle("is-scrolled", scrolled);
+        }
+        syncSpy(self.scroll());
       },
     });
 
-    ScrollTrigger.addEventListener("scrollEnd", syncSpy);
+    ScrollTrigger.addEventListener("scrollEnd", syncFromScroll);
 
-    const onResize = () => placeIndicator(
+    const placeOnActiveLink = () => placeIndicator(
       linksRef.current?.querySelector(".nav-link.is-nav-active") ?? null,
     );
+    const onResize = () => {
+      refreshGeometry();
+      placeOnActiveLink();
+    };
     window.addEventListener("resize", onResize);
     if (document.fonts?.ready) document.fonts.ready.then(onResize);
 
+    // A work filter, a late image or a font swap moves everything below it, so
+    // the cached offsets are re-measured when the document changes size.
+    const layoutObserver = new ResizeObserver(onResize);
+    layoutObserver.observe(document.body);
+
     return () => {
-      ScrollTrigger.removeEventListener("scrollEnd", syncSpy);
+      layoutObserver.disconnect();
+      ScrollTrigger.removeEventListener("scrollEnd", syncFromScroll);
       window.removeEventListener("resize", onResize);
       trigger.kill();
       gsap.killTweensOf(header);
