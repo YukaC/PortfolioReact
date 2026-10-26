@@ -57,10 +57,13 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 | Command               | Description                         |
 | --------------------- | ----------------------------------- |
 | `pnpm dev`            | Start the development server        |
+| `pnpm dev:mobile`     | Same, bound to `0.0.0.0` for a phone|
 | `pnpm build`          | Create a production build           |
 | `pnpm start`          | Run the production build            |
 | `pnpm lint`           | Run ESLint                          |
 | `pnpm e2e:a11y`       | Browser check of the real site      |
+| `pnpm e2e:motion`     | Footer wordmark motion, in a browser|
+| `pnpm check:motion`   | Static GSAP reset-target guard      |
 | `pnpm validate:bebop` | Validate Bebop easter egg invariants |
 
 `pnpm e2e:a11y` runs the house browser verifier (`~/.agents/scripts/browser-verify`) against
@@ -74,6 +77,49 @@ pnpm e2e:a11y                                      # uses browser-verify.json
 pnpm e2e:a11y -- --base-url http://localhost:3000  # reuse a specific server
 pnpm e2e:a11y -- --json --report .browser-verify/report.json
 ```
+
+### Wordmark motion
+
+The footer surname reacts to the pointer: each letter lifts, scales and brightens. That
+contract needs real input and computed styles, which the declarative catalog cannot express,
+so it has its own runner. `pnpm e2e:motion` drives real pointer moves and asserts every
+observable effect — the `--b` brightness channel, `scaleX`/`scaleY` staying equal and above 1,
+the `translateY` lift, the falloff for letters out of reach, the return to rest when the
+pointer leaves, a clean console — plus `prefers-reduced-motion: reduce` and a touch device,
+where the effect must stay off. It reuses a running dev server or starts one.
+
+```bash
+pnpm e2e:motion                                   # reuses localhost:3000
+pnpm e2e:motion -- --base-url http://localhost:3000
+pnpm e2e:motion -- --headed                       # watch it happen
+```
+
+`pnpm check:motion` is the cheap half: a static guard, no browser. `gsap.quickTo()` resets a
+tween through `resetTo()`, which can only rewrite a property GSAP already tracks under that
+exact name. CSSPlugin expands a few properties before that point (`scale` → `scaleX` +
+`scaleY`, and the same for `autoAlpha`/`alpha`), so a `quickTo(…, "scale")` warns
+"not eligible for reset" once per call and animates nothing. The guard reads the alias list
+from the installed GSAP and fails on any alias used as a reset target.
+
+### Phone access (Tailscale or LAN)
+
+Next 16 already binds `next dev` to `0.0.0.0`; `pnpm dev:mobile` states it explicitly for the
+case where the flag matters (older Next, or a wrapper that overrides the default). What
+actually blocks a phone is `allowedDevOrigins` in `next.config.js`: an origin that is not
+listed gets its `/_next/*` requests rejected, so the HTML loads but the client chunks and
+HMR do not.
+
+```bash
+pnpm dev:mobile
+# then on the phone, same tailnet:
+#   http://yuka.tail901e3b.ts.net:3000   (MagicDNS)
+#   http://100.120.254.30:3000           (Tailscale IP, no DNS needed)
+```
+
+Both hosts are allow-listed. `0.0.0.0` also exposes the dev server to the LAN, not only to
+Tailscale: if that matters, bind the tailnet address alone with `pnpm dev -- -H 100.120.254.30`.
+Re-check the hosts after a tailnet rename or an IP change (`tailscale ip -4`,
+`tailscale status --json`).
 
 ## 📁 Project Structure
 
@@ -102,7 +148,7 @@ PortfolioReact/
 │   ├── hooks/                # useFieldMotion, useRevealOnEnter, usePointerLight, useBebopAnimation
 │   └── utils/                # scroll-to-section
 ├── public/                   # Static assets (WebP, bebop GLTF), robots.txt, sitemap
-├── scripts/                  # validate-bebop-timing, bebop-ship-meta
+├── scripts/                  # e2e-a11y, e2e-footer-motion, check-motion-aliases, validate-bebop-timing
 ├── .github/workflows/        # CI (Node 22, pnpm)
 ├── .nvmrc                    # Node 22 (matches CI)
 ├── LICENSE                   # MIT
@@ -169,6 +215,27 @@ used only where a surface has a job — the scrolled nav pill, the work preview
 and its tag. Motion presets live in `src/motion/config.js`. Task notes:
 `odd/tasks/glass-motion-rebrand.md`.
 
+### Field quality on a phone
+
+The liquid field is one simulation with one set of constants. `getSimQuality` in
+`src/components/AppBackground.jsx` returns `{ resolution: 0.32, iterationsPoisson: 12 }` for
+every device; the only things that turn it off are `prefers-reduced-motion` and
+`navigator.connection.saveData`, and then the CSS field underneath carries the section on its
+own.
+
+`resolution` is relative to the canvas, so one constant means one thing everywhere: the dye's
+simulation targets are 0.32 of the viewport, which is the same density of dye cells per CSS
+pixel on a phone as on a desktop. A 390×844 phone gets 125×270 targets against a 1440×900
+desktop's 460×288 — a third of the cells, and a third of the cost. That is also why there is no
+separate coarse-pointer profile any more: measured on a 4× throttled Pixel 8 profile, the old
+`0.22 / 8` bought nothing (59.8 vs 59.9 fps, 0 janky on both, renderer within 20 ms over 6 s of
+scroll) and cost the smoke its detail. The canvas itself runs at `pixelRatio = 1`
+(`LiquidEther.jsx`), so a DPR-3 phone is not paying three times the pixels either.
+Two consequences worth knowing before touching the constants: the dye's *fluidity* is the
+render-target grid, not the pointer, and the touch drag is part of the design — `touchstart` /
+`touchmove` drive the same field the desktop pointer does. Task notes:
+`odd/tasks/mobile-field-parity.md`.
+
 Dark tokens live in `@theme static` (`src/styles/globals.css`):
 
 ```css
@@ -181,8 +248,8 @@ Dark tokens live in `@theme static` (`src/styles/globals.css`):
   --color-paper: #eef2ff;
   --color-mut: #a9b6d3;
   --color-dim: #93a2ba;
-  --color-sky: #8fcbff;   /* ice accent */
-  --color-warm: #f3b7a1;  /* serif accent */
+  --color-sky: #8fcbff;   /* type accent */
+  --color-ice: #8fcbff;   /* alias of sky */
   --color-coral: #e2727f; /* field lattice */
 }
 ```

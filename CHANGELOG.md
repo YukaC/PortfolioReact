@@ -2,13 +2,60 @@
 
 ## Unreleased
 
+### The phone gets the whole field
+
+- The liquid field no longer downgrades itself on a coarse pointer. `getSimQuality`
+  returned `resolution 0.22 / 8 Poisson iterations` for `(pointer: coarse)` or a
+  viewport under 768px, against `0.32 / 12` everywhere else, so a 390×844 phone ran
+  its dye through 86×186 render targets — a fifth of the desktop grid's density —
+  and the smoke read as a blur that never quite moved. Both profiles are gone;
+  one pair of constants applies to every device, and the touch drag now drives the
+  same field the desktop pointer does.
+- Measured before flattening the constant, on the Pixel 8 profile at 4× CPU
+  throttle: scroll 59.9 fps / 0 janky / 0 longtasks on both settings, renderer
+  within 20 ms over 6 s, GPU within 20 ms — the lower resolution was buying
+  nothing measurable. The change is visual only.
+- Why not bake the animation instead: removing the WebGL layer entirely saves
+  ≈0 idle CPU (2490 ms against 2480 ms over 6 s) and would delete the touch
+  response, which is half of what felt broken on a phone. Task notes:
+  `odd/tasks/mobile-field-parity.md`, numbers in `odd/tasks/scroll-perf-pass.md`.
+
+### Back to the Bocanada accent
+
+- The retone that followed the field-first redesign had drifted from the faro:
+  a warm `#f3b7a1` accent, three field blobs whose hue swept violet, orange and
+  green as the reading progress moved, and Fraunces extending past the wordmark
+  into `.accent` and the tagline. All three are reverted; the navy field, the
+  smoke and the coral lattice are untouched.
+- Sky `#8fcbff` is the type accent, not coral: the field's own light on the
+  emphasised word. `.accent` is the heading face at weight 600 in sky, and the
+  technology band's second row (`.mq-accent`) is sky at 0.55. Coral returns to
+  the lattice alone — as type it competed with the 48px dots for the same hue.
+  Measured against the same backdrop behind the hero word: sky 10.57 p50 /
+  2.93 p95, coral 6.04 / 1.67, paper 16.34 / 4.53. The p95 dip is a bright plume
+  bloom passing under the word, the same trade the headline and the body copy
+  already make on a live field.
+- The blobs drift inside the cobalt range (204–224) instead of across the
+  colour wheel, so the field no longer changes colour family as the reader
+  scrolls. Progress bar, timeline and the giant-mail underline fade sky→paper.
+- The `.accent` emphasis is colour rather than type: no serif italic in the
+  headings, and the footer tagline drops it too. Fraunces stays in `_app.js` for
+  one job only, the surname wordmark (`.footer-mark`), which reads as a mark in
+  the serif and as a slab in the sans. The work monogram fallback is the heading
+  face.
+- Fixed while removing the serif: `body` declared `var(--font-manrope)` but sits
+  above the element that carries the next/font variables, so every piece of
+  running copy was falling back to the browser sans. The readable stack now
+  lives on `.root-layout`; the lead and the tagline compute to Manrope.
+
 ### Field-first redesign (glass-motion reference)
 
 - The layout, the type and the micro-interactions now follow the
   `portfolio-glass-motion` reference: a navy field, type as the hero, and glass
   only where a surface has a job.
 - The field is retoned, not replaced. `#060b1a` base, a cobalt
-  `.bocanada-field` gradient, three blobs whose hue follows the reading progress,
+  `.bocanada-field` gradient, three blobs whose hue follows the reading progress
+  (later narrowed to the cobalt range, see above),
   the WebGL smoke and the coral 48px lattice with its spring flares (both drawn
   in the `LiquidEther` shader), the cursor light, grain, and a 2px progress bar.
   The smoke, the dots and the flares are untouched.
@@ -16,7 +63,8 @@
   writes `--scy`, `--p`, `--hf`, `--px/--py`, `--mx/--my` on `:root`. Every layer
   reads from it, so nothing snaps.
 - Fraunces italic joins Manrope and Space Grotesk as the display accent
-  (`.accent`, the footer tagline, the wordmark). The composite font stacks are
+  (`.accent`, the footer tagline, the wordmark); narrowed to the wordmark alone
+  by "Back to the Bocanada accent" above. The composite font stacks are
   declared on `.root-layout`, the element that carries the next/font variables.
 - The hero lost its card. Status line, headline split word by word (with a slow
   per-word parallax), lead, two CTAs and the stack line; the right side is a
