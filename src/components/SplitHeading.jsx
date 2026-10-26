@@ -4,7 +4,7 @@ import { useMemo } from "react";
  * Heading that arrives word by word.
  *
  * Each word sits in a clipping box (`.w`) and slides up from below with a 70ms
- * stagger; `accent` names the word that carries the serif italic, so the
+ * stagger; `accent` names the word that carries the sky emphasis, so the
  * emphasis survives the split. The heading keeps the plain sentence as its
  * accessible name and the words stay in the DOM for search. The reveal trigger
  * is the page-wide `[data-r]` observer.

@@ -71,9 +71,13 @@ const Footer = () => {
     }
 
     const letters = [...mark.children];
+    // `scale` is a CSSPlugin alias that expands into scaleX/scaleY, so a quickTo()
+    // on it has no PropTween of its own to reset and never animates. Split the
+    // axes: same duration and ease on both, so the glyph stays undistorted.
     const tweens = letters.map((letter) => ({
       y: gsap.quickTo(letter, "y", { duration: 0.5, ease: "power3.out" }),
-      scale: gsap.quickTo(letter, "scale", { duration: 0.5, ease: "power3.out" }),
+      scaleX: gsap.quickTo(letter, "scaleX", { duration: 0.5, ease: "power3.out" }),
+      scaleY: gsap.quickTo(letter, "scaleY", { duration: 0.5, ease: "power3.out" }),
     }));
 
     let isVisible = false;
@@ -81,26 +85,66 @@ const Footer = () => {
     let pointerX = 0;
     let pointerY = 0;
 
+    // The letter geometry is layout-only (`offsetLeft/Top/Width/Height` ignore
+    // the transforms the wave itself writes), so it is measured once and then
+    // animated from the cache. Only the mark's own origin moves with scrolling,
+    // and a scroll event just flags it dirty: the single re-read happens inside
+    // the next pointer frame, never in the scroll handler.
+    let centers = [];
+    let originX = 0;
+    let originY = 0;
+    let originDirty = true;
+
+    const measureOrigin = () => {
+      const bounds = mark.getBoundingClientRect();
+      originX = bounds.left;
+      originY = bounds.top;
+      originDirty = false;
+    };
+
+    const measureLetters = () => {
+      centers = letters.map((letter) => ({
+        x: letter.offsetLeft + letter.offsetWidth / 2,
+        y: letter.offsetTop + letter.offsetHeight / 2,
+      }));
+      measureOrigin();
+    };
+
+    measureLetters();
+
     const wave = () => {
       frame = 0;
       if (!isVisible) return;
-      const bounds = mark.getBoundingClientRect();
-      letters.forEach((letter, index) => {
-        const centerX = bounds.left + letter.offsetLeft + letter.offsetWidth / 2;
-        const centerY = bounds.top + letter.offsetTop + letter.offsetHeight / 2;
+      if (originDirty) measureOrigin();
+      for (let i = 0; i < centers.length; i += 1) {
+        const centerX = originX + centers[i].x;
+        const centerY = originY + centers[i].y;
         const force = clamp01(
           1 - Math.hypot((pointerX - centerX) * 0.7, (pointerY - centerY) * 1.1) / 300,
         );
-        letter.style.setProperty("--b", force.toFixed(3));
-        tweens[index].y(-force * 34);
-        tweens[index].scale(1 + force * 0.1);
-      });
+        const scale = 1 + force * 0.1;
+        letters[i].style.setProperty("--b", force.toFixed(3));
+        tweens[i].y(-force * 34);
+        tweens[i].scaleX(scale);
+        tweens[i].scaleY(scale);
+      }
     };
 
     const observer = new IntersectionObserver(([entry]) => {
       isVisible = entry.isIntersecting;
+      // The mark may have moved while it was off screen.
+      if (isVisible) originDirty = true;
     });
     observer.observe(footer);
+
+    const onScroll = () => {
+      originDirty = true;
+    };
+    const onResize = () => measureLetters();
+
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onResize);
+    if (document.fonts?.ready) document.fonts.ready.then(onResize);
 
     const onPointerMove = (event) => {
       pointerX = event.clientX;
@@ -112,6 +156,8 @@ const Footer = () => {
 
     return () => {
       observer.disconnect();
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onResize);
       window.removeEventListener("pointermove", onPointerMove);
       cancelAnimationFrame(frame);
       rise.kill();

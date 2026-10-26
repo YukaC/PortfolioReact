@@ -50,7 +50,7 @@ const ProjectCover = memo(({ project, index, sizes }) => {
 
   return (
     <div className="work-art" style={{ "--h": (index * 47 + 205) % 360 }}>
-      <span className="font-serif text-[clamp(4rem,9vw,7rem)] italic text-white/90">
+      <span className="font-heading text-[clamp(4rem,9vw,7rem)] text-white/90">
         {projectMonogram(project)}
       </span>
     </div>

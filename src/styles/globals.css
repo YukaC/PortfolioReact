@@ -15,7 +15,6 @@
   --color-mut: #a9b6d3;
   --color-dim: #93a2ba;
   --color-sky: #8fcbff;
-  --color-warm: #f3b7a1;
   --color-ice: #8fcbff;
   --color-coral: #e2727f;
 
@@ -42,11 +41,14 @@
    them, so they have to live on the element that carries the next/font
    variables — the wrapper `_app` renders. Declared on `:root` they would be
    invalid at computed-value time and inherit as empty, which silently drops
-   every heading to the browser's sans. */
+   every heading to the browser's sans. The body stack has the same problem:
+   `body` is the parent of this wrapper, so it cannot see the variables and
+   falls back; the readable copy gets its family here instead. */
 .root-layout {
   --font-display: var(--font-manrope), ui-sans-serif, system-ui, sans-serif;
   --font-heading: var(--font-space-grotesk), ui-sans-serif, system-ui, sans-serif;
   --font-serif: var(--font-fraunces), Georgia, "Times New Roman", serif;
+  font-family: var(--font-display), ui-sans-serif, system-ui, sans-serif;
 }
 
 :root {
@@ -278,7 +280,7 @@
     height: 100%;
     transform-origin: left;
     transform: scaleX(var(--p));
-    background: linear-gradient(90deg, var(--color-sky), var(--color-warm));
+    background: linear-gradient(90deg, var(--color-sky), var(--color-paper));
   }
 
   /* Reduced-motion / no-WebGL stand-in for the shader lattice. */
@@ -322,14 +324,15 @@
     opacity: 0.6;
   }
 
-  /* The serif italic: one accent, used for the emphasised word of a heading,
-     the wordmark and the footer tagline. */
+  /* One accent, and it is colour: the emphasised word of a heading carries the
+     field's own light. The emphasis survives the split because the colour sits
+     on the word box, not on the word. Coral stays in the lattice — as type it
+     competes with the 48px dots for the same hue. */
   .accent {
-    font-family: var(--font-serif), Georgia, "Times New Roman", serif;
-    font-style: italic;
-    font-weight: 400;
-    letter-spacing: -0.02em;
-    color: var(--color-warm);
+    font-style: normal;
+    font-weight: 600;
+    letter-spacing: inherit;
+    color: var(--color-sky);
   }
 
   .lead {
@@ -881,15 +884,11 @@
     -webkit-text-stroke: 1px rgb(255 255 255 / 0.26);
   }
 
-  .mq-serif span {
-    font-family: var(--font-serif), Georgia, serif;
-    font-style: italic;
-    font-weight: 400;
-    letter-spacing: -0.03em;
-    background: linear-gradient(90deg, var(--color-sky), var(--color-warm));
-    background-clip: text;
-    color: transparent;
-    opacity: 0.6;
+  .mq-accent span {
+    font-weight: 500;
+    letter-spacing: 0.01em;
+    color: var(--color-sky);
+    opacity: 0.55;
   }
 
   /* --- work --------------------------------------------------------------- */
@@ -1320,7 +1319,7 @@
   }
 
   .timeline::after {
-    background: linear-gradient(var(--color-sky), var(--color-warm));
+    background: linear-gradient(var(--color-sky), var(--color-paper));
     transform-origin: top;
     transform: scaleY(var(--tlp));
   }
@@ -1406,7 +1405,7 @@
     right: 0;
     bottom: 0;
     height: 2px;
-    background: linear-gradient(90deg, var(--color-sky), var(--color-warm));
+    background: linear-gradient(90deg, var(--color-sky), var(--color-paper));
     transform-origin: left;
     transform: scaleX(0.18);
     transition: transform 0.9s var(--ease);
@@ -1473,16 +1472,15 @@
 
   .tagline {
     margin-top: 0.625rem;
-    font-family: var(--font-serif), Georgia, serif;
-    font-style: italic;
     font-size: 0.9375rem;
+    letter-spacing: 0.01em;
     color: var(--color-dim);
   }
 
   .footer-mark {
     margin-top: 3.125rem;
     padding-bottom: 0.06em;
-    font-family: var(--font-serif), Georgia, serif;
+    font-family: var(--font-serif), Georgia, "Times New Roman", serif;
     font-style: italic;
     font-weight: 400;
     font-size: clamp(5.5rem, 23vw, 20.5rem);

@@ -10,7 +10,7 @@ const ROWS = [
   {
     words: ["Interfaces", "Dashboards", "PWAs", "Full-stack", "Accessible", "Responsive"],
     dir: 1,
-    variant: "mq-serif",
+    variant: "mq-accent",
   },
 ];
 

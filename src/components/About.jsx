@@ -47,6 +47,19 @@ const About = () => {
     const words = [...statement.querySelectorAll(".sw")];
     const items = [...timeline.querySelectorAll(".timeline-item")];
 
+    // Viewport height is read once per resize instead of once per scrub frame,
+    // and both scrubs remember what they last wrote so a frame that changes
+    // nothing does not invalidate style.
+    let viewportHeight = window.innerHeight;
+    const measureViewport = () => {
+      viewportHeight = window.innerHeight;
+    };
+    window.addEventListener("resize", measureViewport);
+
+    const lastOpacity = words.map(() => null);
+    const lastColor = words.map(() => null);
+    let lastRailProgress = null;
+
     const wordTrigger = ScrollTrigger.create({
       trigger: statement,
       start: "top 82%",
@@ -56,9 +69,16 @@ const About = () => {
         const reached = self.progress * (words.length + 3);
         words.forEach((word, index) => {
           const fill = clamp01(reached - index);
-          word.style.opacity = (0.16 + 0.84 * fill).toFixed(3);
-          word.style.color =
-            fill > 0 && fill < 1 ? "var(--color-sky)" : "";
+          const opacity = (0.16 + 0.84 * fill).toFixed(3);
+          if (lastOpacity[index] !== opacity) {
+            lastOpacity[index] = opacity;
+            word.style.opacity = opacity;
+          }
+          const color = fill > 0 && fill < 1 ? "var(--color-sky)" : "";
+          if (lastColor[index] !== color) {
+            lastColor[index] = color;
+            word.style.color = color;
+          }
         });
       },
     });
@@ -68,18 +88,25 @@ const About = () => {
       start: "top 72%",
       end: "bottom 60%",
       scrub: true,
+      onRefresh: measureViewport,
       onUpdate(self) {
-        timeline.style.setProperty("--tlp", self.progress.toFixed(3));
+        const progress = self.progress.toFixed(3);
+        if (progress !== lastRailProgress) {
+          lastRailProgress = progress;
+          timeline.style.setProperty("--tlp", progress);
+        }
+        const line = viewportHeight * 0.72;
         items.forEach((item) => {
-          item.classList.toggle(
-            "is-on",
-            item.getBoundingClientRect().top < window.innerHeight * 0.72,
-          );
+          const isOn = item.getBoundingClientRect().top < line;
+          if (item.classList.contains("is-on") !== isOn) {
+            item.classList.toggle("is-on", isOn);
+          }
         });
       },
     });
 
     return () => {
+      window.removeEventListener("resize", measureViewport);
       wordTrigger.kill();
       railTrigger.kill();
     };
