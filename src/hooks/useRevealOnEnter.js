@@ -26,7 +26,9 @@ export function useRevealOnEnter() {
       { threshold: 0.12 },
     );
 
-    const nodes = document.querySelectorAll("[data-r]");
+    // `data-r="paint"` already animated itself in CSS: observing it would only
+    // re-add `is-in` after hydration and fight the running animation.
+    const nodes = document.querySelectorAll('[data-r]:not([data-r="paint"])');
     nodes.forEach((node) => observer.observe(node));
 
     return () => observer.disconnect();
