@@ -57,8 +57,10 @@
   --glass: rgb(255 255 255 / 0.05);
   --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
 
-  /* Motion channel, written by useFieldMotion / ScrollTriggers. Defaults are
-     the settled state, so a reader with no JS still gets a composed page. */
+  /* Motion channel. `useFieldMotion` writes each property on the elements that
+     read it (see the hook), ScrollTrigger owns `--tlp` and `--fp`. These are the
+     settled values: a reader that never gets a write — or a reader with no JS at
+     all — still gets a composed page. */
   --p: 0;
   --scy: 0;
   --hf: 1;
@@ -151,12 +153,41 @@
       linear-gradient(180deg, #081430 0%, #050d20 54%, #04091a 100%);
   }
 
-  /* Blobs answer the reading progress: hue shifts, height falls away. */
+  /* Blobs answer the reading progress: the hue travels, the height falls away.
+     The hue is two fixed gradients per blob cross-faded by `opacity` — blob1
+     212deg -> 222deg, blob2 222deg -> 210deg, blob3 204deg -> 214deg, at the
+     documented alphas — instead of an `hsl()` interpolated by `--p`: an opacity
+     change is composited, while a hue inside a background gradient re-resolves
+     and re-rasterises the blurred layer every frame. `plus-lighter` adds the
+     two premultiplied layers, so the pair composites to exactly the alpha and
+     the colour of the interpolated gradient; a normal blend would dim it
+     mid-scroll, because both layers are translucent. `translate` still answers
+     `--p`, and the pair is blurred on its own layer so the opacity cross-fade
+     never re-rasterises the gradient. */
   .field-blob {
     position: absolute;
     border-radius: 50%;
-    filter: blur(110px);
+    isolation: isolate;
     will-change: transform;
+  }
+
+  .field-blob-layer {
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    filter: blur(110px);
+    mix-blend-mode: plus-lighter;
+    will-change: opacity;
+  }
+
+  .field-blob-start {
+    background: var(--blob-start);
+    opacity: calc(1 - var(--p));
+  }
+
+  .field-blob-end {
+    background: var(--blob-end);
+    opacity: var(--p);
   }
 
   .field-blob-1 {
@@ -164,9 +195,14 @@
     height: 64vw;
     left: -18vw;
     top: -22vw;
-    background: radial-gradient(
+    --blob-start: radial-gradient(
       circle,
-      hsl(calc(214 + var(--p) * 70) 88% 52% / 0.42),
+      hsl(212 88% 52% / 0.42),
+      transparent 68%
+    );
+    --blob-end: radial-gradient(
+      circle,
+      hsl(222 88% 52% / 0.42),
       transparent 68%
     );
     translate: calc(var(--px) * 30px) calc(var(--p) * -30vh + var(--py) * 20px);
@@ -177,9 +213,14 @@
     height: 48vw;
     right: -14vw;
     top: 26vh;
-    background: radial-gradient(
+    --blob-start: radial-gradient(
       circle,
-      hsl(calc(262 - var(--p) * 60) 78% 58% / 0.26),
+      hsl(222 78% 58% / 0.26),
+      transparent 68%
+    );
+    --blob-end: radial-gradient(
+      circle,
+      hsl(210 78% 58% / 0.26),
       transparent 68%
     );
     translate: calc(var(--px) * -40px) calc(var(--p) * -55vh);
@@ -190,9 +231,14 @@
     height: 42vw;
     left: 20vw;
     top: 76vh;
-    background: radial-gradient(
+    --blob-start: radial-gradient(
       circle,
-      hsl(calc(22 + var(--p) * 170) 90% 62% / 0.12),
+      hsl(204 90% 62% / 0.12),
+      transparent 68%
+    );
+    --blob-end: radial-gradient(
+      circle,
+      hsl(214 90% 62% / 0.12),
       transparent 68%
     );
     translate: calc(var(--px) * 24px) calc(var(--p) * -70vh);

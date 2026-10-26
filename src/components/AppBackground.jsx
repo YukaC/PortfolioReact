@@ -13,24 +13,41 @@ const LiquidEther = dynamic(() => import("@/components/LiquidEther"), {
 const BOCANADA_SMOKE_COLORS = ["#0a4a9a", "#66b3e2", "#eaf6ff"];
 const FIELD_INK = "#060b1a";
 
+/* The dye's detail is set by its simulation render targets, which are the canvas
+   size times `resolution`. One pair of constants therefore means the same thing
+   on every device: the same fraction of the viewport, so the smoke reads with the
+   same fluidity. A phone gets a smaller grid in absolute pixels (125x270 against a
+   desktop's 460x288) and is cheaper for it, so there is nothing for a separate
+   profile to buy — the old `0.22 / 8` coarse branch put 86x186 targets behind a
+   390x844 screen and is what made the mobile field look flat. See
+   odd/tasks/mobile-field-parity.md. */
+const SIM_QUALITY = { resolution: 0.32, iterationsPoisson: 12 };
+
 function getSimQuality() {
   if (typeof navigator !== "undefined" && navigator.connection?.saveData) {
     return null;
   }
-  const isCoarse = window.matchMedia("(pointer: coarse)").matches;
-  const isNarrow = window.innerWidth < 768;
-  if (isCoarse || isNarrow) {
-    return { resolution: 0.22, iterationsPoisson: 8 };
-  }
-  return { resolution: 0.32, iterationsPoisson: 12 };
+  return SIM_QUALITY;
 }
+
+/**
+ * One blob of the field: the hue is two fixed gradients cross-faded by
+ * `opacity` (see `.field-blob` in globals.css), inside the element that
+ * `useFieldMotion` translates with the reading progress.
+ */
+const FieldBlob = ({ index }) => (
+  <div className={`field-blob field-blob-${index}`}>
+    <span className="field-blob-layer field-blob-start" />
+    <span className="field-blob-layer field-blob-end" />
+  </div>
+);
 
 /**
  * Bocanada field, retoned for the glass-motion system.
  *
- * Layers, back to front: the navy cobalt sky, three hue-shifting blobs driven
- * by reading progress, the WebGL dye (smoke + the coral lattice and its spring
- * flares live in the shader), the cursor light, then grain.
+ * Layers, back to front: the navy cobalt sky, three blobs whose hue travels
+ * with the reading progress, the WebGL dye (smoke + the coral lattice and its
+ * spring flares live in the shader), the cursor light, then grain.
  *
  * The coral lattice never leaves: without WebGL, or under reduced motion, the
  * CSS stand-in paints the same dots.
@@ -76,9 +93,9 @@ const AppBackground = () => {
       aria-hidden="true"
     >
       <div className="bocanada-field absolute inset-0" />
-      <div className="field-blob field-blob-1" />
-      <div className="field-blob field-blob-2" />
-      <div className="field-blob field-blob-3" />
+      <FieldBlob index={1} />
+      <FieldBlob index={2} />
+      <FieldBlob index={3} />
       {canUseWebgl && simQuality ? (
         <div className="absolute inset-0">
           <LiquidEther
