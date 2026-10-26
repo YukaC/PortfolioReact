@@ -7,7 +7,8 @@ import { useMemo } from "react";
  * stagger; `accent` names the word that carries the sky emphasis, so the
  * emphasis survives the split. The heading keeps the plain sentence as its
  * accessible name and the words stay in the DOM for search. The reveal trigger
- * is the page-wide `[data-r]` observer.
+ * is the page-wide `[data-r]` observer, or `reveal="paint"` for a heading that
+ * must paint before it can be observed.
  *
  * `parallax` gives every word its own slow travel against the scroll, which is
  * what makes the hero title move in layers rather than as one block.
@@ -19,6 +20,7 @@ const SplitHeading = ({
   className = "",
   delayMs = 0,
   parallax = false,
+  reveal = "",
   ...rest
 }) => {
   const words = useMemo(() => text.split(/\s+/).filter(Boolean), [text]);
@@ -29,7 +31,7 @@ const SplitHeading = ({
 
   return (
     <Tag
-      data-r=""
+      data-r={reveal}
       aria-label={text}
       style={{ "--d": `${delayMs}ms` }}
       className={className}

@@ -609,6 +609,52 @@
     filter: none;
   }
 
+  /* Above-the-fold reveals paint on the first frame. Same travel and same blur,
+     driven by CSS instead of waiting for hydration and an IntersectionObserver:
+     text that starts at `opacity: 0` cannot be the largest paint until that
+     round trip finishes, which measured 2.2s with no network at all and 10.5s
+     on Slow 3G. `[data-r="paint"]` keeps the choreography, not the gate. */
+  /* `backwards` rather than `both`: while the animation runs it fills the
+     opening frame, and once it ends nothing of it is applied any more. A filled
+     animation keeps every hero node in the effect stack for the life of the
+     page, which measured 200ms of extra style work across a six second scroll. */
+  [data-r="paint"] {
+    opacity: 1;
+    transform: none;
+    filter: none;
+    translate: none;
+    animation: r-paint 1.1s var(--ease) backwards;
+    animation-delay: var(--d, 0ms);
+  }
+
+  [data-r="paint"] .w > span {
+    transform: none;
+    animation: r-word 1.1s var(--ease) backwards;
+    animation-delay: calc(var(--d, 0ms) + var(--i) * 70ms);
+  }
+
+  @keyframes r-paint {
+    from {
+      translate: 0 28px;
+      filter: blur(6px);
+    }
+
+    to {
+      translate: 0 0;
+      filter: none;
+    }
+  }
+
+  @keyframes r-word {
+    from {
+      transform: translateY(112%);
+    }
+
+    to {
+      transform: none;
+    }
+  }
+
   .w {
     display: inline-block;
     overflow: hidden;
@@ -1820,6 +1866,11 @@
     opacity: 1;
     transform: none;
     filter: none;
+  }
+
+  [data-r="paint"],
+  [data-r="paint"] .w > span {
+    animation: none;
   }
 
   .w > span {

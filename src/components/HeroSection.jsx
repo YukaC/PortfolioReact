@@ -23,7 +23,7 @@ const HeroSection = () => {
     <section id="home" className="hero">
       <div className="site-shell">
         <div className="hero-copy">
-          <span className="status" data-r="">
+          <span className="status" data-r="paint">
             <i aria-hidden="true" />
             Open to freelance &amp; full-time
           </span>
@@ -34,17 +34,18 @@ const HeroSection = () => {
             text="Turning real problems into working software"
             accent="working"
             parallax
+            reveal="paint"
             delayMs={120}
           />
 
-          <p className="lead" data-r="" style={{ "--d": "520ms" }}>
+          <p className="lead" data-r="paint" style={{ "--d": "520ms" }}>
             Agustin Ciucani. Full-stack developer in Buenos Aires. I ship React
             and Next.js products people can actually use.
           </p>
 
           <div className="hero-foot">
             <div>
-              <div className="hero-actions" data-r="" style={{ "--d": "640ms" }}>
+              <div className="hero-actions" data-r="paint" style={{ "--d": "640ms" }}>
                 <Magnetic>
                   <a
                     href="#portfolio"
@@ -64,7 +65,7 @@ const HeroSection = () => {
                 </a>
               </div>
 
-              <p className="stackline" data-r="" style={{ "--d": "760ms" }}>
+              <p className="stackline" data-r="paint" style={{ "--d": "760ms" }}>
                 {STACK.map((item) => (
                   <span key={item}>{item}</span>
                 ))}
