@@ -3,6 +3,15 @@
 import { useEffect, useRef } from 'react';
 import * as THREE from 'three';
 
+// Presentation cadence, driven by how long the pointer has been still. Below the
+// first threshold the field runs at display rate; between the two it runs on
+// every other animation frame; after the second it settles into a slow breath so
+// the haze keeps drifting instead of freezing, at ~7 composite passes per second
+// instead of the 15 the previous build spent on unchanged output.
+const IDLE_HALF_RATE_AFTER_MS = 320;
+const IDLE_BREATH_AFTER_MS = 2200;
+const IDLE_BREATH_INTERVAL_MS = 143;
+
 export default function LiquidEther({
   mouseForce = 20,
   cursorSize = 100,
@@ -71,6 +80,22 @@ export default function LiquidEther({
     const bg = new THREE.Color(backgroundColor);
     const bgVec4 = lightMode ? new THREE.Vector4(bg.r, bg.g, bg.b, 1) : new THREE.Vector4(0, 0, 0, 0);
 
+    // Releases every geometry and material reachable from a root object. Used on
+    // unmount so the field never leaves GPU programs or buffers behind.
+    const disposeObject3D = (root) => {
+      if (!root) return;
+      root.traverse((obj) => {
+        if (obj.geometry) obj.geometry.dispose();
+        const material = obj.material;
+        if (Array.isArray(material)) {
+          for (const entry of material) if (entry) entry.dispose();
+        } else if (material) {
+          material.dispose();
+        }
+      });
+      root.clear();
+    };
+
     class CommonClass {
       constructor() {
         this.width = 0;
@@ -109,12 +134,16 @@ export default function LiquidEther({
         this.timer = new THREE.Timer();
       }
       resize() {
-        if (!this.container) return;
+        if (!this.container) return false;
         const rect = this.container.getBoundingClientRect();
-        this.width = Math.max(1, Math.floor(rect.width));
-        this.height = Math.max(1, Math.floor(rect.height));
+        const width = Math.max(1, Math.floor(rect.width));
+        const height = Math.max(1, Math.floor(rect.height));
+        if (width === this.width && height === this.height) return false;
+        this.width = width;
+        this.height = height;
         this.aspect = this.width / this.height;
         if (this.renderer) this.renderer.setSize(this.width, this.height, false);
+        return true;
       }
       update() {
         this.timer.update();
@@ -144,7 +173,11 @@ export default function LiquidEther({
         this.takeoverFrom = new THREE.Vector2();
         this.takeoverTo = new THREE.Vector2();
         this.onInteract = null;
+        this.pendingX = 0;
+        this.pendingY = 0;
+        this.pointerRaf = 0;
         this._onMouseMove = this.onDocumentMouseMove.bind(this);
+        this._flushPointer = this.flushPointer.bind(this);
         this._onTouchStart = this.onDocumentTouchStart.bind(this);
         this._onTouchMove = this.onDocumentTouchMove.bind(this);
         this._onTouchEnd = this.onTouchEnd.bind(this);
@@ -157,7 +190,9 @@ export default function LiquidEther({
           (this.docTarget && this.docTarget.defaultView) || (typeof window !== 'undefined' ? window : null);
         if (!defaultView) return;
         this.listenerTarget = defaultView;
-        this.listenerTarget.addEventListener('mousemove', this._onMouseMove);
+        // Passive: this handler never cancels the event, so letting the browser
+        // wait on it would cost scroll responsiveness for nothing.
+        this.listenerTarget.addEventListener('mousemove', this._onMouseMove, { passive: true });
         this.listenerTarget.addEventListener('touchstart', this._onTouchStart, { passive: true });
         this.listenerTarget.addEventListener('touchmove', this._onTouchMove, { passive: true });
         this.listenerTarget.addEventListener('touchend', this._onTouchEnd);
@@ -166,6 +201,10 @@ export default function LiquidEther({
         }
       }
       dispose() {
+        if (this.pointerRaf && this.listenerTarget) {
+          this.listenerTarget.cancelAnimationFrame(this.pointerRaf);
+        }
+        this.pointerRaf = 0;
         if (this.listenerTarget) {
           this.listenerTarget.removeEventListener('mousemove', this._onMouseMove);
           this.listenerTarget.removeEventListener('touchstart', this._onTouchStart);
@@ -179,21 +218,28 @@ export default function LiquidEther({
         this.docTarget = null;
         this.container = null;
       }
-      isPointInside(clientX, clientY) {
-        if (!this.container) return false;
-        const rect = this.container.getBoundingClientRect();
-        if (rect.width === 0 || rect.height === 0) return false;
+      isEmptyRect(rect) {
+        return !rect || rect.width === 0 || rect.height === 0;
+      }
+      isPointInsideRect(rect, clientX, clientY) {
+        if (this.isEmptyRect(rect)) return false;
         return clientX >= rect.left && clientX <= rect.right && clientY >= rect.top && clientY <= rect.bottom;
       }
       updateHoverState(clientX, clientY) {
-        this.isHoverInside = this.isPointInside(clientX, clientY);
+        if (!this.container) {
+          this.isHoverInside = false;
+          return false;
+        }
+        this.isHoverInside = this.isPointInsideRect(this.container.getBoundingClientRect(), clientX, clientY);
         return this.isHoverInside;
       }
       setCoords(x, y) {
         if (!this.container) return;
+        this.setCoordsFromRect(x, y, this.container.getBoundingClientRect());
+      }
+      setCoordsFromRect(x, y, rect) {
+        if (this.isEmptyRect(rect)) return;
         if (this.timer) window.clearTimeout(this.timer);
-        const rect = this.container.getBoundingClientRect();
-        if (rect.width === 0 || rect.height === 0) return;
         const nx = (x - rect.left) / rect.width;
         const ny = (y - rect.top) / rect.height;
         this.coords.set(nx * 2 - 1, -(ny * 2 - 1));
@@ -202,19 +248,27 @@ export default function LiquidEther({
           this.mouseMoved = false;
         }, 100);
       }
-      setNormalized(nx, ny) {
-        this.coords.set(nx, ny);
-        this.mouseMoved = true;
+      // A pointer burst can fire far more often than the display refreshes.
+      // Events only record the latest position; one rAF resolves it against a
+      // single layout read, so a burst cannot force a layout per event.
+      queuePointer(clientX, clientY) {
+        this.pendingX = clientX;
+        this.pendingY = clientY;
+        if (this.pointerRaf || !this.container || !this.listenerTarget) return;
+        this.pointerRaf = this.listenerTarget.requestAnimationFrame(this._flushPointer);
       }
-      onDocumentMouseMove(event) {
-        if (!this.updateHoverState(event.clientX, event.clientY)) return;
+      flushPointer() {
+        this.pointerRaf = 0;
+        if (!this.container) return;
+        const clientX = this.pendingX;
+        const clientY = this.pendingY;
+        const rect = this.container.getBoundingClientRect();
+        this.isHoverInside = this.isPointInsideRect(rect, clientX, clientY);
+        if (!this.isHoverInside) return;
         if (this.onInteract) this.onInteract();
         if (this.isAutoActive && !this.hasUserControl && !this.takeoverActive) {
-          if (!this.container) return;
-          const rect = this.container.getBoundingClientRect();
-          if (rect.width === 0 || rect.height === 0) return;
-          const nx = (event.clientX - rect.left) / rect.width;
-          const ny = (event.clientY - rect.top) / rect.height;
+          const nx = (clientX - rect.left) / rect.width;
+          const ny = (clientY - rect.top) / rect.height;
           this.takeoverFrom.copy(this.coords);
           this.takeoverTo.set(nx * 2 - 1, -(ny * 2 - 1));
           this.takeoverStartTime = performance.now();
@@ -223,8 +277,15 @@ export default function LiquidEther({
           this.isAutoActive = false;
           return;
         }
-        this.setCoords(event.clientX, event.clientY);
+        this.setCoordsFromRect(clientX, clientY, rect);
         this.hasUserControl = true;
+      }
+      setNormalized(nx, ny) {
+        this.coords.set(nx, ny);
+        this.mouseMoved = true;
+      }
+      onDocumentMouseMove(event) {
+        this.queuePointer(event.clientX, event.clientY);
       }
       onDocumentTouchStart(event) {
         if (event.touches.length !== 1) return;
@@ -695,6 +756,14 @@ export default function LiquidEther({
         Common.renderer.render(this.scene, this.camera);
         Common.renderer.setRenderTarget(null);
       }
+      dispose() {
+        disposeObject3D(this.scene);
+        this.scene = null;
+        this.camera = null;
+        this.material = null;
+        this.geometry = null;
+        this.plane = null;
+      }
     }
 
     class Advection extends ShaderPass {
@@ -1133,6 +1202,28 @@ export default function LiquidEther({
         });
         [this.dyeRead, this.dyeWrite] = [this.dyeWrite, this.dyeRead];
       }
+      dispose() {
+        // The 9 HalfFloat targets hold the whole GPU footprint of the field.
+        for (const key in this.fbos) {
+          const fbo = this.fbos[key];
+          if (fbo) fbo.dispose();
+          this.fbos[key] = null;
+        }
+        const passes = [
+          this.advection,
+          this.dyeAdvection,
+          this.externalForce,
+          this.viscous,
+          this.divergence,
+          this.poisson,
+          this.pressure
+        ];
+        for (const pass of passes) {
+          if (pass) pass.dispose();
+        }
+        this.dyeRead = null;
+        this.dyeWrite = null;
+      }
     }
 
     class Output {
@@ -1188,6 +1279,16 @@ export default function LiquidEther({
         uniforms.pointerUv.value.set(Mouse.coords.x * 0.5 + 0.5, Mouse.coords.y * 0.5 + 0.5);
         this.render();
       }
+      dispose() {
+        if (this.simulation) {
+          this.simulation.dispose();
+          this.simulation = null;
+        }
+        disposeObject3D(this.scene);
+        this.scene = null;
+        this.camera = null;
+        this.output = null;
+      }
     }
 
     class WebGLManager {
@@ -1200,6 +1301,8 @@ export default function LiquidEther({
         this.lastUserInteraction = performance.now();
         this.frameIndex = 0;
         this.idleTimer = null;
+        this.needsPresent = true;
+        this.reallocTimer = null;
         Mouse.onInteract = () => {
           this.lastUserInteraction = performance.now();
           if (this.autoDriver) this.autoDriver.forceStop();
@@ -1233,8 +1336,21 @@ export default function LiquidEther({
         this.output = new Output();
       }
       resize() {
-        Common.resize();
-        this.output.resize();
+        // Cheap half: adopt the container size for the drawing buffer. Returning
+        // early when the pixel size did not change means a burst of observer
+        // callbacks that lands on the same size does no work at all.
+        if (!Common.resize()) return;
+        this.needsPresent = true;
+        // Expensive half: reallocating the 9 HalfFloat targets must happen once
+        // per resize, not once per callback, so hold it until the size settles.
+        if (this.reallocTimer) window.clearTimeout(this.reallocTimer);
+        this.reallocTimer = window.setTimeout(() => {
+          this.reallocTimer = null;
+          if (!this.output) return;
+          this.output.resize();
+          // Freshly allocated targets are empty, so the canvas must be redrawn.
+          this.needsPresent = true;
+        }, 120);
       }
       render(shouldSimulate = true, shouldPresent = true) {
         if (this.autoDriver && this.autoDriver.enabled) this.autoDriver.update();
@@ -1246,17 +1362,28 @@ export default function LiquidEther({
         if (!this.running) return;
         this.frameIndex += 1;
         const idleMs = performance.now() - this.lastUserInteraction;
-        let shouldSimulate = true;
-        let shouldPresent = true;
-        if (idleMs > 2200) {
-          shouldSimulate = false;
-          shouldPresent = true;
-        } else if (idleMs > 320) {
-          shouldSimulate = (this.frameIndex & 1) === 0;
-          shouldPresent = shouldSimulate;
+        // One fixed simulation step per drawn frame (simProps.dt is a constant,
+        // not a wall-clock delta), so the cadence changes how much the fluid
+        // advances, never how a single frame looks.
+        let advance = true;
+        let present = true;
+        if (idleMs > IDLE_BREATH_AFTER_MS) {
+          // Slow breath: the timer in scheduleNext is the throttle here, and each
+          // tick only re-composites the field against a fresh shader clock. The
+          // fluid does not advance, so a tick costs one draw call (the previous
+          // build did the same at 15/s), while the time-driven haze and lattice
+          // flares keep drifting instead of freezing.
+          advance = false;
+        } else if (idleMs > IDLE_HALF_RATE_AFTER_MS) {
+          advance = (this.frameIndex & 1) === 0;
+          present = advance;
         }
-        if (shouldSimulate || shouldPresent) {
-          this.render(shouldSimulate, shouldPresent);
+        // Draw only when the presented frame is stale. A resize or reallocation
+        // leaves empty render targets behind, so it always forces a full step.
+        const mustPresent = this.needsPresent;
+        if (mustPresent || present) {
+          this.needsPresent = false;
+          this.render(mustPresent ? true : advance, true);
         }
         this.scheduleNext(idleMs);
       }
@@ -1270,8 +1397,8 @@ export default function LiquidEther({
           window.clearTimeout(this.idleTimer);
           this.idleTimer = null;
         }
-        if (idleMs > 2200) {
-          this.idleTimer = window.setTimeout(this._loop, 66);
+        if (idleMs > IDLE_BREATH_AFTER_MS) {
+          this.idleTimer = window.setTimeout(this._loop, IDLE_BREATH_INTERVAL_MS);
           return;
         }
         rafRef.current = requestAnimationFrame(this._loop);
@@ -1279,6 +1406,9 @@ export default function LiquidEther({
       start() {
         if (this.running) return;
         this.running = true;
+        // A restart (re-entering the viewport, tab visible again) always redraws
+        // once, so the canvas can never stay stale while the simulation idles.
+        this.needsPresent = true;
         this._loop();
       }
       pause() {
@@ -1294,17 +1424,24 @@ export default function LiquidEther({
       }
       dispose() {
         try {
+          this.pause();
           window.removeEventListener('resize', this._resize);
           document.removeEventListener('visibilitychange', this._onVisibility);
-          Mouse.dispose();
-          if (this.idleTimer) {
-            window.clearTimeout(this.idleTimer);
-            this.idleTimer = null;
+          if (this.reallocTimer) {
+            window.clearTimeout(this.reallocTimer);
+            this.reallocTimer = null;
           }
+          Mouse.dispose();
+          if (this.output) {
+            this.output.dispose();
+            this.output = null;
+          }
+          paletteTex.dispose();
           if (Common.renderer) {
             const canvas = Common.renderer.domElement;
             if (canvas && canvas.parentNode) canvas.parentNode.removeChild(canvas);
             Common.renderer.dispose();
+            Common.renderer = null;
           }
         } catch (e) {
           void 0;
@@ -1372,8 +1509,11 @@ export default function LiquidEther({
 
     const ro = new ResizeObserver(() => {
       if (!webglRef.current) return;
+      // One layout read per frame for the burst; the manager then coalesces the
+      // expensive render-target reallocation behind a settle timer.
       if (resizeRafRef.current) cancelAnimationFrame(resizeRafRef.current);
       resizeRafRef.current = requestAnimationFrame(() => {
+        resizeRafRef.current = null;
         if (!webglRef.current) return;
         webglRef.current.resize();
       });
@@ -1383,6 +1523,8 @@ export default function LiquidEther({
 
     return () => {
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
+      if (resizeRafRef.current) cancelAnimationFrame(resizeRafRef.current);
+      resizeRafRef.current = null;
       if (resizeObserverRef.current) {
         try {
           resizeObserverRef.current.disconnect();
