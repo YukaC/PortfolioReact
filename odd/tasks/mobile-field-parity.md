@@ -4,9 +4,9 @@ Make the dye on a phone look like the dye on a desktop. The plan the user approv
 of the field and stop simulating on touch"; the source read and the measured evidence retired that
 plan before any code was written, and the replacements below are cheaper and keep the touch response.
 
-Status: closed (2026-10-26). Field parity shipped, T2 dropped, checks green. Nothing committed —
-the branch still carries the whole uncommitted rebrand/perf pass, and commit grouping is the user's
-decision.
+Status: closed (2026-10-26). Field parity shipped, T2 dropped, checks green, committed. The change
+lives in `cee6d43` (`feat(field): one simulation quality for every device, and a cheaper idle loop`)
+together with the rest of the field work; T3's public copy landed in `ddb2c7c`.
 
 ## Specs
 
@@ -51,8 +51,8 @@ desktop field. That is reachable by giving the coarse pointer the desktop consta
 | T0 | S3, S5 | inline | Decide bake vs. not, on evidence. Decided: **no bake** — ≈0 CPU saved, and it removes the touch response the user is missing. Recorded in the Log. | DONE |
 | T1 | S1, S2, S4, S6 | inline | Give the coarse pointer the desktop simulation constants in `getSimQuality`, so the mobile dye is as detailed as the desktop one relative to its viewport. Measured before/after. | DONE |
 | T2 | S5 | inline | If T1 regresses the mobile numbers, the cheaper route wins: keep the lower resolution and re-open the bake as the fallback. Only runs when the numbers say so. | DROPPED — T1 measured flat, no regression to react to |
-| T3 | S8 | inline | Docs: feature doc evidence, README if the field's quality contract becomes documented behavior, CHANGELOG only if user-visible. | pending |
-| T4 | S7, S8 | inline + spot | Verify: `check:lint`, `check:motion`, `e2e:motion`, `validate:bebop`, `next build`, and a fresh mobile 4× measurement against the baseline in Evidence. | pending |
+| T3 | S8 | inline | Docs: feature doc evidence, README if the field's quality contract becomes documented behavior, CHANGELOG only if user-visible. README section, CHANGELOG entry, and the `scroll-perf-pass` handoff written; landed in `ddb2c7c`. | DONE |
+| T4 | S7, S8 | inline + spot | Verify: `check:lint`, `check:motion`, `e2e:motion`, `validate:bebop`, `next build`, and a fresh mobile 4× measurement against the baseline in Evidence. All six green on the production bundle. | DONE |
 
 Route note: inline because the change is two constants in one file; the repository is also a separate
 clone outside this session's root, so a delegated writer would need per-call interactive consent for
@@ -153,3 +153,15 @@ straight, so the working invocation is `node scripts/e2e-footer-motion.mjs --bas
 - L8 (scope note): `odd/tasks/archive/extreme-perf.md` still records the old `0.22` coarse profile. It is an archive of a past pass, so it is left as written; this document is the current record.
 - L9 (T3, docs): the contract is written where a maintainer will hit it — README `### Field quality on a phone` (why one constant, what `resolution` means per viewport, why no coarse profile, why `pixelRatio = 1` matters) and a `CHANGELOG` entry, because a sharper field on a phone is user-visible. `scroll-perf-pass.md` gets L12 so its reader is routed here instead of copying an obsolete constant.
 - L10 (T4, checks): all six S7 checks pass on the production bundle. `e2e:a11y` additionally confirms the reduced-motion hero and the CSS field still stand in for the simulation, which is the contract this change could have broken.
+- L11 (commit slices, 2026-10-26): the worktree carried 747+/167− across 16 files — the field work, the
+  accent retone, the dev tooling and the docs all uncommitted at once. The user chose four slices with
+  `globals.css` split by hunk, because that file mixes the field blocks with the type tokens:
+  `cee6d43` field + perf (code, the four field hunks, both ODD docs) · `e3ec3b6` accent and the scrub
+  write-guards (the remaining eight CSS hunks plus the components that consume them) · `a5fd454` dev
+  origin list and the two guards · `ddb2c7c` README and CHANGELOG. Boundaries are file-level except for
+  `globals.css`; the field slice goes first so its `.field-blob-layer` classes exist in the same commit
+  that renders them, and the accent slice removes `--color-warm` only after the last consumer is in it.
+- L12 (delivery, open): the branch is now 9924 authored lines over 54 commits since `origin/main`, so a
+  single pull request would be a review wall. No strategy is chosen yet and none is applied: push, pull
+  request and merge stay the user's decision. Candidates are `feature-branch-chain` over the four
+  slices above, or `stacked-to-main` if the field slice should land on its own before the rebrand.
