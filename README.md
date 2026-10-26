@@ -236,6 +236,31 @@ render-target grid, not the pointer, and the touch drag is part of the design â€
 `touchmove` drive the same field the desktop pointer does. Task notes:
 `odd/tasks/mobile-field-parity.md`.
 
+### What a 3G phone pays
+
+Measured at 390x844, DPR 3, CPU 4x throttle, on three network profiles
+(`odd/tasks/mobile-load-budget.md`):
+
+| network | load | FCP | LCP | canvas | JS |
+| --- | --- | --- | --- | --- | --- |
+| none | 0.36 s | 0.24 s | 0.24 s | 786 ms | 403 KB |
+| Fast 3G | 2.2 s | 0.92 s | 0.92 s | 3.7 s | 403 KB |
+| Slow 3G | 8.7 s | 2.3 s | 2.3 s | never | 212 KB |
+
+Two rules keep those numbers:
+
+- Above-the-fold text paints on the first frame. `[data-r="paint"]` runs the same
+  travel, blur and stagger from CSS, so no entry animation can hold the largest
+  paint behind hydration. Plain `[data-r]` still waits for the IntersectionObserver,
+  which is correct below the fold.
+- The live dye waits for a connection that can pay for it. `getSimQuality()` returns
+  `null` for `saveData` or `effectiveType` of `slow-2g` / `2g` / `3g`, and re-reads
+  the connection on `change`; the CSS field covers those seconds. That is 191 KB of
+  `three` not requested on a metered phone.
+
+Below that floor the page is React plus GSAP; there is no cheaper version left
+without rewriting the animation layer.
+
 Dark tokens live in `@theme static` (`src/styles/globals.css`):
 
 ```css

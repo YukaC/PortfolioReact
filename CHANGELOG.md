@@ -2,6 +2,26 @@
 
 ## Unreleased
 
+### The hero paints before it is hydrated
+
+- The lead paragraph was the largest paint on the page and it started at
+  `opacity: 0`, so it could not count until React hydrated, an
+  `IntersectionObserver` added `is-in` and a 1.1 s transition finished. That is
+  2.2 s on a fast local connection, 4.0 s on Fast 3G and 10.5 s on Slow 3G — with
+  the network to blame for none of the first figure.
+- `[data-r="paint"]` is the same reveal, moved into CSS: same 1.1 s travel, same
+  blur, same 70 ms word stagger, but it runs from the first frame. LCP now equals
+  FCP on every profile measured: 244 ms local, 924 ms Fast 3G, 2.3 s Slow 3G.
+  Below-the-fold reveals keep the observer.
+- On a metered or slow connection the WebGL field is not requested at all.
+  `getSimQuality()` returns `null` for `saveData` and for `effectiveType` of
+  `slow-2g`, `2g` or `3g`, and re-reads the connection on `change`, so a phone that
+  walks into coverage gets the live field without a reload. The CSS field is
+  already what the page shows while the chunk is in flight; now it is what those
+  users keep. Slow 3G: 402.6 -> 211.5 KB of JS, 578.1 -> 387.0 KB total.
+- Fraunces is no longer preloaded. It is a 45 KB variable italic used once, in the
+  footer wordmark, and it was being fetched ahead of the field on every cold load.
+
 ### The phone gets the whole field
 
 - The liquid field no longer downgrades itself on a coarse pointer. `getSimQuality`
