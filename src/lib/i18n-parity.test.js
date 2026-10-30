@@ -5,6 +5,7 @@ import en from "../i18n/messages/en.js";
 import es from "../i18n/messages/es.js";
 import pt from "../i18n/messages/pt.js";
 import { DICTIONARIES, lookupMessage } from "../i18n/messages/index.js";
+import { headingWords } from "./heading-accent.js";
 
 /**
  * What this protects: a translation that loses a key looks fine in review and
@@ -34,8 +35,6 @@ const translatedKeys = (dictionary) =>
   flatten(dictionary).filter((key) => !INTENTIONALLY_ENGLISH.includes(key));
 
 const accentSections = ["hero", "work", "about", "contact"];
-
-const words = (text) => text.split(/\s+/).filter(Boolean);
 
 test("every locale defines exactly the English key set", () => {
   for (const [locale, dictionary] of Object.entries({ es, pt })) {
@@ -92,9 +91,10 @@ test("an emphasised word is a word of its own heading", () => {
         "string",
         `${locale}.${section}.accent is missing`,
       );
-      for (const word of words(accent)) {
+      const titleWords = headingWords(title);
+      for (const word of headingWords(accent)) {
         assert.ok(
-          words(title).includes(word),
+          titleWords.includes(word),
           `${locale}.${section}.accent "${word}" does not appear in "${title}"`,
         );
       }
@@ -122,5 +122,22 @@ test("placeholders survive translation", () => {
         `${locale}.${key} lost a placeholder`,
       );
     }
+  }
+});
+
+test("punctuation does not hide an emphasised word", () => {
+  // The whole point of the shared normaliser: copy carries commas and periods,
+  // and an accent that misses them silently loses the emphasis.
+  const cases = [
+    ["Desarrollo tu software, de punta a punta", "software"],
+    ["Contame el problema. Te devuelvo el plan.", "plan."],
+    ["Cómo trabajo: una persona, el ciclo completo", "completo"],
+  ];
+
+  for (const [title, accent] of cases) {
+    assert.ok(
+      headingWords(title).includes(headingWords(accent)[0]),
+      `"${accent}" should match a word of "${title}"`,
+    );
   }
 });

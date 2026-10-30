@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { accentWordSet, isAccentWord } from "@/lib/heading-accent";
 
 /**
  * Heading that arrives word by word.
@@ -24,10 +25,9 @@ const SplitHeading = ({
   ...rest
 }) => {
   const words = useMemo(() => text.split(/\s+/).filter(Boolean), [text]);
-  const accentWords = useMemo(
-    () => new Set(accent.split(/\s+/).filter(Boolean)),
-    [accent],
-  );
+  // Punctuation is part of the sentence, not part of the word: `accent:
+  // "software"` has to emphasise `software,` in the heading.
+  const accentWords = useMemo(() => accentWordSet(accent), [accent]);
 
   return (
     <Tag
@@ -52,7 +52,11 @@ const SplitHeading = ({
 
         return (
           <span key={`${word}-${index}`}>
-            {accentWords.has(word) ? <em className="accent">{box}</em> : box}
+            {isAccentWord(word, accentWords) ? (
+              <em className="accent">{box}</em>
+            ) : (
+              box
+            )}
             {index < words.length - 1 ? " " : null}
           </span>
         );

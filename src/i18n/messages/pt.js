@@ -9,11 +9,11 @@
  */
 const pt = {
   meta: {
-    title: "Agustin Ciucani — Desenvolvedor full-stack em Buenos Aires",
+    title: "Agustín Ciucani — Desenvolvedor full-stack em Buenos Aires",
     description:
       "Desenvolvedor full-stack em Buenos Aires. Levo produto React e Next.js do painel ao deploy: PWAs, painéis e as APIs por trás deles.",
     imageAlt:
-      "Retrato de Agustin Ciucani, desenvolvedor full-stack em Buenos Aires",
+      "Retrato de Agustín Ciucani, desenvolvedor full-stack em Buenos Aires",
   },
   a11y: {
     skipToContent: "Ir para o conteúdo",
@@ -38,12 +38,12 @@ const pt = {
   },
   hero: {
     status: "Disponível para freelance e tempo integral",
-    title: "Do painel ao deploy, sem intermediários",
-    accent: "intermediários",
+    title: "Desenvolvo seu software, de ponta a ponta",
+    accent: "software",
     lead:
-      "Agustin Ciucani, desenvolvedor full-stack em Buenos Aires. Construo o painel, a API e o deploy que coloca tudo online.",
-    seeWork: "Ver o trabalho",
-    getInTouch: "Fale comigo",
+      "Sou Agustín Ciucani, desenvolvedor full-stack em Buenos Aires. Construo produtos principalmente com React e Next.js, mas me adapto à stack que for preciso. Do visual ao servidor.",
+    seeWork: "Ver projetos",
+    getInTouch: "Vamos conversar",
     stackLabel: "Stack",
   },
   marquee: {
@@ -122,7 +122,7 @@ const pt = {
     triggerTitle: "Segure por 1,5 segundos...",
     triggerAria: "Segure por 1,5 segundos para abrir o easter egg",
     socialLabel: "Redes sociais",
-    copyright: "© {year} Agustin Ciucani",
+    copyright: "© {year} Agustín Ciucani",
   },
 };
 

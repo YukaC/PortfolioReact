@@ -37,7 +37,7 @@ const Layout = ({ children, title, description, projects = [] }) => {
       <Head>
         <title>{pageTitle}</title>
         <meta name="description" content={pageDescription} />
-        <meta name="author" content="Agustin Ciucani" />
+        <meta name="author" content="Agustín Ciucani" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <meta name="geo.region" content={PERSON_REGION} />
         <meta name="geo.placename" content={PERSON_LOCALITY} />
@@ -55,7 +55,7 @@ const Layout = ({ children, title, description, projects = [] }) => {
         {locale !== "pt" ? (
           <meta property="og:locale:alternate" content="pt_BR" />
         ) : null}
-        <meta property="og:site_name" content="Agustin Ciucani" />
+        <meta property="og:site_name" content="Agustín Ciucani" />
         <meta property="og:title" content={pageTitle} />
         <meta property="og:description" content={pageDescription} />
         <meta property="og:type" content="website" />

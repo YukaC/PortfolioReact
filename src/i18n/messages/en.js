@@ -10,11 +10,11 @@
  */
 const en = {
   meta: {
-    title: "Agustin Ciucani — Full-stack developer in Buenos Aires",
+    title: "Agustín Ciucani — Full-stack developer in Buenos Aires",
     description:
       "Full-stack developer in Buenos Aires. I take React and Next.js products from dashboard to deploy: PWAs, dashboards, and the APIs behind them.",
     imageAlt:
-      "Portrait of Agustin Ciucani, full-stack developer in Buenos Aires",
+      "Portrait of Agustín Ciucani, full-stack developer in Buenos Aires",
   },
   a11y: {
     skipToContent: "Skip to content",
@@ -39,12 +39,12 @@ const en = {
   },
   hero: {
     status: "Open to freelance and full-time",
-    title: "From dashboard to deploy, no handoffs",
-    accent: "handoffs",
+    title: "I build your software, end to end",
+    accent: "software",
     lead:
-      "Agustin Ciucani, full-stack developer in Buenos Aires. I build the dashboard, the API, and the deploy that puts them online.",
-    seeWork: "See the work",
-    getInTouch: "Get in touch",
+      "I am Agustín Ciucani, a full-stack developer in Buenos Aires. I build products mostly with React and Next.js, but I adapt to whatever stack the job needs. From the interface to the server.",
+    seeWork: "See projects",
+    getInTouch: "Let's talk",
     stackLabel: "Stack",
   },
   marquee: {
@@ -121,7 +121,7 @@ const en = {
     triggerTitle: "Hold for 1.5 seconds...",
     triggerAria: "Hold for 1.5 seconds to play the easter egg",
     socialLabel: "Social links",
-    copyright: "© {year} Agustin Ciucani",
+    copyright: "© {year} Agustín Ciucani",
   },
 };
 
