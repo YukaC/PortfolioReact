@@ -56,8 +56,8 @@ enfoque alternativo.
 | T2 | S6 | inline (test de paridad i18n) | `c131da8` |
 | T3 | S4 | inline (`scripts/measure-vitals.mjs`) | `a75534b` |
 | T4 | S4, S5 | inline (mount del field por engagement) | `a75534b` |
-| T5 | S6 | inline (a11y: contraste, foco, reduced motion) | pendiente |
-| T6 | S10 | inline (gates completos) | pendiente |
+| T5 | S6 | inline + worker (a11y: contraste, foco, reduced motion) | `4ed67dc` |
+| T6 | S10 | inline (gates completos) | ver L8 |
 | T7 | S7, S8, S9 | inline (docs + dev server + reporte) | pendiente |
 
 **Corte de slice:** `c131da8..a75534b` = 999 líneas autoradas. La copia en tres idiomas
@@ -123,3 +123,36 @@ lector interactúa.
 **L7 — gates corridos:** `pnpm lint` 0 problemas · `pnpm test` 27/27 · `pnpm build` OK ·
 `pnpm e2e:a11y` 16 OK / 0 falla · `pnpm e2e:motion` 13 OK / 0 falla ·
 `pnpm check:motion` limpio · `pnpm validate:bebop` OK · `pnpm measure:vitals` 3/3 pass.
+
+**L8 — a11y (auditoría independiente + worker, commit `4ed67dc`).** Hallazgos y cierre:
+
+| Sev | Hallazgo | Fix aplicado |
+|---|---|---|
+| blocker | `.lead`/`.status` 3.9:1 y `.stackline` 3.07:1 sobre el núcleo del blob del hero | `--color-mut` #a9b6d3 → #c2cde4 (4.97:1), `--color-dim` → #9eabc4, blob-1 0.42 → 0.36, `.stackline` a mut |
+| blocker | el único control del diálogo Bebop tenía `outline: none` | anillo ámbar 2px en `:focus-visible` |
+| major | drawer mobile `role="menu"` sin roving focus ni traslado de foco | nav disclosure: foco al entrar, retorno al toggle al cerrar |
+| major | `aria-label` del trigger del footer no contenía su texto visible (2.5.3) | la etiqueta incluye el tagline |
+| major | `[data-r] { opacity: 0 }` sin fallback → sin JS la página queda vacía | `@media (scripting: none)` neutraliza la animación |
+| minor | filas hermanas a `--o: 0.32` = 1.9:1 | `0.6` |
+| minor | `.focus-ring` usado en 12 componentes y definido en ningún lado | regla real con sky 2px |
+| minor | `nav.contact` = `hero.getInTouch` (dos links con el mismo nombre) | nav → "Contacto"/"Contact"/"Contato" |
+| minor | marquee no reaccionaba al cambio de reduced-motion en caliente | `subscribeReducedMotion` |
+| minor | bloque reduced-motion sin `.menu-toggle-bar`, `.work-tab`, `.btn::before/::after` | agregados |
+| minor | estado del filtro solo por color (2.6:1) y sin anuncio | anillo inset en `[aria-pressed="true"]` + `aria-live` persistente |
+| minor | diálogo con `aria-modal` pero página alcanzable | `inert` sobre `#main-content` al abrir |
+
+Residual conocido y aceptado (sin fix, reportado): `--color-dim` queda en 3.4:1 sobre el peor
+fondo, pero solo lo usan textos fuera del hero (donde el fondo real es rgb(20,40,84) → 6:1) y
+bordes; y bajo el cursor el `.field-glow` lleva mut a 4.06:1 de forma transitoria.
+
+**L9 — gates finales, corridos por el padre después del commit de a11y:** `pnpm lint` limpio ·
+`pnpm test` 27/27 · `pnpm e2e:a11y` 16 OK / 0 falla · `pnpm build` OK · `node
+scripts/measure-vitals.mjs` → `/` LCP 216ms · CLS 0.000 · TBT 144ms · JS 211kB **pass**; `/es`
+332ms/0.000/61ms **pass**; `/pt` 340ms/0.000/60ms **pass**.
+
+**L10 — bug encontrado verificando la página servida (no por un test):** la tarjeta del proyecto
+`MyrkStudio` mostraba el relleno genérico "Open-source project on GitHub." porque
+`PROJECT_OVERRIDES` se indexa por `repo.name` y la clave seguía siendo el slug viejo
+`WLandStudio` (el repo se renombró; el commit `00cee8b` había arreglado solo Pelis). Se renombró
+la clave y la página vuelve a mostrar título y problema reales. Lección: los overrides de proyecto
+se verifican contra la página renderizada, no contra el diccionario.

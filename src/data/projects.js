@@ -144,7 +144,11 @@ export const PROJECT_OVERRIDES = {
       },
     },
   },
-  WLandStudio: {
+  // Keyed by the repository name as GitHub reports it (`MyrkStudio`), because
+  // `PROJECT_OVERRIDES[repo.name]` is the only lookup. The slug used to be
+  // `WLandStudio`, which silently left this card on the generic
+  // "Open-source project on GitHub." fallback after the rename.
+  MyrkStudio: {
     title: "Myrk Studio",
     description:
       "Brand site for a narrative Minecraft series: single editorial scroll, WebGL hero, whitelist flow.",
