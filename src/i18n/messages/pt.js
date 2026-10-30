@@ -41,7 +41,7 @@ const pt = {
     title: "Do painel ao deploy, sem intermediários",
     accent: "intermediários",
     lead:
-      "Agustin Ciucani, desenvolvedor full-stack em Buenos Aires. Construo o painel, a API e o deploy que mantém tudo de pé.",
+      "Agustin Ciucani, desenvolvedor full-stack em Buenos Aires. Construo o painel, a API e o deploy que coloca tudo online.",
     seeWork: "Ver o trabalho",
     getInTouch: "Fale comigo",
     stackLabel: "Stack",
@@ -51,9 +51,11 @@ const pt = {
   },
   work: {
     eyebrow: "Trabalhos selecionados",
-    title: "Software real, rodando em produção",
-    accent: "produção",
+    title: "Demos que funcionam, não maquetes",
+    accent: "maquetes",
     lead: "Painéis, apps e ferramentas. Cada um com seu código-fonte.",
+    demoNotice:
+      "Cada link de \"Ver demo\" abre uma demo: uma versão de amostra que funciona, não o deploy de produção do projeto.",
     filterLabel: "Filtrar projetos",
     filters: {
       all: "Todos",
@@ -74,7 +76,7 @@ const pt = {
     title: "Como eu trabalho: uma pessoa, o ciclo completo",
     accent: "completo",
     statement:
-      "Levo interfaces, painéis e PWAs do brief ao deploy em React e Next.js, e depois mantenho tudo de pé.",
+      "Levo interfaces, painéis e PWAs do brief ao deploy em React e Next.js: front, API e o servidor onde rodam.",
     portraitAlt: "Retrato de {name}",
     role: "Desenvolvedor full-stack",
     socialAria: "{name} (abre em uma nova aba)",
