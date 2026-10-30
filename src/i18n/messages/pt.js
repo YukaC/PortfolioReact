@@ -119,7 +119,9 @@ const pt = {
     mailSubject: "Consulta de projeto",
   },
   footer: {
-    tagline: "Acho que está na hora de cair fora dessa cena.",
+    // The tagline is the Bebop trigger line and stays in English in every
+    // language: it is a quote, not copy. Deliberately absent from this file so
+    // the per-key fallback resolves it to `en`.
     triggerTitle: "Segure por 1,5 segundos...",
     triggerAria: "Segure por 1,5 segundos para abrir o easter egg",
     socialLabel: "Redes sociais",
