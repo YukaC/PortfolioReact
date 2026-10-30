@@ -13,6 +13,7 @@ import {
 } from "@/data/projects";
 import { prefersReducedMotion, hasFinePointer } from "@/motion/prefersReducedMotion";
 import { gsap, registerMotion } from "@/motion/register";
+import { resolveProjectLinks } from "@/lib/project-links";
 
 const COVER_BLUR =
   "data:image/svg+xml;charset=utf-8," +
@@ -58,6 +59,70 @@ const ProjectCover = memo(({ project, index, sizes }) => {
 });
 
 ProjectCover.displayName = "ProjectCover";
+
+/**
+ * Project row: the whole card opens the live demo, and a small secondary
+ * action keeps the repository one click away when it is a different place.
+ */
+const WorkRow = ({ project, index }) => {
+  // `project.siteUrl` is already resolved upstream (override → GitHub "Website"
+  // → repo); re-running the resolver keeps the fallback entries in sync.
+  const { siteUrl, repoUrl, showRepoLink } = resolveProjectLinks({
+    repoUrl: project.repoLink,
+    siteUrlFromOverride: project.siteUrl,
+  });
+
+  return (
+    <li
+      className="work-row"
+      data-work-row=""
+      data-work-key={project.name ?? project.title}
+      style={{ "--d": `${index * 90}ms` }}
+    >
+      <div className="work-thumb" aria-hidden="true">
+        <ProjectCover
+          project={project}
+          index={index}
+          sizes="(max-width: 900px) 100vw, 1px"
+        />
+      </div>
+
+      <span className="work-num">{String(index + 1).padStart(2, "0")}</span>
+
+      <div className="work-body">
+        <h3>{project.title}</h3>
+        <p className="work-problem">{project.problem ?? project.description}</p>
+        {project.tags?.length ? (
+          <p className="work-tags">{project.tags.join(" · ")}</p>
+        ) : null}
+        {showRepoLink ? (
+          <a
+            href={repoUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label={`${project.title} en GitHub`}
+            className="work-repo focus-ring relative z-[3] mt-3 inline-flex items-center gap-1.5 rounded-full border border-white/15 px-2.5 py-1 font-mono text-[0.6875rem] uppercase tracking-[0.14em] text-white/55 transition-colors hover:border-white/40 hover:text-white/90"
+          >
+            GitHub
+            <SwapArrow direction="d" size={11} />
+          </a>
+        ) : null}
+      </div>
+
+      <span className="work-go" aria-hidden="true">
+        <SwapArrow direction="d" />
+      </span>
+
+      <a
+        className="work-hit focus-ring"
+        href={siteUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label={`${project.title} — ver demo`}
+      />
+    </li>
+  );
+};
 
 /**
  * WorkList - selected work as a filtered list.
@@ -236,47 +301,11 @@ const WorkList = ({ projects = PINNED_FALLBACK }) => {
         <ul className="work-list" ref={listRef} key={filter}>
           {visible.length > 0 ? (
             visible.map((project, index) => (
-              <li
+              <WorkRow
                 key={project.name ?? project.repoLink}
-                className="work-row"
-                data-work-row=""
-                data-work-key={project.name ?? project.title}
-                style={{ "--d": `${index * 90}ms` }}
-              >
-                <div className="work-thumb" aria-hidden="true">
-                  <ProjectCover
-                    project={project}
-                    index={index}
-                    sizes="(max-width: 900px) 100vw, 1px"
-                  />
-                </div>
-
-                <span className="work-num">
-                  {String(index + 1).padStart(2, "0")}
-                </span>
-
-                <div className="work-body">
-                  <h3>{project.title}</h3>
-                  <p className="work-problem">
-                    {project.problem ?? project.description}
-                  </p>
-                  {project.tags?.length ? (
-                    <p className="work-tags">{project.tags.join(" · ")}</p>
-                  ) : null}
-                </div>
-
-                <span className="work-go" aria-hidden="true">
-                  <SwapArrow direction="d" />
-                </span>
-
-                <a
-                  className="work-hit focus-ring"
-                  href={project.repoLink}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  aria-label={`${project.title}, GitHub repository, opens in a new tab`}
-                />
-              </li>
+                project={project}
+                index={index}
+              />
             ))
           ) : (
             <li className="work-row">
@@ -311,7 +340,7 @@ const WorkList = ({ projects = PINNED_FALLBACK }) => {
           </div>
         ))}
         <span className="work-preview-tag">
-          View repository
+          View demo
           <SwapArrow direction="d" size={13} />
         </span>
       </div>

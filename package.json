@@ -16,6 +16,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
+    "test": "node --test src/lib",
     "check:lint": "eslint .",
     "e2e:a11y": "node scripts/e2e-a11y.mjs",
     "e2e:motion": "node scripts/e2e-footer-motion.mjs",
