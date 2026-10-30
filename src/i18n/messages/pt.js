@@ -8,7 +8,7 @@ const pt = {
   meta: {
     title: "Agustin Ciucani, desenvolvedor full-stack em Buenos Aires",
     description:
-      "Agustin Ciucani é desenvolvedor full-stack em Buenos Aires, Argentina. Ele cria produtos em React e Next.js com interfaces acessíveis e movimento que assenta.",
+      "Agustin Ciucani é desenvolvedor full-stack em Buenos Aires, Argentina. Ele cria produtos em React e Next.js com interfaces acessíveis e animações que não atrapalham.",
     imageAlt:
       "Retrato de Agustin Ciucani, desenvolvedor full-stack em Buenos Aires",
   },
@@ -20,7 +20,7 @@ const pt = {
   },
   nav: {
     main: "Navegação principal",
-    home: "Ir para a seção inicial",
+    home: "Ir para o início",
     openMenu: "Abrir menu",
     closeMenu: "Fechar menu",
     contact: "Vamos conversar",
@@ -38,7 +38,7 @@ const pt = {
     title: "Transformo problemas reais em software que funciona",
     accent: "funciona",
     lead:
-      "Agustin Ciucani. Desenvolvedor full-stack em Buenos Aires. Entrego produtos em React e Next.js que as pessoas realmente conseguem usar.",
+      "Agustin Ciucani. Desenvolvedor full-stack em Buenos Aires. Crio produtos em React e Next.js que as pessoas realmente usam.",
     seeWork: "Ver projetos",
     getInTouch: "Falar comigo",
     stackLabel: "Stack",
@@ -55,9 +55,9 @@ const pt = {
   },
   work: {
     eyebrow: "Trabalhos selecionados",
-    title: "Software em uso real",
-    accent: "real",
-    lead: "Interfaces, painéis e ferramentas. O código de cada um.",
+    title: "Software que está em produção",
+    accent: "produção",
+    lead: "Interfaces, painéis e ferramentas. Cada um com seu código-fonte.",
     filterLabel: "Filtrar projetos",
     filters: {
       all: "Todos",
@@ -78,15 +78,15 @@ const pt = {
     title: "Como eu trabalho e onde aprendi",
     accent: "aprendi",
     statement:
-      "Atuo em interfaces, painéis, PWAs e produtos full-stack em React e Next.js. Acessíveis, responsivos e seguros para clicar.",
+      "Atuo em interfaces, painéis, PWAs e produtos full-stack em React e Next.js. Acessíveis, responsivos e sem sustos ao usar.",
     portraitAlt: "Retrato de {name}",
     role: "Desenvolvedor full-stack",
     socialAria: "{name} (abre em uma nova aba)",
     workTitle: "Como eu gosto de trabalhar",
-    introStrong: "Trabalho de produção em React, Next.js e Tailwind.",
-    introRest: "Acessível, responsivo e seguro para clicar.",
+    introStrong: "Trabalho em produção com React, Next.js e Tailwind.",
+    introRest: "Acessível, responsivo e sem sustos ao usar.",
     offClock:
-      "Fora do horário eu escuto música, toco guitarra e mexo em um Ford Fiesta 95.",
+      "Fora do horário eu escuto música, toco guitarra e mexo num Ford Fiesta 95.",
     skillsLabel: "Ferramentas",
     source: "Ver o código",
     educationTitle: "Formação",
@@ -110,7 +110,7 @@ const pt = {
     title: "Me conta o que você está construindo.",
     accent: "construindo.",
     lead:
-      "Freelance ou tempo integral. Mande o problema, a stack e o prazo. Eu respondo com os próximos passos.",
+      "Freelance ou tempo integral. Me manda o problema, a stack e o prazo que eu respondo como seguir.",
     copy: "Copiar endereço",
     copied: "Copiado ✓",
     manual: "Selecione acima",
@@ -119,7 +119,7 @@ const pt = {
     mailSubject: "Consulta de projeto",
   },
   footer: {
-    tagline: "Acho que é hora de explodir essa cena.",
+    tagline: "Acho que está na hora de cair fora dessa cena.",
     triggerTitle: "Segure por 1,5 segundos...",
     triggerAria: "Segure por 1,5 segundos para abrir o easter egg",
     socialLabel: "Redes sociais",

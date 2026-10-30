@@ -21,6 +21,17 @@
   test fails if an English key is missing in Spanish or Portuguese.
 - GitHub pins translate per field from the `i18n` block that already owns each slug, so a
   project's English copy and its translations cannot drift apart.
+- The Spanish and Portuguese copy is written, not translated. Calques that read as machine
+  output (`movimiento que se asienta`, `El código de cada uno`, `seguros para clicar`,
+  `volar esta escena`) became native phrasing, and the three pins that still rendered
+  English (`btrfs2ext4`, the GRUB theme, `cleanupDiskW11`) now translate per field too.
+- Image alt text is not part of this: `WorkList` renders its preview as `<Image alt="">`,
+  decorative on purpose, so no project alt is announced in any language. The copy pass
+  stopped there instead of adding translated data nothing reads. Product titles
+  (`Turnos App`, `Pelis en Casa`, `Myrk Studio`) stay with their project.
+- `src/lib/project-i18n.test.js` now pins the translated field list, the English fallback
+  for a slug or locale without a block, and that localizing a list does not mutate the
+  input. It needs no `@/` resolver, which is why that module imports its data relatively.
 - Also fixed in passing: the work-list aria labels were hardcoded Spanish
   (`"… en GitHub"`, `"ver demo"`) on an English page. Task notes: `odd/tasks/auto-locale.md`.
 

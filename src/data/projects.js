@@ -40,7 +40,7 @@ export const PROJECT_OVERRIDES = {
         description:
           "El sitio que estás leyendo: render en servidor para SEO, un sistema visual hecho a mano y un easter egg en WebGL.",
         problem:
-          "Este sitio tenía que leerse como una práctica de trabajo, no como una plantilla.",
+          "Este sitio tenía que transmitir trabajo real y no una plantilla.",
         outcome:
           "Next.js con ISR, un sistema de diseño en Tailwind y un easter egg en WebGL.",
       },
@@ -49,7 +49,7 @@ export const PROJECT_OVERRIDES = {
         description:
           "O site que você está lendo: renderização no servidor para SEO, um sistema visual feito à mão e um easter egg em WebGL.",
         problem:
-          "Este site precisava soar como uma prática de trabalho, não como um template.",
+          "Este site precisava mostrar trabalho de verdade, não um template.",
         outcome:
           "Next.js com ISR, um design system em Tailwind e um easter egg em WebGL.",
       },
@@ -72,7 +72,7 @@ export const PROJECT_OVERRIDES = {
         description:
           "App multi-tenant de gestión de turnos con validación en tiempo real, panel de administración y visualización de datos con ECharts.",
         problem:
-          "Una municipalidad necesitaba un solo lugar para tomar turnos entre distintos tenants.",
+          "Una municipalidad necesitaba un solo lugar para sacar turnos en distintas áreas.",
         outcome:
           "Una app Flask y React con validación en vivo, panel de administración y ECharts.",
       },
@@ -80,7 +80,7 @@ export const PROJECT_OVERRIDES = {
         description:
           "App multi-tenant de gestão de agendamentos com validação em tempo real, painel administrativo e visualização de dados com ECharts.",
         problem:
-          "Uma prefeitura precisava de um só lugar para receber agendamentos entre tenants.",
+          "Uma prefeitura precisava de um só lugar para receber agendamentos de várias secretarias.",
         outcome:
           "Um app Flask e React com validação ao vivo, painel administrativo e ECharts.",
       },
@@ -101,7 +101,7 @@ export const PROJECT_OVERRIDES = {
     i18n: {
       es: {
         description:
-          "Finanzas personales con el mes como unidad: ingresos, gastos, categorías y un desglose semanal, sin crear cuenta.",
+          "Finanzas personales organizadas por mes: ingresos, gastos, categorías y un desglose semanal, sin crear cuenta.",
         problem:
           "Casi todas las apps de presupuesto esconden el panorama mensual detrás de un modelo semanal.",
         outcome:
@@ -109,7 +109,7 @@ export const PROJECT_OVERRIDES = {
       },
       pt: {
         description:
-          "Finanças pessoais com o mês como unidade: receitas, despesas, categorias e um detalhamento semanal, sem criar conta.",
+          "Finanças pessoais organizadas por mês: receitas, despesas, categorias e um detalhamento semanal, sem criar conta.",
         problem:
           "Quase todo app de orçamento esconde o panorama mensal atrás de um modelo semanal.",
         outcome:
@@ -132,11 +132,11 @@ export const PROJECT_OVERRIDES = {
     i18n: {
       es: {
         description:
-          "Catálogo y reseñas de películas: búsqueda, filtros por género y director, ficha de cada film y comentarios de lectores.",
+          "Catálogo y reseñas de películas: búsqueda, filtros por género y director, ficha de cada película y comentarios de lectores.",
         problem:
           "Un trabajo académico de 2022 (HTML + jQuery + Flask) que no se podía mostrar tal como estaba.",
         outcome:
-          "Reconstruido como app estática en React, con datos embebidos y movimiento basado en springs.",
+          "Reconstruido como app estática en React, con datos embebidos y animaciones con springs.",
       },
       pt: {
         description:
@@ -144,7 +144,7 @@ export const PROJECT_OVERRIDES = {
         problem:
           "Um trabalho acadêmico de 2022 (HTML + jQuery + Flask) que não dava para mostrar como estava.",
         outcome:
-          "Reconstruído como app estático em React, com dados embutidos e movimento em springs.",
+          "Reconstruído como app estático em React, com dados embutidos e animações com springs.",
       },
     },
   },
@@ -163,7 +163,7 @@ export const PROJECT_OVERRIDES = {
     i18n: {
       es: {
         description:
-          "Sitio de marca para una serie narrativa de Minecraft: scroll editorial único, hero en WebGL y flujo de whitelist.",
+          "Sitio de marca para una serie narrativa de Minecraft: scroll editorial de una sola pasada, hero en WebGL y flujo de whitelist.",
         problem:
           "Una serie ficticia necesitaba un sitio que se sintiera como un estudio y no como una plantilla.",
         outcome:
@@ -171,7 +171,7 @@ export const PROJECT_OVERRIDES = {
       },
       pt: {
         description:
-          "Site de marca para uma série narrativa de Minecraft: scroll editorial único, hero em WebGL e fluxo de whitelist.",
+          "Site de marca para uma série narrativa de Minecraft: scroll editorial de página única, hero em WebGL e fluxo de whitelist.",
         problem:
           "Uma série fictícia precisava de um site que parecesse um estúdio, não um template.",
         outcome:
@@ -189,6 +189,24 @@ export const PROJECT_OVERRIDES = {
     imgSrc: "/btrfs2ext4.webp",
     alt: "btrfs2ext4 dry-run terminal screenshot",
     tags: ["C", "Linux", "btrfs", "ext4"],
+    i18n: {
+      es: {
+        description:
+          "Convertidor en el lugar de Btrfs a Ext4 para dispositivos de bloque e imágenes: journal de recuperación ante cortes, rollback y escalado según la memoria disponible.",
+        problem:
+          "Mover un sistema de archivos en vivo de Btrfs a Ext4 sin copiar todo de nuevo.",
+        outcome:
+          "Un convertidor en el lugar, con journal de recuperación y rollback.",
+      },
+      pt: {
+        description:
+          "Conversor no local de Btrfs para Ext4 em dispositivos de bloco e imagens: journal de recuperação após queda, rollback e escalonamento conforme a memória disponível.",
+        problem:
+          "Mover um sistema de arquivos em uso de Btrfs para Ext4 sem copiar tudo de novo.",
+        outcome:
+          "Um conversor no local, com journal de recuperação e rollback.",
+      },
+    },
   },
   "cowboy-bebop-grub-theme": {
     title: "Cowboy Bebop GRUB Theme",
@@ -198,6 +216,22 @@ export const PROJECT_OVERRIDES = {
     imgSrc: "/cowboy-bebop-grub-theme.webp",
     alt: "Cowboy Bebop GRUB theme boot menu screenshot",
     tags: ["Shell", "GRUB", "Linux"],
+    i18n: {
+      es: {
+        description: "Tema de GRUB con la estética de Cowboy Bebop.",
+        problem:
+          "Un menú de arranque que combine con el lockscreen de Cowboy Bebop.",
+        outcome:
+          "Un tema de GRUB con la tipografía y los fotogramas de la serie.",
+      },
+      pt: {
+        description: "Tema de GRUB com a estética de Cowboy Bebop.",
+        problem:
+          "Um menu de boot que combine com o lockscreen de Cowboy Bebop.",
+        outcome:
+          "Um tema de GRUB com a tipografia e os frames da série.",
+      },
+    },
   },
   AppDespensa: {
     title: "App Despensa",
@@ -234,6 +268,22 @@ export const PROJECT_OVERRIDES = {
     imgSrc: "/cleanupDiskW11.webp",
     alt: "cleanupDiskW11 Windows 11 cleaner GUI screenshot",
     tags: ["Python", "Windows"],
+    i18n: {
+      es: {
+        description: "Script auxiliar de limpieza de disco para Windows 11.",
+        problem:
+          "Las instalaciones de Windows 11 que dejan basura en el disco después de actualizar.",
+        outcome:
+          "Un auxiliar en Python con una interfaz mínima para las tareas de limpieza.",
+      },
+      pt: {
+        description: "Script auxiliar de limpeza de disco para o Windows 11.",
+        problem:
+          "Instalações do Windows 11 que deixam lixo no disco depois das atualizações.",
+        outcome:
+          "Um auxiliar em Python com uma interface mínima para as tarefas de limpeza.",
+      },
+    },
   },
   AhorrAR: {
     title: "AhorrAR",
@@ -247,17 +297,17 @@ export const PROJECT_OVERRIDES = {
     i18n: {
       es: {
         description:
-          "Comparación de precios en vivo para comercios argentinos, con ofertas reales ordenadas y envío confirmado (Scrapling + Express + React).",
+          "Comparación de precios en vivo para comercios argentinos, que ordena ofertas reales y confirma el envío (Scrapling + Express + React).",
         problem:
           "Los precios de los supermercados argentinos están dispersos entre sitios.",
-        outcome: "Una comparación en vivo ordenada y con envío confirmado.",
+        outcome: "Una comparación en vivo que ordena ofertas y confirma el envío.",
       },
       pt: {
         description:
-          "Comparação de preços ao vivo para lojas argentinas, com ofertas reais ordenadas e frete confirmado (Scrapling + Express + React).",
+          "Comparação de preços ao vivo para lojas argentinas, que ordena ofertas reais e confirma o frete (Scrapling + Express + React).",
         problem:
           "Os preços dos mercados argentinos estão espalhados entre sites.",
-        outcome: "Uma comparação ao vivo ordenada e com frete confirmado.",
+        outcome: "Uma comparação ao vivo que ordena ofertas e confirma o frete.",
       },
     },
   },
