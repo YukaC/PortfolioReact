@@ -166,3 +166,26 @@ maquetas" y el hero/about pasan a hablar de "poner online" y "el servidor donde 
 "mantener andando". Se agregó un aviso único encima de la lista, en los tres idiomas: cada link
 "Ver demo" abre una demo, no el deploy de producción del proyecto. Cada tarjeta queda libre de
 repetir el descargo. Sin casos de estudio ni rutas nuevas: el pedido era redacción.
+
+**L12 — bug reportado por el usuario (verbatim):**
+> en el dev server no cambia el idioma automaticamentw, y por mas que seleccione otro idioma no cambia xd
+
+**Causa raíz (no era la copia).** Next 16 renombró la convención `middleware.js` → `proxy.js`, y el
+doc es explícito: el archivo va "en la raíz del proyecto **o dentro de `src`** si corresponde, al
+mismo nivel que `pages` o `app`". Acá `pages` vive en `src/pages`, así que el `middleware.js` de la
+raíz quedaba fuera del árbol que Turbopack mira en `next dev`: **el proxy nunca se ejecutaba en
+desarrollo** (sin `Set-Cookie`, sin `Content-Language`, `?lang=` ignorado, `<html lang="en">`
+siempre). Producción sí lo corría por compatibilidad con el nombre viejo, por eso ningún gate lo
+detectó: los e2e corren contra el dev server y solo verifican `/` en inglés.
+
+**Fix:** `middleware.js` → `src/proxy.js` con `export function proxy(...)` e import por alias
+`@/i18n/locale`. Verificado en dev y en `next start`:
+
+| pedido | resultado |
+|---|---|
+| `Accept-Language: es-AR` en `/` | `content-language: es` · cookie `pf_locale=es-AR` · `<html lang="es-AR">` · copia en español |
+| `Accept-Language: pt-BR` en `/` | `<html lang="pt-BR">` · copia en portugués |
+| `?lang=pt` con header `en-US` | copia en portugués (el switcher gana sobre el header) |
+| click ES → PT → EN en el navegador | idioma, `<html lang>`, `aria-current` y cookie cambian en cada click |
+
+Gates: test 27/27 · e2e:a11y 16 OK · build OK (`ƒ Proxy (Middleware)`) · vitals 3/3 pass.

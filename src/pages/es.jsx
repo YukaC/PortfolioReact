@@ -4,7 +4,7 @@ import { fetchPinnedProjects } from "@/lib/fetch-pinned-projects";
 /**
  * Spanish home: `/es`.
  *
- * Prerendered like the English one, so the middleware can rewrite `/` here and
+ * Prerendered like the English one, so the proxy can rewrite `/` here and
  * the visitor receives Spanish HTML on the first byte (no client-side swap).
  */
 export async function getStaticProps() {

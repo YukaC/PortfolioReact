@@ -5,10 +5,15 @@ import {
   QUERY_PARAM,
   pickLocale,
   toHtmlLang,
-} from "./src/i18n/locale.js";
+} from "@/i18n/locale";
 
 /**
  * Language resolution at the edge.
+ *
+ * This is the `proxy.js` convention (Next 16 renamed `middleware.js` to
+ * `proxy.js`; the deprecated name is still compiled by `next build` but
+ * `next dev` never executes it, which silently killed language resolution in
+ * development only).
  *
  * The site is prerendered once per language (`/`, `/es`, `/pt`), so the visitor
  * gets translated HTML on the first byte — no client-side swap and no flash.
@@ -73,7 +78,7 @@ function resolveLocale(pathname, searchParams, request) {
   });
 }
 
-export function middleware(request) {
+export function proxy(request) {
   const { pathname, searchParams } = request.nextUrl;
   const chosen = resolveLocale(pathname, searchParams, request);
 
