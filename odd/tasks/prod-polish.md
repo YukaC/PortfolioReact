@@ -253,3 +253,34 @@ palabra entra y sale con su caja de clipping sin animaciones desfasadas.
 Verificado en navegador a 1440x900 y 390x844: título en 2 y 3 líneas, hero entra en el viewport,
 sin overflow horizontal, CTAs "Ver proyectos" / "Hablemos".
 Gates: lint limpio · test **28/28** · e2e:runtime 7 OK · e2e:a11y 16 OK · build OK · vitals 3/3 pass.
+
+**L16 — segundo pedido de layout del usuario (verbatim):**
+> sería mejor si fuera desarrollo tu software un breakline y abajo de punta a punta
+
+`SplitHeading` ahora trata un `\n` en la copia como línea pedida: las palabras de cada lado van en
+su propio bloque (`.hl`), y el índice de stagger sigue contando a través del corte. Sin el wrapper
+en los títulos de una sola línea, así el resto del sitio no cambia.
+
+**Lo que costó que la línea se respete** (tres intentos fallidos, todos medidos con un probe propio
+en 1440/1280/1024/390/360 × 3 idiomas):
+1. Achicar la tipografía: no servía, porque `.hero-title` tenía `max-width: 22ch` — una unidad
+   *relativa a la fuente*. La línea mide **28.2ch**: encoger el tipo encogía el tope con él, así
+   que el break nunca entraba. El ratio era constante.
+2. Subir el tope a 26ch: seguía sin entrar (hacía falta ≥ 28.2ch).
+3. Dar ancho explícito con `calc(100vw - 1.5rem)`: entraba, pero generaba **scroll horizontal**.
+
+Solución final: `width: min(30ch, calc(100vw - clamp(2.75rem, 6vw, 8rem) - 0.75rem))` con
+`max-width: none`. `max-width` no puede agrandar (un bloque solo se encoge dentro de su padre, y el
+techo era `.site-shell`), así que el título usa ancho propio: llega al gutter de la página en
+desktop —mismo borde izquierdo, más lugar a la derecha— y la resta del gutter impide que toque el
+borde del viewport. Resultado medido: 1440/1280/1024 × ES/EN/PT = **2 filas, cada línea dictada en
+una sola fila, hero entra en el viewport, sin overflow horizontal**. En 390 la línea se parte
+("Desarrollo" / "tu software,") porque no entra de otra forma; en 360 quedan 3–4 filas.
+
+El CSS de `.hl` había quedado dentro de un `@media (hover: hover) and (pointer: fine)`, por eso no
+aplicaba en contextos táctiles: movido a la capa de componentes.
+
+**El gate nuevo encontró su primer bug real:** `e2e:runtime` falló 2 asserts porque comparaba
+`es.hero.title` crudo (con `\n`) contra HTML con spans. Se endureció: `plainText()` + `sentence()`
+aplanan marcado y espacios de ambos lados, así un cambio de copia o de marcado no puede romper la
+spec. Vuelve a 7 OK.

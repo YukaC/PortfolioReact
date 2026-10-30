@@ -348,6 +348,14 @@
     color: var(--color-sky);
   }
 
+  /* A `\n` in the copy is a line the designer asked for: the words around it
+     render in their own block line, so the break holds at every viewport instead
+     of moving as the heading grows. Single-line headings get no wrapper class,
+     so their natural wrapping is untouched. */
+  .hl {
+    display: block;
+  }
+
   .lead {
     color: var(--color-mut);
     font-size: clamp(1.0625rem, 1.5vw, 1.25rem);
@@ -824,7 +832,19 @@
 
   .hero-title {
     margin: 1.625rem 0 1.5rem;
-    max-width: 22ch;
+    /* The hero copy carries a dictated line break, so the heading needs room the
+       copy column does not have. `max-width` alone could not give it: a block
+       can only shrink inside its parent, and `.site-shell` is the wall — with
+       `max-width` in `ch` the line "Desarrollo tu software," (28.2ch in this
+       type) wrapped at every font size, because shrinking the type shrank the
+       cap with it. An explicit width lets the line reach into the page gutter on
+       desktop (same left edge, more room to the right), and the `100vw` term
+       keeps the box on screen where the line has to wrap anyway. */
+    /* The subtraction is the page gutter plus a hair: the heading may reach into
+       the gutter, never past the viewport edge, so an explicit width cannot
+       introduce a horizontal scrollbar. */
+    width: min(30ch, calc(100vw - clamp(2.75rem, 6vw, 8rem) - 0.75rem));
+    max-width: none;
   }
 
   .hero-actions {

@@ -38,7 +38,7 @@ const pt = {
   },
   hero: {
     status: "Disponível para freelance e tempo integral",
-    title: "Desenvolvo seu software, de ponta a ponta",
+    title: "Desenvolvo seu software,\nde ponta a ponta",
     accent: "software",
     lead:
       "Sou Agustín Ciucani, desenvolvedor full-stack em Buenos Aires. Construo produtos principalmente com React e Next.js, mas me adapto à stack que for preciso. Do visual ao servidor.",
