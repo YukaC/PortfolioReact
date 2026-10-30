@@ -231,3 +231,25 @@ rompe las specs. Reusa el servidor de :3000 (el caso que se rompió es el dev) o
 
 Gates finales: lint limpio · test 27/27 · e2e:runtime 7 OK · e2e:a11y 16 OK · build OK ·
 vitals 3/3 pass. README actualizado con los comandos nuevos.
+
+**L15 — hero dictado por el usuario (verbatim):**
+> mejor el herl hacelo asi: Desarrollo tu software, de punta a punta
+> Soy Agustín Ciucani, desarrollador full-stack en Buenos Aires. Armo productos sobre todo con React y Next.js, pero me adapto al stack que haga falta. Desde lo visual hasta el servidor.
+> [Ver proyectos] [Hablemos]
+
+Aplicado con su puntuación exacta, traducido a EN/PT con el mismo sentido (EN "I build your software,
+end to end" · PT "Desenvolvo seu software, de ponta a ponta"), y `accent: "software"` en los tres.
+El usuario escribe **Agustín** con tilde, así que el nombre se normalizó en toda la copia, el `<head>`,
+el JSON-LD y el footer (18 apariciones en el HTML servido).
+
+**Bug que encontró el test de paridad y se arregló de raíz:** `accent: "software"` no matcheaba
+`software,` (con coma) y el énfasis del título desaparecía sin error de build. En vez de manosear la
+copia se creó `src/lib/heading-accent.js` (`normalizeHeadingWord`, `headingWords`, `accentWordSet`,
+`isAccentWord`), que ignoran la puntuación de borde: lo usa `SplitHeading` y lo usa el test, así hay
+una sola definición de "la misma palabra". Nuevo test: "punctuation does not hide an emphasised
+word". El acento colorea el token completo (coma incluida): a 108px es un punto de 2px y así la
+palabra entra y sale con su caja de clipping sin animaciones desfasadas.
+
+Verificado en navegador a 1440x900 y 390x844: título en 2 y 3 líneas, hero entra en el viewport,
+sin overflow horizontal, CTAs "Ver proyectos" / "Hablemos".
+Gates: lint limpio · test **28/28** · e2e:runtime 7 OK · e2e:a11y 16 OK · build OK · vitals 3/3 pass.

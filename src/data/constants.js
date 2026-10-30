@@ -4,10 +4,10 @@
  */
 
 export const SITE_URL = "https://agustinciucani.dev";
-export const SITE_NAME = "Agustin Ciucani";
-export const SITE_TITLE = "Agustin Ciucani, Full-stack Developer in Buenos Aires";
+export const SITE_NAME = "Agustín Ciucani";
+export const SITE_TITLE = "Agustín Ciucani, Full-stack Developer in Buenos Aires";
 export const SITE_DESCRIPTION =
-  "Agustin Ciucani is a full-stack developer in Buenos Aires, Argentina. He builds React and Next.js products with accessible UI and motion that settles.";
+  "Agustín Ciucani is a full-stack developer in Buenos Aires, Argentina. He builds React and Next.js products with accessible UI and motion that settles.";
 export const CONTACT_EMAIL = "agusyuk25@gmail.com";
 export const PERSON_JOB_TITLE = "Full-stack developer";
 export const PERSON_LOCALITY = "Buenos Aires";
