@@ -381,3 +381,41 @@ mata al hijo (`next-server`), y `kill -9 -PGID` a veces mata al shell. Helper de
 `/tmp/with-prod.sh <puerto> <cmd>` — mata al PID que realmente escucha (`ss -ltnp`), arranca el
 server, **compara el `buildId` servido contra `.next/BUILD_ID` y aborta si no coinciden**, y al
 final mata al listener. Regla: nunca medir contra un servidor sin verificar el build.
+
+**L21 — "se perdieron los flares de los puntos rojos" + video de rendimiento (Moto G82 / Brave).**
+> se perdieron los flares de destwllo de los puntoa rojos de fondo y te adjunto video del rendimiento para que veas lo mal que funciona en mi moto g82 con brave
+
+**Flares (regresión real de L19).** El CSS de reemplazo dibujaba los puntos planos; los flares viven en
+el shader. Se agregaron seis `.spark-flare` sobre la misma retícula de 48px: núcleo brillante +
+bloom en `radial-gradient`, animados **solo con `opacity` y `scale`** (los lleva el compositor; un
+`filter: blur()` de glow costaría más que toda la capa). Primer intento: ciclo de 7 s con el pulso al
+final → no se veía nada durante los primeros ~5,7 s. Reajustado a 5,5 s con dos golpes por ciclo, brillo
+de reposo 0,22 y delays repartidos 0–4,2 s. Bajo `prefers-reduced-motion` queda un glow estático.
+Verificado con muestreo de opacidades (llega a 1) y captura a 390x844.
+
+**Video: la causa principal no era el sitio.** Análisis del mp4 (864x1920, 24,3 s): 72 huecos de frame
+>60 ms, con stalls de 408/541/731 ms, y contenido **borroso** a los 2 s y a los 12 s (transiciones de
+reveal a medio camino). La URL del video es `100.120.254.30:3000` (Tailscale) con el indicador `N` de
+Next: era el **dev server**. Medido en el mismo perfil de teléfono:
+
+| Servidor | JS | Carga |
+|---|---|---|
+| dev `:3000` | **1 223 kB** en 25 archivos | **7 347 ms** |
+| prod `:3001` | **209 kB** en 15 archivos | **2 040 ms** |
+
+6x menos bytes y 3,6x menos carga. Dev sirve los chunks sin minificar y compila on-demand.
+
+**Segundo cambio: el reveal ya no anima `filter: blur()` en pantallas chicas o puntero grueso.** En un
+GPU móvil animar blur es la operación más cara que pide esta página, y hay una por cada reveal: el
+video muestra el hero entero borroso durante segundos, que es lo que se ve cuando el blur avanza a
+trompicones. Se conservan el viaje y el fundido; el blur queda en desktop, donde hay margen.
+**Honestidad sobre la evidencia:** localmente no pude reproducir la ganancia — esta máquina tiene una
+RX 570 y el "antes/después" con rasterizado por software dio p95 19,3 vs 20,0 ms, dentro del ruido.
+El cambio se sostiene por el video y por lo conocido del costo de blur en GPU móvil, no por una
+medición propia. Reversible en una línea si prefiere el blur.
+
+**Entregado para que pueda juzgar:** `next start -H 0.0.0.0 -p 3001` corriendo junto al dev server, para
+comparar el sitio real desde el teléfono por LAN/Tailscale.
+
+Gates: lint limpio · test 28/28 · e2e:runtime 7 OK · e2e:a11y 16 OK · e2e:motion 13 OK ·
+vitals 3/3 pass con 209 kB.
