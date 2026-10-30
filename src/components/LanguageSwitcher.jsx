@@ -5,7 +5,7 @@ import { useT } from "@/i18n/LocaleProvider";
  * Language switcher.
  *
  * Each option is a plain anchor to `/?lang=<code>`: a full navigation, so the
- * middleware can persist the choice in the cookie and the server can answer with
+ * proxy can persist the choice in the cookie and the server can answer with
  * the matching prerendered page. Client-side routing here would only swap text
  * and never write the cookie.
  *

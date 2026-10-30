@@ -1,7 +1,7 @@
 import Home from "@/components/Home";
 import { fetchPinnedProjects } from "@/lib/fetch-pinned-projects";
 
-/** English home: `/`. Also the destination of the middleware's x-default. */
+/** English home: `/`. Also the destination of the proxy's x-default. */
 export async function getStaticProps() {
   const projects = await fetchPinnedProjects();
 

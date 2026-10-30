@@ -7,7 +7,7 @@ import { DEFAULT_LOCALE, htmlLangFromPath } from "@/i18n/locale";
  * `<html lang>` has to be right in the served HTML, before any JavaScript runs,
  * so the language is resolved here and not in a client effect:
  *
- *   1. `x-pf-html-lang`, the full tag the middleware detected (`es-AR`);
+ *   1. `x-pf-html-lang`, the full tag the proxy detected (`es-AR`);
  *   2. otherwise the language of the prerendered route (`/es` → `es`), because a
  *      static HTML file cannot know a visitor's region — the client refines the
  *      attribute to the regional tag after mount, without touching any text.
