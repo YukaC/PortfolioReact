@@ -207,3 +207,27 @@ exigen). El mensaje "Seleccionalo arriba" queda solo para cuando fallan las dos 
 el textarea enfocado contenían exactamente `agusyuk25@gmail.com`, el botón pasa a "Copiado ✓" y el
 live region anuncia "Mail copiado al portapapeles"; no queda ningún textarea en el DOM.
 Gates: test 27/27 · e2e:a11y 16 OK · build OK · vitals 3/3 pass.
+
+**L14 — specs propias para los dos bugs que pasaron los gates.** Recomendación aceptada por el
+usuario ("hace o implementa lo recomendado"). Nuevo `scripts/e2e-runtime.mjs` + `pnpm e2e:runtime`
+(7 asserts), independiente del runner compartido `browser-verify`, que solo abre `/` en inglés
+sobre `127.0.0.1`:
+
+1. `/` con `Accept-Language: es-AR` → `content-language: es`, `<html lang="es-AR">`, copia del
+   diccionario ES y `pf_locale` persistido, más `Vary: Accept-Language`.
+2. `/?lang=pt` con header `en-US` → portugués (el switcher gana).
+3. Portapapeles sin Async Clipboard API (`navigator.clipboard` borrado antes de cualquier script
+   de la página): el click dispara un único evento `copy` con la dirección exacta, el botón dice
+   "Copiado ✓", el live region anuncia y no queda ningún textarea en el DOM.
+
+Los marcadores de idioma se importan de `src/i18n/messages/{es,pt}.js`, así que cambiar la copia no
+rompe las specs. Reusa el servidor de :3000 (el caso que se rompió es el dev) o levanta `next dev`.
+
+**Prueba de que las specs sirven (rojo → verde, con evidencia):**
+- `Contact.jsx` revertido a `261c783` → 2 FALLA (`no copy event fired`), exit 1.
+- `src/proxy.js` movido fuera del árbol → 4 FALLA (sin `content-language`, `html lang=en`, sin
+  cookie, sin `Vary: Accept-Language`), exit 1.
+- Ambos restaurados → 7 OK · 0 FALLA, exit 0.
+
+Gates finales: lint limpio · test 27/27 · e2e:runtime 7 OK · e2e:a11y 16 OK · build OK ·
+vitals 3/3 pass. README actualizado con los comandos nuevos.

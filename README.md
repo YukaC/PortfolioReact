@@ -62,6 +62,7 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 | `pnpm start`          | Run the production build            |
 | `pnpm lint`           | Run ESLint                          |
 | `pnpm e2e:a11y`       | Browser check of the real site      |
+| `pnpm e2e:runtime`    | Locale proxy + clipboard contracts  |
 | `pnpm e2e:motion`     | Footer wordmark motion, in a browser|
 | `pnpm check:motion`   | Static GSAP reset-target guard      |
 | `pnpm validate:bebop` | Validate Bebop easter egg invariants |
@@ -76,6 +77,19 @@ overflow. It reuses a dev server already running for this checkout, or starts on
 pnpm e2e:a11y                                      # uses browser-verify.json
 pnpm e2e:a11y -- --base-url http://localhost:3000  # reuse a specific server
 pnpm e2e:a11y -- --json --report .browser-verify/report.json
+```
+
+`pnpm e2e:runtime` covers the two contracts that catalog cannot see, because it only ever
+opens `/` in English on a `127.0.0.1` origin: that the locale proxy answers `/` in the
+visitor's language (and that `?lang=` beats the request header), and that the contact button
+still puts the address on the clipboard when `navigator.clipboard` does not exist — the
+insecure origin a phone hits when it opens the dev server over the LAN. It reuses a running
+server, or boots `next dev` itself, so it exercises the development path where the proxy
+regression lived.
+
+```bash
+pnpm e2e:runtime                                   # reuse the server on :3000
+pnpm e2e:runtime -- --url http://127.0.0.1:3100    # or point it at another one
 ```
 
 ### Wordmark motion

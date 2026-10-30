@@ -19,6 +19,7 @@
     "test": "node --test src/lib",
     "check:lint": "eslint .",
     "e2e:a11y": "node scripts/e2e-a11y.mjs",
+    "e2e:runtime": "node scripts/e2e-runtime.mjs",
     "e2e:motion": "node scripts/e2e-footer-motion.mjs",
     "check:motion": "node scripts/check-motion-aliases.mjs",
     "measure:vitals": "node scripts/measure-vitals.mjs",
