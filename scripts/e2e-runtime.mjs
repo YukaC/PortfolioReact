@@ -38,6 +38,17 @@ import pt from "../src/i18n/messages/pt.js";
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const DEFAULT_URL = "http://127.0.0.1:3000";
 
+/** The visible text of the document, with markup and whitespace flattened. */
+const plainText = (html) =>
+  html
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&[a-z]+;/gi, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+/** A dictionary string in the same flattened shape, so copy edits cannot break the check. */
+const sentence = (value) => String(value).replace(/\s+/g, " ").trim();
+
 const results = [];
 const record = (name, ok, detail) => {
   results.push({ name, ok, detail });
@@ -90,11 +101,18 @@ async function checkRequestLocale(baseUrl) {
   const contentLanguage = response.headers.get("content-language");
   const cookie = response.headers.get("set-cookie") ?? "";
   const lang = /<html[^>]*lang="([^"]+)"/.exec(html)?.[1] ?? "";
+  const text = plainText(html);
 
   record(
     "proxy answers / in the browser's language",
-    contentLanguage === "es" && lang.startsWith("es") && html.includes(es.hero.title),
-    `content-language=${contentLanguage} · html lang=${lang} · hero="${lang.startsWith("es") ? "es" : "?"}"`,
+    contentLanguage === "es" &&
+      lang.startsWith("es") &&
+      // The heading is split into word spans, so compare against the document
+      // text rather than the raw markup: a dictated line break or a markup
+      // change must not be able to fail this.
+      text.includes(sentence(es.hero.title)) &&
+      text.includes(sentence(es.hero.lead)),
+    `content-language=${contentLanguage} · html lang=${lang} · copy=${text.includes(sentence(es.hero.lead)) ? "es" : "not-es"}`,
   );
 
   record(
@@ -118,11 +136,14 @@ async function checkSwitcherWins(baseUrl) {
   });
   const html = await response.text();
   const lang = /<html[^>]*lang="([^"]+)"/.exec(html)?.[1] ?? "";
+  const text = plainText(html);
 
   record(
     "the switcher beats the request header",
-    lang.startsWith("pt") && html.includes(pt.hero.title),
-    `html lang=${lang}`,
+    lang.startsWith("pt") &&
+      text.includes(sentence(pt.hero.title)) &&
+      text.includes(sentence(pt.hero.lead)),
+    `html lang=${lang} · copy=${text.includes(sentence(pt.hero.lead)) ? "pt" : "not-pt"}`,
   );
 }
 

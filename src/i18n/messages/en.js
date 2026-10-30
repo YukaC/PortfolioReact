@@ -39,7 +39,7 @@ const en = {
   },
   hero: {
     status: "Open to freelance and full-time",
-    title: "I build your software, end to end",
+    title: "I build your software,\nend to end",
     accent: "software",
     lead:
       "I am Agustín Ciucani, a full-stack developer in Buenos Aires. I build products mostly with React and Next.js, but I adapt to whatever stack the job needs. From the interface to the server.",
