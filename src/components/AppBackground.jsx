@@ -30,6 +30,24 @@ const SIM_QUALITY = { resolution: 0.32, iterationsPoisson: 12 };
    improves. No NetworkInformation API means no guessing: the field mounts. */
 const SLOW_EFFECTIVE_TYPES = new Set(["slow-2g", "2g", "3g"]);
 
+/* What counts as the reader engaging with a page that is only ornament away from
+   being complete: any of these means "the browser can afford the shader now". */
+const ENGAGEMENT_EVENTS = [
+  "scroll",
+  "wheel",
+  "touchstart",
+  "pointerdown",
+  "keydown",
+];
+
+/* After `load`, how long the field may keep asking for an idle slice before it
+   mounts anyway, and the fallback when the browser has no requestIdleCallback. */
+const FIELD_MOUNT_DEADLINE_MS = 1200;
+const FIELD_MOUNT_FALLBACK_MS = 600;
+/* A visitor who reads and never touches anything still gets the live field: the
+   smoke is part of the identity, not a reward for scrolling. */
+const FIELD_EAGER_MS = 5000;
+
 function getConnection() {
   return typeof navigator === "undefined" ? null : navigator.connection;
 }
@@ -108,13 +126,57 @@ const AppBackground = () => {
     if (!simQuality) {
       return undefined;
     }
+
+    /* The field is ornament, so it is never allowed to bid for the first second
+       and never for a frame the reader is scrolling.
+
+       Measured with scripts/measure-vitals.mjs (390x844, CPU 4x): three's module
+       eval plus the shader compile is 380 ms of blocking work in two long tasks.
+       Mounting it on the first idle slot put that on top of hydration — the part
+       the reader is actually waiting for — and a scroll that landed in that
+       window stuttered. So the mount waits for either the first real engagement
+       (a scroll, a wheel, a touch, a key) or FIELD_EAGER_MS of a visitor who is
+       only reading, then takes an idle slice. The CSS field below already paints
+       the same colours, so nothing looks missing while it waits. */
     const enableWebgl = () => setCanUseWebgl(true);
-    if (typeof requestIdleCallback === "function") {
-      const idleId = requestIdleCallback(enableWebgl, { timeout: 400 });
-      return () => cancelIdleCallback(idleId);
+    let timer = 0;
+    let idleId = 0;
+    let eagerTimer = 0;
+    let engaged = false;
+
+    const mount = () => {
+      if (typeof requestIdleCallback === "function") {
+        idleId = requestIdleCallback(enableWebgl, {
+          timeout: FIELD_MOUNT_DEADLINE_MS,
+        });
+        return;
+      }
+      timer = window.setTimeout(enableWebgl, FIELD_MOUNT_FALLBACK_MS);
+    };
+
+    const onEngage = () => {
+      if (engaged) return;
+      engaged = true;
+      for (const type of ENGAGEMENT_EVENTS) {
+        window.removeEventListener(type, onEngage, { capture: true });
+      }
+      window.clearTimeout(eagerTimer);
+      mount();
+    };
+
+    for (const type of ENGAGEMENT_EVENTS) {
+      window.addEventListener(type, onEngage, { capture: true, passive: true });
     }
-    const timeoutId = window.setTimeout(enableWebgl, 200);
-    return () => window.clearTimeout(timeoutId);
+    eagerTimer = window.setTimeout(onEngage, FIELD_EAGER_MS);
+
+    return () => {
+      for (const type of ENGAGEMENT_EVENTS) {
+        window.removeEventListener(type, onEngage, { capture: true });
+      }
+      window.clearTimeout(eagerTimer);
+      if (idleId) cancelIdleCallback(idleId);
+      if (timer) window.clearTimeout(timer);
+    };
   }, [simQuality]);
 
   return (
