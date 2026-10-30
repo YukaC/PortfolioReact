@@ -280,6 +280,13 @@ const WorkList = ({ projects = PINNED_FALLBACK }) => {
           </Reveal>
         </div>
 
+        {/* Said once, above the list, in every language: these are demos, not
+            client systems. Saying it here keeps each card free to describe the
+            build without repeating the disclaimer. */}
+        <Reveal as="p" className="work-note" delayMs={200}>
+          {t("work.demoNotice")}
+        </Reveal>
+
         <div
           className="work-tabs"
           ref={tabsRef}

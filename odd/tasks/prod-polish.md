@@ -156,3 +156,13 @@ scripts/measure-vitals.mjs` → `/` LCP 216ms · CLS 0.000 · TBT 144ms · JS 21
 `WLandStudio` (el repo se renombró; el commit `00cee8b` había arreglado solo Pelis). Se renombró
 la clave y la página vuelve a mostrar título y problema reales. Lección: los overrides de proyecto
 se verifican contra la página renderizada, no contra el diccionario.
+
+**L11 — corrección del usuario (verbatim):**
+> quise referirme a que las webs online que vera el visitante son demos, no deploys de prod final.
+
+Consecuencia: el título de la sección de trabajo ("Software real, corriendo en producción") y las
+frases que implicaban sistemas live eran **falsas**. Se cambiaron por "Demos que funcionan, no
+maquetas" y el hero/about pasan a hablar de "poner online" y "el servidor donde corren" en vez de
+"mantener andando". Se agregó un aviso único encima de la lista, en los tres idiomas: cada link
+"Ver demo" abre una demo, no el deploy de producción del proyecto. Cada tarjeta queda libre de
+repetir el descargo. Sin casos de estudio ni rutas nuevas: el pedido era redacción.

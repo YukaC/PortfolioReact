@@ -42,7 +42,7 @@ const en = {
     title: "From dashboard to deploy, no handoffs",
     accent: "handoffs",
     lead:
-      "Agustin Ciucani, full-stack developer in Buenos Aires. I build the dashboard, the API, and the deploy that keeps them running.",
+      "Agustin Ciucani, full-stack developer in Buenos Aires. I build the dashboard, the API, and the deploy that puts them online.",
     seeWork: "See the work",
     getInTouch: "Get in touch",
     stackLabel: "Stack",
@@ -52,9 +52,11 @@ const en = {
   },
   work: {
     eyebrow: "Selected work",
-    title: "Real software, running in production",
-    accent: "production",
+    title: "Working demos, not mockups",
+    accent: "mockups",
     lead: "Dashboards, apps, and tools. Every one links to its source.",
+    demoNotice:
+      "Every \"View demo\" link opens a demo build: a working sample of the project, not its production deployment.",
     filterLabel: "Filter projects",
     filters: {
       all: "All",
@@ -75,7 +77,7 @@ const en = {
     title: "How I work: one person, the whole cycle",
     accent: "cycle",
     statement:
-      "I take interfaces, dashboards, and PWAs from brief to deploy in React and Next.js, then keep them running.",
+      "I take interfaces, dashboards, and PWAs from brief to deploy in React and Next.js: front, API, and the server they run on.",
     portraitAlt: "{name} portrait",
     role: "Full-stack developer",
     socialAria: "{name} (opens in a new tab)",
