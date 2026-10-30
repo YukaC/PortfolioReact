@@ -419,3 +419,35 @@ comparar el sitio real desde el teléfono por LAN/Tailscale.
 
 Gates: lint limpio · test 28/28 · e2e:runtime 7 OK · e2e:a11y 16 OK · e2e:motion 13 OK ·
 vitals 3/3 pass con 209 kB.
+
+**L22 — "el problema son las anims y la carga del contenido que desaparece" (usuario).**
+> creo que el problema son las anims y lq carga del contenido que desaparece...
+
+**Diagnóstico correcto, y es de diseño, no de rendimiento.** `[data-r]` nace en `opacity: 0` +
+`filter: blur(6px)`, y solo aparece cuando React hidrata y el `IntersectionObserver` agrega `.is-in`.
+El contenido no "desaparece": **nunca aparece hasta que la hidratación termina**, y todo lo que está
+bajo el pliegue depende del mismo paso. Medido a 6x de CPU + Slow 4G, primer instante con todo lo
+visible del viewport efectivamente visible:
+
+| Servidor | Antes | Después |
+|---|---|---|
+| dev `:3000` | 13 673 ms | visible desde el primer muestreo (833 ms, `op:1/1`) |
+| prod `:3001` | 591 ms | 583 ms |
+
+**Fix: el reveal pasa a ser "visible primero".** El estado oculto ahora es una clase que JS pide
+(`.is-pending`), nunca el default del CSS. `useRevealOnEnter` la aplica **solo a nodos fuera de
+pantalla**; lo que el lector ya ve se marca `is-in` sin tocar opacidad. Resultado: si la hidratación
+tarda —o no llega— la página se lee igual, y el efecto sigue intacto abajo (verificado: 14 nodos
+pendientes, y Contacto pasa de 0 a 1 al entrar en viewport).
+
+**Contrato nuevo para que no vuelva:** `src/lib/reveal-contract.test.js` lee `globals.css` y falla si
+el estado base de `[data-r]` vuelve a ocultar contenido, si `.is-pending` deja de ser el que oculta,
+o si `.is-in` deja de restaurar opacidad y filtro. Prueba rojo→verde: simulando la regresión vieja el
+test falla (`the reveal base state does not hide content`), con el CSS actual pasa.
+
+Nota de método: primero intenté un spec de navegador que bloqueaba los `.js` para simular "el script no
+llega". No sirve contra el dev server: ahí el CSS se inyecta por JS, así que sin scripts no hay estilos
+y todas las cajas miden 0. El invariante es del CSS, así que se protege leyendo el CSS.
+
+Gates: lint limpio · test **31/31** · e2e:runtime 7 OK · e2e:a11y 16 OK · e2e:motion 13 OK ·
+vitals 3/3 pass (209 kB · LCP 216 ms · CLS 0.000 · TBT 143 ms).
