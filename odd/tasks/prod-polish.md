@@ -284,3 +284,22 @@ aplicaba en contextos táctiles: movido a la capa de componentes.
 `es.hero.title` crudo (con `\n`) contra HTML con spans. Se endureció: `plainText()` + `sentence()`
 aplanan marcado y espacios de ambos lados, así un cambio de copia o de marcado no puede romper la
 spec. Vuelve a 7 OK.
+
+**L17 — foto del home de Myrk Studio (pedido del usuario).**
+> tenes que actualizar la foto del home de myrkstudio
+
+El sitio se había rediseñado (`d8e0eff feat(editorial): the shipped rework — sky-only hero`), pero el
+asset del portfolio seguía siendo la captura vieja (con el agujero negro y su anillo rosa). Se generó
+una captura nueva del build servido: `dist/` de `/mnt/JuegosHDD/Proyectos/MyrkStudio` en
+`http://127.0.0.1:4173`, chromium headless, 1440x900 (misma relación que el asset anterior, que la
+tarjeta recorta a 16/9 con `object-cover`), 4.5s de espera para que asiente la animación, sin errores
+de consola. Convertida a WebP q82 método 6: **57 468 → 51 618 bytes** con el mismo nombre de archivo,
+así que no hubo que tocar `PROJECT_OVERRIDES`.
+
+**Trampa que costó 20 minutos:** con el archivo reemplazado, la web seguía mostrando la foto vieja.
+No era el navegador ni mi `curl` (que pedía JPEG y recibía la nueva): Next cachea las variantes
+optimizadas por URL+ancho+calidad **sin mirar el contenido del archivo**, y en dev esa caché vive en
+`.next/dev/cache/images` — borré primero `.next/cache/images`, que es la ruta de producción, y no
+pasó nada. Limpiando la ruta correcta la variante AVIF pasa de 4 980 a 5 136 bytes y muestra el hero
+actual. Regla para el futuro: reemplazar una imagen conservando el nombre exige limpiar
+`.next/dev/cache/images` (o cambiar el nombre del archivo) antes de verificar.
