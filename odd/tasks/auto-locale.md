@@ -88,7 +88,9 @@ slices, each PR targeting the one before it, #44 (`main`) to #50:
 | 07 auto-locale | `pr/07-auto-locale` | #50 (tree = `feat/agency-rebrand`) |
 
 This feature's own boundary is slice 07: the two i18n commits plus their records
-and the refreshed card screenshots. `size:exception` is recommended on every
+and the refreshed card screenshots. The L8/L9 copy pass lands on top of it
+(`78aef16`, `8c73475`), because it rewrites the copy those commits introduced.
+`size:exception` is recommended on every
 slice — the split follows authored passes, not a line count, because the branch is
 one rebrand of one site.
 
@@ -107,11 +109,13 @@ one fix-less pass through the diff and the documentation — no second writer.
   `ƒ Proxy (Middleware)`.
 - `e2e:a11y` against the production build — 16 OK / 0 fail / 0 skipped, including
   `console: sin errores en consola`, `first-tab`, `a11y-labels` and `reduced-motion`.
-- Copy pass (L8/L9): `pnpm test` 22 pass / 0 fail — the 5 new `project-i18n` cases
-  pin the field list, a slug with no block, an unknown locale, and that localizing a
-  list does not mutate the input. `pnpm lint` clean, `pnpm build` prerenders the three
-  pages, `e2e:a11y` 16 OK / 0 fail, `e2e:motion` 13 OK / 0 fail, and the new copy greps
-  out of `.next/server/pages/{es,pt}.html`.
+- Copy pass (L8/L9): commits `78aef16` (the pinned field list and its test) and
+  `8c73475` (the rewritten copy), pushed to `feat/agency-rebrand`. `pnpm test`
+  22 pass / 0 fail — the 5 new `project-i18n` cases pin the field list, a slug with
+  no block, an unknown locale, and that localizing a list does not mutate the input.
+  `pnpm lint` clean, `pnpm build` prerenders the three pages, `e2e:a11y` 16 OK /
+  0 fail, `e2e:motion` 13 OK / 0 fail, and the new copy greps out of
+  `.next/server/pages/{es,pt}.html`.
 - `e2e:motion` — 13 OK / 0 fail, including `console/errors` and
   `console/reset-warning`.
 - Negotiation matrix, `next start` on :3102:
