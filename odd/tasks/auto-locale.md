@@ -73,12 +73,27 @@ unknown language) plus a hydration probe on the three pages.
 
 ## Delivery
 
-Strategy `ask-on-risk`, and the branch is far past the ~400-line slice: 61 commits
-since `origin/main` with no upstream, so the pick is still the owner's —
-`feature-branch-chain`, `stacked-to-main`, or a single PR. Slice boundaries for
-this feature are the two commits above plus its documentation; nothing is pushed.
-The portfolio's own deploy also stays a decision: `ciucani.vercel.app` currently
-serves `feat/agency-rebrand` without this feature.
+Owner picked **push + chained PRs**. `feat/agency-rebrand` is pushed and doubles as
+the chain tracker (#51, draft, never merged); the chain itself is seven stacked
+slices, each PR targeting the one before it, #44 (`main`) to #50:
+
+| Slice | Branch | PR |
+| --- | --- | --- |
+| 01 foundation | `pr/01-rebrand-foundation` | #44 |
+| 02 glass identity | `pr/02-glass-identity` | #45 |
+| 03 frost system | `pr/03-frost-system` | #46 |
+| 04 hero, profile, SEO | `pr/04-hero-profile-and-seo` | #47 |
+| 05 sections and taste | `pr/05-sections-and-taste` | #48 |
+| 06 perf budget | `pr/06-perf-budget` | #49 |
+| 07 auto-locale | `pr/07-auto-locale` | #50 (tree = `feat/agency-rebrand`) |
+
+This feature's own boundary is slice 07: the two i18n commits plus their records
+and the refreshed card screenshots. `size:exception` is recommended on every
+slice — the split follows authored passes, not a line count, because the branch is
+one rebrand of one site.
+
+`ciucani.vercel.app` deploys from `feat/agency-rebrand` and was redeployed after
+this feature landed; merging to `main` stays the owner's call.
 
 Route: inline for every task. The worker that started this feature was cut
 mid-verification before it could commit, so the remaining work was verification,
