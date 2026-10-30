@@ -52,11 +52,23 @@ const FIELD_MOUNT_FALLBACK_MS = 600;
    smoke is part of the identity, not a reward for scrolling. */
 const FIELD_EAGER_MS = 5000;
 
+/* Where the live dye is worth its price: a screen with room for it and a real
+   pointer. Measured on a phone profile (390x844, DPR 3, CPU 4x, 4G): mounting it
+   costs 190 kB of JS on top of the 209 kB the page needs anyway, plus a 216 ms
+   shader compile on the first gesture. The CSS field below — the same navy sky,
+   the same three blobs, the same coral lattice — costs nothing, is already in
+   the bundle, and `useFieldMotion` keeps driving it from scroll and pointer, so
+   a phone loses the plume and none of the response. */
+const SIM_MEDIA_QUERY = "(min-width: 64rem) and (pointer: fine)";
+
 function getConnection() {
   return typeof navigator === "undefined" ? null : navigator.connection;
 }
 
 function getSimQuality() {
+  if (typeof window === "undefined") return null;
+  if (!window.matchMedia(SIM_MEDIA_QUERY).matches) return null;
+
   const connection = getConnection();
   if (!connection) {
     return SIM_QUALITY;
@@ -118,9 +130,15 @@ const AppBackground = () => {
     };
     connection?.addEventListener?.("change", applyConnection);
 
+    // The device class can change without a reload: a rotated tablet, a resized
+    // window, a keyboard folio. Re-read it instead of deciding once.
+    const deviceQuery = window.matchMedia(SIM_MEDIA_QUERY);
+    deviceQuery.addEventListener?.("change", applyConnection);
+
     return () => {
       offMotion();
       connection?.removeEventListener?.("change", applyConnection);
+      deviceQuery.removeEventListener?.("change", applyConnection);
     };
   }, []);
 
