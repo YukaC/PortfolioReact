@@ -102,12 +102,16 @@ one fix-less pass through the diff and the documentation — no second writer.
 ## Evidence
 
 - `pnpm test` — 17 pass, 0 fail (8 negotiation cases, dictionary parity, the
-  existing project-link suite).
-- `pnpm lint` — clean.
+  existing project-link suite).- `pnpm lint` — clean.
 - `pnpm build` — `/` 1107 ms, `/es` 1108 ms, `/pt` 1107 ms prerendered, plus
   `ƒ Proxy (Middleware)`.
 - `e2e:a11y` against the production build — 16 OK / 0 fail / 0 skipped, including
   `console: sin errores en consola`, `first-tab`, `a11y-labels` and `reduced-motion`.
+- Copy pass (L8/L9): `pnpm test` 22 pass / 0 fail — the 5 new `project-i18n` cases
+  pin the field list, a slug with no block, an unknown locale, and that localizing a
+  list does not mutate the input. `pnpm lint` clean, `pnpm build` prerenders the three
+  pages, `e2e:a11y` 16 OK / 0 fail, `e2e:motion` 13 OK / 0 fail, and the new copy greps
+  out of `.next/server/pages/{es,pt}.html`.
 - `e2e:motion` — 13 OK / 0 fail, including `console/errors` and
   `console/reset-warning`.
 - Negotiation matrix, `next start` on :3102:
@@ -161,3 +165,24 @@ translations cannot drift apart.
 L7. Verification caught no defect, so no correction round was needed. The build's
 GitHub 403 fallbacks (`fetchRepoHomepage`) are the previous session's rate limit,
 not this change: the fallback list is what renders, exactly as before.
+
+L8. "creo que la traduccion automatica del portfolio deberia tener una mejor
+traduccion, es media mala, muy literal y queda mal redactada" is read as a copy
+pass, not as a change to the mechanism: nothing here is machine translated, the
+dictionaries were written by transposing the English sentence word by word, which
+is why they read as output. The fix is native phrasing in the same keys, and the
+three pins that had no `i18n` block at all (`btrfs2ext4`, the GRUB theme,
+`cleanupDiskW11`) got one. Product titles (`Turnos App`, `Pelis en Casa`, `Myrk
+Studio`, the repo names) stay as they are: they are names, not copy.
+
+L9. Owner decisions on the copy pass: translate the image alt text too, and keep
+`Pelis en Casa` as a brand name on the Portuguese page. The first one did not
+survive contact with the code: `WorkList` paints its preview as `<Image alt="">`,
+so `project.alt` is read by no component and the `es`/`pt` alt strings added to
+`PROJECT_OVERRIDES` would have been data nobody renders — announced nowhere,
+because the preview is decorative on purpose (the a11y run counts 12 decorative
+images). The alt strings and the extra `TRANSLATED_FIELDS` entry were reverted;
+what stayed is the test that pins the four real fields, plus the relative import
+that makes the module testable. `ciucani.vercel.app` deploys from
+`feat/agency-rebrand`, so the copy reaches the site on a push to that branch, not
+on a merge to `main`.
