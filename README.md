@@ -121,6 +121,33 @@ Tailscale: if that matters, bind the tailnet address alone with `pnpm dev -- -H 
 Re-check the hosts after a tailnet rename or an IP change (`tailscale ip -4`,
 `tailscale status --json`).
 
+## 🌍 Languages
+
+The site is written in English and translated into Spanish and Portuguese, and the
+visitor does not choose: `middleware.js` reads `Accept-Language`, and `/` answers with the
+matching prerendered page — `/es` or `/pt` — through an internal rewrite, so the URL bar
+keeps `/` and the language never becomes part of the public address.
+
+"Translated in advance" is literal: those pages are built by `next build` (ISR, one hour),
+so the bytes that arrive already carry the translated copy, `<title>`, description and
+social tags. There is no dictionary swap after hydration and therefore no flash of
+English.
+
+Resolution order is `?lang=` → cookie → `Accept-Language` → English. The middleware stores
+the detected tag (one year, `SameSite=Lax`), sets `Vary: Accept-Language, Cookie` and sends
+the decision to the render as `x-pf-locale` / `x-pf-html-lang`.
+
+A static HTML file cannot know a region, so `<html lang>` ships as `es` and
+`LocaleProvider` refines it to `es-AR` / `pt-BR` from that cookie after mount — the
+attribute only, never the text. `es-419` keeps the language and drops the region: HTML has
+no exact regional tag for it.
+
+The decisions live in one pure module (`src/i18n/locale.js`) shared by the edge runtime,
+the document shell and React; the dictionaries are in `src/i18n/messages/` and fall back to
+English key by key, because translation lag is expected and a blank string is not. Project
+cards translate per field from the `i18n` block that already owns the slug in
+`src/data/projects.js`. Task notes: `odd/tasks/auto-locale.md`.
+
 ## 📁 Project Structure
 
 ```
