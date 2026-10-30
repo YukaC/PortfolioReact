@@ -135,3 +135,5 @@ odd/tasks/archive/
 
 # Playwright MCP session artifacts (console log + page snapshot)
 .playwright-mcp/
+.vercel
+.env*
