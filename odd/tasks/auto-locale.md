@@ -207,3 +207,13 @@ upstream rule fix in the reference-architecture repo (make it skip files whose o
 fetch is in `getStaticProps`/`getServerSideProps`), tracked as follow-up; until
 then the three pages are unguarded by any rule. This is the change that turned
 `reference-check` green on PR #51.
+
+L11. "el boton de i thinks its time to blow up this scene debe siempre mantenerse
+en ingles, es una referencia al anime". The footer trigger is a quote, so it is
+not copy: `footer.tagline` is now absent from `es.js` and `pt.js` and the per-key
+English fallback (S4) resolves it, which is why the earlier "largarnos de esta
+escena"/"cair fora dessa cena" wording is gone rather than improved. The new case
+in `i18n-locale.test.js` asserts the quote in all three locales and that neither
+dictionary defines the key, so a future translation pass fails instead of
+shadowing it. Verified: `pnpm test` 23/23, `pnpm lint` clean, `pnpm build` renders
+the English line on `/es` and `/pt`, `e2e:a11y` 16 OK, `e2e:motion` 13 OK.

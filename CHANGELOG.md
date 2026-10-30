@@ -22,9 +22,13 @@
 - GitHub pins translate per field from the `i18n` block that already owns each slug, so a
   project's English copy and its translations cannot drift apart.
 - The Spanish and Portuguese copy is written, not translated. Calques that read as machine
-  output (`movimiento que se asienta`, `El código de cada uno`, `seguros para clicar`,
-  `volar esta escena`) became native phrasing, and the three pins that still rendered
-  English (`btrfs2ext4`, the GRUB theme, `cleanupDiskW11`) now translate per field too.
+  output (`movimiento que se asienta`, `El código de cada uno`, `seguros para clicar`)
+  became native phrasing, and the three pins that still rendered English (`btrfs2ext4`,
+  the GRUB theme, `cleanupDiskW11`) now translate per field too.
+- The footer's Bebop trigger keeps the English line (`I think it's time to blow this
+  scene.`) in every language, because it quotes the anime rather than describing
+  anything. Its key is absent from `es` and `pt`, so the per-key fallback resolves it,
+  and a test fails if a translation ever shadows it.
 - Image alt text is not part of this: `WorkList` renders its preview as `<Image alt="">`,
   decorative on purpose, so no project alt is announced in any language. The copy pass
   stopped there instead of adding translated data nothing reads. Product titles

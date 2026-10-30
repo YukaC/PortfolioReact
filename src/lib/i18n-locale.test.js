@@ -8,6 +8,8 @@ import {
   toHtmlLang,
 } from "../i18n/locale.js";
 import { getMessages, lookupMessage } from "../i18n/messages/index.js";
+import esDictionary from "../i18n/messages/es.js";
+import ptDictionary from "../i18n/messages/pt.js";
 
 test("the Accept-Language header is ranked by q-value, not by position", () => {
   const ranked = parseAcceptLanguage("en;q=0.4, es-AR, pt-BR;q=0.8");
@@ -132,4 +134,20 @@ test("every key of the English dictionary exists in Spanish and Portuguese", () 
     const missing = en.filter((key) => lookupMessage(messages, key) === undefined);
     assert.deepEqual(missing, [], `${locale} is missing ${missing.join(", ")}`);
   }
+});
+
+test("the Cowboy Bebop trigger line is a quote, so it is never translated", () => {
+  const english = lookupMessage(getMessages("en"), "footer.tagline");
+
+  assert.equal(english, "I think it's time to blow this scene.");
+  for (const locale of ["es", "pt"]) {
+    assert.equal(
+      lookupMessage(getMessages(locale), "footer.tagline"),
+      english,
+      `${locale} translated the quote`,
+    );
+  }
+  // A translation would shadow the fallback, so the dictionaries stay silent.
+  assert.equal(esDictionary.footer.tagline, undefined);
+  assert.equal(ptDictionary.footer.tagline, undefined);
 });
