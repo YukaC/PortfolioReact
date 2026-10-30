@@ -79,6 +79,18 @@ function getSimQuality() {
   return SLOW_EFFECTIVE_TYPES.has(connection.effectiveType) ? null : SIM_QUALITY;
 }
 
+/* Where the stand-in field flares and how long each one waits between strikes.
+   Hand-placed on the 48px lattice the `.bocanada-sparks` background draws, so a
+   flare always lands on a dot instead of floating between them. */
+const SPARK_FLARES = [
+  { x: 18, y: 22, delay: 0, scale: 1 },
+  { x: 72, y: 14, delay: 0.9, scale: 0.8 },
+  { x: 42, y: 46, delay: 1.7, scale: 1.2 },
+  { x: 86, y: 58, delay: 2.6, scale: 0.9 },
+  { x: 26, y: 74, delay: 3.4, scale: 1.1 },
+  { x: 62, y: 88, delay: 4.2, scale: 0.85 },
+];
+
 /**
  * One blob of the field: the hue is two fixed gradients cross-faded by
  * `opacity` (see `.field-blob` in globals.css), inside the element that
@@ -267,7 +279,26 @@ const AppBackground = () => {
         </div>
       ) : null}
       {isReducedMotion || !canUseWebgl ? (
-        <div className="bocanada-sparks absolute inset-0" />
+        <div className="bocanada-sparks absolute inset-0">
+          {/* The shader draws a flare wherever the coral lattice is struck; the
+              stand-in used to be flat dots, which is why the field read as
+              "missing the flares" the moment phones stopped mounting WebGL.
+              Six positioned glows on the same 48px lattice, animated on opacity
+              and scale only, give the layer its pulse back for no measurable
+              cost — a radial gradient is a paint, not a per-frame filter. */}
+          {SPARK_FLARES.map((flare) => (
+            <i
+              key={`${flare.x}-${flare.y}`}
+              className="spark-flare"
+              style={{
+                "--fx": `${flare.x}%`,
+                "--fy": `${flare.y}%`,
+                "--fd": `${flare.delay}s`,
+                "--fs": flare.scale,
+              }}
+            />
+          ))}
+        </div>
       ) : null}
       <div className="field-glow" />
       <div className="field-grain" />
