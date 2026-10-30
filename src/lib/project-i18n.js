@@ -6,8 +6,11 @@
  * already owns that slug and is applied per field: a slug with no `i18n` block,
  * or a locale without one, keeps the English string. The fallback is explicit
  * here rather than a silent merge in each component.
+ *
+ * The import is relative, not the `@/` alias, so `node --test` can load this
+ * module without a resolver: the field list below is behaviour worth pinning.
  */
-import { PROJECT_OVERRIDES } from "@/data/projects";
+import { PROJECT_OVERRIDES } from "../data/projects.js";
 
 /** Fields `PROJECT_OVERRIDES[slug].i18n[locale]` may translate. */
 const TRANSLATED_FIELDS = ["title", "description", "problem", "outcome"];
