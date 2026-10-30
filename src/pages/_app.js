@@ -1,6 +1,7 @@
 import "lenis/dist/lenis.css";
 import "@/styles/globals.css";
 import { Fraunces, Manrope, Space_Grotesk } from "next/font/google";
+import { LocaleProvider } from "@/i18n/LocaleProvider";
 
 const manrope = Manrope({
   subsets: ["latin"],
@@ -30,13 +31,21 @@ const fraunces = Fraunces({
   preload: false,
 });
 
+/**
+ * The locale comes from the page's own `getStaticProps`, so the provider never
+ * guesses on the client: the first render after hydration uses the same
+ * dictionary the server used, which is what keeps the HTML and the client in
+ * sync and the page flicker-free.
+ */
 function MyApp({ Component, pageProps }) {
   return (
-    <div
-      className={`${manrope.variable} ${spaceGrotesk.variable} ${fraunces.variable} root-layout`}
-    >
-      <Component {...pageProps} />
-    </div>
+    <LocaleProvider locale={pageProps.locale}>
+      <div
+        className={`${manrope.variable} ${spaceGrotesk.variable} ${fraunces.variable} root-layout`}
+      >
+        <Component {...pageProps} />
+      </div>
+    </LocaleProvider>
   );
 }
 

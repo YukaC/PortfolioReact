@@ -1,17 +1,16 @@
 import { useEffect, useRef } from "react";
+import { useT } from "@/i18n/LocaleProvider";
 import { prefersReducedMotion } from "@/motion/prefersReducedMotion";
 
-const ROWS = [
-  {
-    words: ["React", "Next.js", "Tailwind", "Python", "PostgreSQL", "Flask", "Node"],
-    dir: -1,
-    variant: "mq-outline",
-  },
-  {
-    words: ["Interfaces", "Dashboards", "PWAs", "Full-stack", "Accessible", "Responsive"],
-    dir: 1,
-    variant: "mq-accent",
-  },
+/** Technology names stay as they are; only the second track is copy. */
+const STACK_WORDS = [
+  "React",
+  "Next.js",
+  "Tailwind",
+  "Python",
+  "PostgreSQL",
+  "Flask",
+  "Node",
 ];
 
 const BASE_SPEED = 48;
@@ -27,8 +26,14 @@ const MAX_SKEW = 8;
  * laid out, just still).
  */
 const Marquee = () => {
+  const { t } = useT();
   const rootRef = useRef(null);
   const innerRef = useRef(null);
+
+  const rows = [
+    { words: STACK_WORDS, dir: -1, variant: "mq-outline" },
+    { words: t("marquee.traits"), dir: 1, variant: "mq-accent" },
+  ];
 
   useEffect(() => {
     const root = rootRef.current;
@@ -109,7 +114,7 @@ const Marquee = () => {
   return (
     <div className="marquee" ref={rootRef} aria-hidden="true">
       <div className="marquee-inner" ref={innerRef}>
-        {ROWS.map((row) => (
+        {rows.map((row) => (
           <div
             key={row.variant}
             className={`mq ${row.variant}`}

@@ -1,7 +1,8 @@
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { SOCIAL_LINKS } from "@/data/constants";
 import { useBebopAnimation } from "@/hooks/useBebopAnimation";
+import { useT } from "@/i18n/LocaleProvider";
 import {
   hasFinePointer,
   prefersReducedMotion,
@@ -25,9 +26,14 @@ const clamp01 = (value) => Math.min(1, Math.max(0, value));
  * seat, so the easter egg never moved.
  */
 const Footer = () => {
+  const { t } = useT();
   const currentYear = new Date().getFullYear();
   const footerRef = useRef(null);
   const markRef = useRef(null);
+  // The wordmark's serif is a 45 KB italic; it is only worth a request when the
+  // footer is about to be seen. The stylesheet starts on the system serif and
+  // `is-serif` switches the family, which is what makes the browser fetch it.
+  const [serif, setSerif] = useState(false);
   const {
     phase,
     isActive,
@@ -47,6 +53,21 @@ const Footer = () => {
     },
     [triggerElRef],
   );
+
+  useEffect(() => {
+    const footer = footerRef.current;
+    if (!footer || serif) return undefined;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (!entry.isIntersecting) return;
+        setSerif(true);
+        observer.disconnect();
+      },
+      { rootMargin: "150% 0px" },
+    );
+    observer.observe(footer);
+    return () => observer.disconnect();
+  }, [serif]);
 
   useEffect(() => {
     const footer = footerRef.current;
@@ -145,6 +166,9 @@ const Footer = () => {
     window.addEventListener("scroll", onScroll, { passive: true });
     window.addEventListener("resize", onResize);
     if (document.fonts?.ready) document.fonts.ready.then(onResize);
+    // The serif arrives long after the first measurement (it is fetched when the
+    // footer gets close), and every letter centre depends on its metrics.
+    document.fonts?.addEventListener("loadingdone", onResize);
 
     const onPointerMove = (event) => {
       pointerX = event.clientX;
@@ -158,6 +182,7 @@ const Footer = () => {
       observer.disconnect();
       window.removeEventListener("scroll", onScroll);
       window.removeEventListener("resize", onResize);
+      document.fonts?.removeEventListener("loadingdone", onResize);
       window.removeEventListener("pointermove", onPointerMove);
       cancelAnimationFrame(frame);
       rise.kill();
@@ -185,8 +210,8 @@ const Footer = () => {
               tabIndex={0}
               role="button"
               className="tagline focus-ring max-w-fit cursor-help select-none touch-none"
-              title="Hold for 1.5 seconds..."
-              aria-label="Hold for 1.5 seconds to play the easter egg"
+              title={t("footer.triggerTitle")}
+              aria-label={t("footer.triggerAria")}
               onMouseEnter={handleTriggerEnter}
               onMouseLeave={handleTriggerLeave}
               onPointerDown={handleTriggerPointerDown}
@@ -205,11 +230,11 @@ const Footer = () => {
                 }
               }}
             >
-              I think it&apos;s time to blow this scene.
+              {t("footer.tagline")}
             </p>
           </div>
 
-          <nav aria-label="Social media links">
+          <nav aria-label={t("footer.socialLabel")}>
             <ul className="footer-links">
               {SOCIAL_LINKS.map((link) => (
                 <li key={link.name}>
@@ -220,18 +245,20 @@ const Footer = () => {
                     className="focus-ring"
                   >
                     {link.name}
-                    <span className="sr-only"> (opens in a new tab)</span>
+                    <span className="sr-only">{t("a11y.newTab")}</span>
                   </a>
                 </li>
               ))}
             </ul>
           </nav>
 
-          <p className="footer-copy">© {currentYear} Agustin Ciucani</p>
+          <p className="footer-copy">
+            {t("footer.copyright", { year: currentYear })}
+          </p>
         </div>
       </div>
 
-      <p className="footer-mark" aria-hidden="true" ref={markRef}>
+      <p className={`footer-mark${serif ? " is-serif" : ""}`} aria-hidden="true" ref={markRef}>
         {[...WORDMARK].map((letter, index) => (
           <span className="footer-mark-ch" key={`${letter}-${index}`}>
             {letter}

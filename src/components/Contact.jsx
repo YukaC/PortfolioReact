@@ -3,8 +3,7 @@ import Reveal from "@/components/Reveal";
 import SplitHeading from "@/components/SplitHeading";
 import SwapArrow from "@/components/SwapArrow";
 import { CONTACT_EMAIL } from "@/data/constants";
-
-const MAILTO = `mailto:${CONTACT_EMAIL}?subject=Project%20inquiry`;
+import { useT } from "@/i18n/LocaleProvider";
 
 /**
  * Contact - one address, offered plainly.
@@ -14,8 +13,13 @@ const MAILTO = `mailto:${CONTACT_EMAIL}?subject=Project%20inquiry`;
  * announced through a live region, not just by the label that rolls.
  */
 const Contact = () => {
+  const { t } = useT();
   const [status, setStatus] = useState("idle");
   const resetRef = useRef(0);
+
+  const mailto = `mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent(
+    t("contact.mailSubject"),
+  )}`;
 
   useEffect(() => () => window.clearTimeout(resetRef.current), []);
 
@@ -32,16 +36,16 @@ const Contact = () => {
 
   const label =
     status === "copied"
-      ? "Copied ✓"
+      ? t("contact.copied")
       : status === "manual"
-        ? "Select it above"
-        : "Copy address";
+        ? t("contact.manual")
+        : t("contact.copy");
 
   const announcement =
     status === "copied"
-      ? "Address copied to the clipboard"
+      ? t("contact.copiedAnnouncement")
       : status === "manual"
-        ? "Copy blocked. Select the address above."
+        ? t("contact.manualAnnouncement")
         : "";
 
   return (
@@ -51,21 +55,20 @@ const Contact = () => {
       aria-labelledby="contact-heading"
     >
       <div className="site-shell">
-        <Reveal className="eyebrow">Contact</Reveal>
+        <Reveal className="eyebrow">{t("contact.eyebrow")}</Reveal>
         <SplitHeading
           as="h2"
           id="contact-heading"
-          text="Tell me what you are building."
-          accent="building."
+          text={t("contact.title")}
+          accent={t("contact.accent")}
           delayMs={80}
         />
         <Reveal as="p" className="lead" delayMs={160}>
-          Freelance or full-time. Send the problem, the stack, and the timeline.
-          I reply with next steps.
+          {t("contact.lead")}
         </Reveal>
 
         <Reveal delayMs={220}>
-          <a className="bigmail focus-ring" href={MAILTO}>
+          <a className="bigmail focus-ring" href={mailto}>
             <span>{CONTACT_EMAIL}</span>
             <SwapArrow direction="d" size={28} />
           </a>
