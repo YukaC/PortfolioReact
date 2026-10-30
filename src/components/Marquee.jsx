@@ -1,6 +1,9 @@
 import { useEffect, useRef } from "react";
 import { useT } from "@/i18n/LocaleProvider";
-import { prefersReducedMotion } from "@/motion/prefersReducedMotion";
+import {
+  prefersReducedMotion,
+  subscribeReducedMotion,
+} from "@/motion/prefersReducedMotion";
 
 /** Technology names stay as they are; only the second track is copy. */
 const STACK_WORDS = [
@@ -60,10 +63,6 @@ const Marquee = () => {
     window.addEventListener("resize", measure);
     if (document.fonts?.ready) document.fonts.ready.then(measure);
 
-    if (prefersReducedMotion()) {
-      return () => window.removeEventListener("resize", measure);
-    }
-
     let frame = 0;
     let running = false;
     let lastTime = 0;
@@ -102,11 +101,40 @@ const Marquee = () => {
         frame = requestAnimationFrame(loop);
       }
     });
-    observer.observe(root);
 
-    return () => {
+    const start = () => {
+      // A track that restarts must not inherit the scroll velocity it measured
+      // before the OS switch asked it to stop.
+      velocity = 0;
+      lastScroll = window.scrollY;
+      observer.observe(root);
+    };
+
+    const stop = () => {
       observer.disconnect();
       cancelAnimationFrame(frame);
+      frame = 0;
+      running = false;
+      inner.style.transform = "";
+    };
+
+    // The reader can flip the OS switch mid-session, so the band follows the
+    // media query instead of reading it once at mount: it stops where it is and
+    // picks the scroll velocity up again when the switch flips back.
+    const sync = (isReduced) => {
+      if (isReduced) {
+        stop();
+        return;
+      }
+      start();
+    };
+
+    sync(prefersReducedMotion());
+    const unsubscribe = subscribeReducedMotion(sync);
+
+    return () => {
+      unsubscribe();
+      stop();
       window.removeEventListener("resize", measure);
     };
   }, []);

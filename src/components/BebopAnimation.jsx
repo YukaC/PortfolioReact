@@ -74,6 +74,17 @@ const BebopAnimation = memo(
 
       const overlay = overlayRef.current;
       const triggerToRestore = restoreFocusRef?.current;
+
+      // The overlay claims `aria-modal`, so the page behind it has to actually
+      // leave the tab order and the accessibility tree while it is open; the
+      // trap below only covers Tab, not what a screen reader can still reach.
+      // The target is the main region, not the first `.site-shell` — that one
+      // belongs to the (closed) mobile drawer, and inerting it would take the
+      // drawer's own links out of play for no gain.
+      const pageBehind = document.getElementById("main-content");
+      const wasInert = pageBehind?.inert ?? false;
+      if (pageBehind) pageBehind.inert = true;
+
       if (overlay) {
         overlay.addEventListener("keydown", handleTabKey);
         overlay.addEventListener("keydown", handleEscape);
@@ -85,6 +96,7 @@ const BebopAnimation = memo(
           overlay.removeEventListener("keydown", handleTabKey);
           overlay.removeEventListener("keydown", handleEscape);
         }
+        if (pageBehind) pageBehind.inert = wasInert;
         if (triggerToRestore && typeof triggerToRestore.focus === "function") {
           try {
             triggerToRestore.focus({ preventScroll: true });

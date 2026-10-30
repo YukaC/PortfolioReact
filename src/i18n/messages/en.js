@@ -27,7 +27,7 @@ const en = {
     home: "Go to the home section",
     openMenu: "Open menu",
     closeMenu: "Close menu",
-    contact: "Get in touch",
+    contact: "Contact",
     links: {
       portfolio: "Projects",
       about: "About",
