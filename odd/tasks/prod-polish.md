@@ -303,3 +303,41 @@ optimizadas por URL+ancho+calidad **sin mirar el contenido del archivo**, y en d
 pasó nada. Limpiando la ruta correcta la variante AVIF pasa de 4 980 a 5 136 bytes y muestra el hero
 actual. Regla para el futuro: reemplazar una imagen conservando el nombre exige limpiar
 `.next/dev/cache/images` (o cambiar el nombre del archivo) antes de verificar.
+
+**L18 — análisis del "lag de reveal y scroll" reportado por el usuario.**
+> noto ciertos bugs de reveal y lag en las animaciones de scroll y revelacion, tal vez sea por el hdd o el dev server, pero quiero que lo analices
+
+Método: probe propio con GPU real (`xvfb-run` + `--use-gl=angle --use-angle=gl`, Radeon RX 570
+/ radeonsi, ~57 fps de techo por el compositor), midiendo frames por rAF, `longtask`, y el retardo
+entre "el nodo entra al viewport" y "recibe `.is-in`".
+
+**Descartado con números:**
+| Hipótesis | Resultado |
+|---|---|
+| HDD / dev server | dev 57,8 fps · prod 56,8 fps · **0 frames >32 ms** en ambos. Idénticos. |
+| El shader como costo | con y sin canvas: p50 18,0 vs 17,4 ms. El field cuesta **~0,5 ms/frame** en GPU real. |
+| El observer del reveal | retardo entrada→`.is-in`: **mediana 0 ms, máximo 1 ms**. Ningún nodo quedó sin revelar (los 5 "sin `.is-in`" son los `data-r="paint"` del hero, que animan por CSS a propósito). |
+| DPR del canvas | `pixelRatio = 1` fijo en `LiquidEther`: el canvas es 390x844 también en DPR 3, no escala el costo. |
+| Click en los filtros | tras remontar la lista: 14/19 `.is-in`, 0 nodos ocultos. El remount no rompe reveals. |
+
+**Causa real (dos defectos, uno mío):**
+1. `AppBackground` montaba el field en el **primer evento de scroll**. La compilación de shaders
+   (177–228 ms medidos a 4x) caía dentro del gesto que el lector está mirando: el scroll tropieza y
+   el reveal siguiente llega tarde. Ahora un scroll solo arma un timer de 180 ms, el montaje ocurre
+   con el scroll en reposo, y el deadline de `requestIdleCallback` se re-valida contra
+   `lastScrollAt` para que un scroll sostenido siga postergando. El fallback de 5 s arma el mismo
+   debounce. Medido después: la compilación cae a los 7751 ms (después de que el barrido termina)
+   en vez de a los 5548 ms en pleno gesto; scroll 57 fps, p95 20 ms.
+2. El logo usaba `next/link` con `href="#home"`: el cliente lo resolvía contra la URL viva
+   (`/?lang=es#home`) y el servidor contra la ruta (`/es#home`) → **hydration mismatch en todas las
+   páginas de idioma**, con React re-parcheando el header. Ahora es un `<a>` normal.
+
+**Residual honesto:** quedan long tasks de hidratación de 78–133 ms (a 4x) al cargar, que se solapan
+con los reveals del primer segundo. No se eliminan sin reestructurar la hidratación.
+
+**Error de método a registrar:** un `pkill -9 -f next-server` mató también el dev server del usuario
+en :3000 (reiniciado enseguida) y un `next start -p 3007` ajeno. Para los servidores de prueba:
+`setsid` + `kill -9 -PGID`, nunca `pkill` por nombre.
+
+Gates: lint limpio · test 28/28 · e2e:runtime 7 OK · e2e:a11y 16 OK · e2e:motion 13 OK ·
+vitals 3/3 pass (JS crítico bajó a 209 kB al sacar `next/link`).
