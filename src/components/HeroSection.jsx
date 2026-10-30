@@ -1,6 +1,7 @@
 import Magnetic from "@/components/Magnetic";
 import SplitHeading from "@/components/SplitHeading";
 import SwapArrow from "@/components/SwapArrow";
+import { useT } from "@/i18n/LocaleProvider";
 import { scrollToSectionByHash } from "@/utils/scroll-to-section";
 
 const STACK = ["React", "Next.js", "Tailwind", "Python", "PostgreSQL"];
@@ -14,6 +15,8 @@ const STACK = ["React", "Next.js", "Tailwind", "Python", "PostgreSQL"];
  * without a panel cutting the welcome in half.
  */
 const HeroSection = () => {
+  const { t } = useT();
+
   const handleCtaClick = (e, href) => {
     e.preventDefault();
     scrollToSectionByHash(href);
@@ -25,22 +28,21 @@ const HeroSection = () => {
         <div className="hero-copy">
           <span className="status" data-r="paint">
             <i aria-hidden="true" />
-            Open to freelance &amp; full-time
+            {t("hero.status")}
           </span>
 
           <SplitHeading
             as="h1"
             className="hero-title"
-            text="Turning real problems into working software"
-            accent="working"
+            text={t("hero.title")}
+            accent={t("hero.accent")}
             parallax
             reveal="paint"
             delayMs={120}
           />
 
           <p className="lead" data-r="paint" style={{ "--d": "520ms" }}>
-            Agustin Ciucani. Full-stack developer in Buenos Aires. I ship React
-            and Next.js products people can actually use.
+            {t("hero.lead")}
           </p>
 
           <div className="hero-foot">
@@ -52,7 +54,7 @@ const HeroSection = () => {
                     className="btn btn-solid focus-ring"
                     onClick={(e) => handleCtaClick(e, "#portfolio")}
                   >
-                    See work
+                    {t("hero.seeWork")}
                     <SwapArrow direction="r" />
                   </a>
                 </Magnetic>
@@ -61,7 +63,7 @@ const HeroSection = () => {
                   className="btn focus-ring"
                   onClick={(e) => handleCtaClick(e, "#contact")}
                 >
-                  Get in touch
+                  {t("hero.getInTouch")}
                 </a>
               </div>
 

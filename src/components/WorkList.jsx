@@ -13,6 +13,7 @@ import {
 } from "@/data/projects";
 import { prefersReducedMotion, hasFinePointer } from "@/motion/prefersReducedMotion";
 import { gsap, registerMotion } from "@/motion/register";
+import { useT } from "@/i18n/LocaleProvider";
 import { resolveProjectLinks } from "@/lib/project-links";
 
 const COVER_BLUR =
@@ -65,6 +66,8 @@ ProjectCover.displayName = "ProjectCover";
  * action keeps the repository one click away when it is a different place.
  */
 const WorkRow = ({ project, index }) => {
+  const { t } = useT();
+
   // `project.siteUrl` is already resolved upstream (override → GitHub "Website"
   // → repo); re-running the resolver keeps the fallback entries in sync.
   const { siteUrl, repoUrl, showRepoLink } = resolveProjectLinks({
@@ -100,10 +103,10 @@ const WorkRow = ({ project, index }) => {
             href={repoUrl}
             target="_blank"
             rel="noopener noreferrer"
-            aria-label={`${project.title} en GitHub`}
+            aria-label={t("work.repoAria", { title: project.title })}
             className="work-repo focus-ring relative z-[3] mt-3 inline-flex items-center gap-1.5 rounded-full border border-white/15 px-2.5 py-1 font-mono text-[0.6875rem] uppercase tracking-[0.14em] text-white/55 transition-colors hover:border-white/40 hover:text-white/90"
           >
-            GitHub
+            {t("work.github")}
             <SwapArrow direction="d" size={11} />
           </a>
         ) : null}
@@ -118,7 +121,7 @@ const WorkRow = ({ project, index }) => {
         href={siteUrl}
         target="_blank"
         rel="noopener noreferrer"
-        aria-label={`${project.title} — ver demo`}
+        aria-label={t("work.demoAria", { title: project.title })}
       />
     </li>
   );
@@ -133,6 +136,7 @@ const WorkRow = ({ project, index }) => {
  * rides inline above each row instead.
  */
 const WorkList = ({ projects = PINNED_FALLBACK }) => {
+  const { t } = useT();
   const items = useMemo(
     () => projects.slice(0, MAX_PINNED_PROJECTS),
     [projects],
@@ -262,17 +266,17 @@ const WorkList = ({ projects = PINNED_FALLBACK }) => {
       <div className="site-shell">
         <div className="section-head">
           <div>
-            <Reveal className="eyebrow">Selected work</Reveal>
+            <Reveal className="eyebrow">{t("work.eyebrow")}</Reveal>
             <SplitHeading
               as="h2"
               id="work-heading"
-              text="Shipped for real use"
-              accent="real"
+              text={t("work.title")}
+              accent={t("work.accent")}
               delayMs={80}
             />
           </div>
           <Reveal as="p" className="lead" delayMs={160}>
-            Interfaces, dashboards, and tools. Source for each.
+            {t("work.lead")}
           </Reveal>
         </div>
 
@@ -281,7 +285,7 @@ const WorkList = ({ projects = PINNED_FALLBACK }) => {
           ref={tabsRef}
           data-r=""
           role="group"
-          aria-label="Filter projects"
+          aria-label={t("work.filterLabel")}
         >
           <i className="work-tab-ind" ref={tabIndicatorRef} aria-hidden="true" />
           {WORK_FILTERS.map((option) => (
@@ -293,7 +297,7 @@ const WorkList = ({ projects = PINNED_FALLBACK }) => {
               aria-pressed={filter === option.id}
               onClick={() => setFilter(option.id)}
             >
-              {option.label}
+              {t(`work.filters.${option.id}`)}
             </button>
           ))}
         </div>
@@ -310,7 +314,7 @@ const WorkList = ({ projects = PINNED_FALLBACK }) => {
           ) : (
             <li className="work-row">
               <span className="work-num">—</span>
-              <p className="work-problem">Nothing here yet.</p>
+              <p className="work-problem">{t("work.empty")}</p>
             </li>
           )}
         </ul>
@@ -322,9 +326,9 @@ const WorkList = ({ projects = PINNED_FALLBACK }) => {
             rel="noopener noreferrer"
             className="btn focus-ring"
           >
-            GitHub profile
+            {t("work.githubProfile")}
             <SwapArrow direction="d" />
-            <span className="sr-only"> (opens in a new tab)</span>
+            <span className="sr-only">{t("a11y.newTab")}</span>
           </a>
         </Reveal>
       </div>
@@ -340,7 +344,7 @@ const WorkList = ({ projects = PINNED_FALLBACK }) => {
           </div>
         ))}
         <span className="work-preview-tag">
-          View demo
+          {t("work.viewDemo")}
           <SwapArrow direction="d" size={13} />
         </span>
       </div>

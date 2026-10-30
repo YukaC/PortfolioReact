@@ -1,6 +1,7 @@
 import { memo, useEffect, useRef } from "react";
 import { ANIMATION_PHASES } from "@/data/bebop-timings";
 import { prefersBebopReducedMotion } from "@/data/bebopShip";
+import { useT } from "@/i18n/LocaleProvider";
 import BebopShip from "@/components/BebopShip";
 import styles from "@/components/bebop/bebop.module.css";
 
@@ -14,6 +15,7 @@ import styles from "@/components/bebop/bebop.module.css";
  */
 const BebopAnimation = memo(
   ({ phase, onDismiss, onShipReady, onShipFailed, restoreFocusRef }) => {
+    const { t } = useT();
     const overlayRef = useRef(null);
     const reducedMotion = prefersBebopReducedMotion();
 
@@ -121,7 +123,7 @@ const BebopAnimation = memo(
           .join(" ")}
         role="dialog"
         aria-modal="true"
-        aria-label="Cowboy Bebop Easter Egg Animation"
+        aria-label={t("a11y.bebopDialog")}
         tabIndex={-1}
       >
         <button
@@ -129,7 +131,7 @@ const BebopAnimation = memo(
           onClick={onDismiss}
           className={styles.bebopSkipButton}
         >
-          Skip
+          {t("a11y.bebopSkip")}
         </button>
 
         {/* CRT noise/grid/glow — disabled via CSS during phaseShip (GPU). */}

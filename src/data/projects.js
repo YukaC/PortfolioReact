@@ -17,6 +17,7 @@ export const MAX_PINNED_PROJECTS = 6;
  * @property {string} [alt]
  * @property {string[]} [tags]
  * @property {boolean} [isFeatured]
+ * @property {Partial<Record<"es"|"pt", { title?: string, description?: string, problem?: string, outcome?: string }>>} [i18n]
  */
 
 /** @type {Record<string, ProjectOverride>} */
@@ -31,6 +32,28 @@ export const PROJECT_OVERRIDES = {
     imgSrc: "/portfolio.webp",
     alt: "Portfolio home page screenshot",
     tags: ["React", "Next.js", "Tailwind CSS"],
+    // Translations are opt-in per field: anything left out stays English (see
+    // `localizeProject`), never blank.
+    i18n: {
+      es: {
+        title: "Portfolio profesional",
+        description:
+          "El sitio que estás leyendo: render en servidor para SEO, un sistema visual hecho a mano y un easter egg en WebGL.",
+        problem:
+          "Este sitio tenía que leerse como una práctica de trabajo, no como una plantilla.",
+        outcome:
+          "Next.js con ISR, un sistema de diseño en Tailwind y un easter egg en WebGL.",
+      },
+      pt: {
+        title: "Portfólio profissional",
+        description:
+          "O site que você está lendo: renderização no servidor para SEO, um sistema visual feito à mão e um easter egg em WebGL.",
+        problem:
+          "Este site precisava soar como uma prática de trabalho, não como um template.",
+        outcome:
+          "Next.js com ISR, um design system em Tailwind e um easter egg em WebGL.",
+      },
+    },
   },
   MuniDgoSaaS: {
     title: "Turnos App",
@@ -44,6 +67,24 @@ export const PROJECT_OVERRIDES = {
     alt: "Turnos App Screenshot",
     tags: ["JavaScript", "Python", "Flask", "MySQL"],
     isFeatured: true,
+    i18n: {
+      es: {
+        description:
+          "App multi-tenant de gestión de turnos con validación en tiempo real, panel de administración y visualización de datos con ECharts.",
+        problem:
+          "Una municipalidad necesitaba un solo lugar para tomar turnos entre distintos tenants.",
+        outcome:
+          "Una app Flask y React con validación en vivo, panel de administración y ECharts.",
+      },
+      pt: {
+        description:
+          "App multi-tenant de gestão de agendamentos com validação em tempo real, painel administrativo e visualização de dados com ECharts.",
+        problem:
+          "Uma prefeitura precisava de um só lugar para receber agendamentos entre tenants.",
+        outcome:
+          "Um app Flask e React com validação ao vivo, painel administrativo e ECharts.",
+      },
+    },
   },
   OpenBalance: {
     title: "OpenBalance",
@@ -57,6 +98,24 @@ export const PROJECT_OVERRIDES = {
     alt: "OpenBalance monthly summary screenshot",
     tags: ["React", "Next.js", "TypeScript"],
     isFeatured: true,
+    i18n: {
+      es: {
+        description:
+          "Finanzas personales con el mes como unidad: ingresos, gastos, categorías y un desglose semanal, sin crear cuenta.",
+        problem:
+          "Casi todas las apps de presupuesto esconden el panorama mensual detrás de un modelo semanal.",
+        outcome:
+          "Una app Next.js local-first con persistencia en Zustand que funciona sin backend.",
+      },
+      pt: {
+        description:
+          "Finanças pessoais com o mês como unidade: receitas, despesas, categorias e um detalhamento semanal, sem criar conta.",
+        problem:
+          "Quase todo app de orçamento esconde o panorama mensal atrás de um modelo semanal.",
+        outcome:
+          "Um app Next.js local-first com persistência em Zustand que roda sem backend.",
+      },
+    },
   },
   TrabajoFinal_Ciucani_Grecco: {
     title: "Pelis en Casa",
@@ -70,6 +129,24 @@ export const PROJECT_OVERRIDES = {
     alt: "Pelis en Casa movie catalog screenshot",
     tags: ["React", "Vite", "Motion"],
     isFeatured: true,
+    i18n: {
+      es: {
+        description:
+          "Catálogo y reseñas de películas: búsqueda, filtros por género y director, ficha de cada film y comentarios de lectores.",
+        problem:
+          "Un trabajo académico de 2022 (HTML + jQuery + Flask) que no se podía mostrar tal como estaba.",
+        outcome:
+          "Reconstruido como app estática en React, con datos embebidos y movimiento basado en springs.",
+      },
+      pt: {
+        description:
+          "Catálogo e resenhas de filmes: busca, filtros por gênero e diretor, ficha de cada filme e comentários dos leitores.",
+        problem:
+          "Um trabalho acadêmico de 2022 (HTML + jQuery + Flask) que não dava para mostrar como estava.",
+        outcome:
+          "Reconstruído como app estático em React, com dados embutidos e movimento em springs.",
+      },
+    },
   },
   WLandStudio: {
     title: "Myrk Studio",
@@ -83,6 +160,24 @@ export const PROJECT_OVERRIDES = {
     alt: "Myrk Studio home page screenshot",
     tags: ["React", "Vite", "Tailwind CSS", "Three.js"],
     isFeatured: true,
+    i18n: {
+      es: {
+        description:
+          "Sitio de marca para una serie narrativa de Minecraft: scroll editorial único, hero en WebGL y flujo de whitelist.",
+        problem:
+          "Una serie ficticia necesitaba un sitio que se sintiera como un estudio y no como una plantilla.",
+        outcome:
+          "React, Vite y Tailwind con atmósfera GSAP/Three, ajustado para el scroll en mobile.",
+      },
+      pt: {
+        description:
+          "Site de marca para uma série narrativa de Minecraft: scroll editorial único, hero em WebGL e fluxo de whitelist.",
+        problem:
+          "Uma série fictícia precisava de um site que parecesse um estúdio, não um template.",
+        outcome:
+          "React, Vite e Tailwind com atmosfera GSAP/Three, ajustado para o scroll no celular.",
+      },
+    },
   },
   btrfs2ext4: {
     title: "btrfs2ext4",
@@ -114,6 +209,22 @@ export const PROJECT_OVERRIDES = {
     imgSrc: "/appdespensa.webp",
     alt: "App Despensa admin dashboard screenshot",
     tags: ["React", "Node", "PostgreSQL", "PWA"],
+    i18n: {
+      es: {
+        description:
+          "POS PWA local-first para un almacén: panel de ventas, caja, productos e ingreso de stock (React + Node + PostgreSQL).",
+        problem:
+          "Un almacén necesitaba ventas, caja y stock sin pagar un SaaS.",
+        outcome: "Un POS PWA local-first sobre React, Node y PostgreSQL.",
+      },
+      pt: {
+        description:
+          "PDV PWA local-first para uma mercearia: painel de vendas, caixa, produtos e entrada de estoque (React + Node + PostgreSQL).",
+        problem:
+          "Uma mercearia precisava de vendas, caixa e estoque sem pagar um SaaS.",
+        outcome: "Um PDV PWA local-first em React, Node e PostgreSQL.",
+      },
+    },
   },
   cleanupDiskW11: {
     title: "cleanupDiskW11",
@@ -133,6 +244,22 @@ export const PROJECT_OVERRIDES = {
     imgSrc: "/ahorrar.webp",
     alt: "AhorrAR price comparison landing page screenshot",
     tags: ["React", "TypeScript", "Express"],
+    i18n: {
+      es: {
+        description:
+          "Comparación de precios en vivo para comercios argentinos, con ofertas reales ordenadas y envío confirmado (Scrapling + Express + React).",
+        problem:
+          "Los precios de los supermercados argentinos están dispersos entre sitios.",
+        outcome: "Una comparación en vivo ordenada y con envío confirmado.",
+      },
+      pt: {
+        description:
+          "Comparação de preços ao vivo para lojas argentinas, com ofertas reais ordenadas e frete confirmado (Scrapling + Express + React).",
+        problem:
+          "Os preços dos mercados argentinos estão espalhados entre sites.",
+        outcome: "Uma comparação ao vivo ordenada e com frete confirmado.",
+      },
+    },
   },
 };
 

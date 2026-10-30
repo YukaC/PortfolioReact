@@ -1526,7 +1526,11 @@
   .footer-mark {
     margin-top: 3.125rem;
     padding-bottom: 0.06em;
-    font-family: var(--font-serif), Georgia, "Times New Roman", serif;
+    /* The serif is a 45 KB italic that only this wordmark uses, so the mark
+       starts on the system serif and picks Fraunces up once the footer is
+       close (`is-serif`, set from the Footer's observer). Nothing above the
+       fold reads this family, so the browser never fetches it during load. */
+    font-family: Georgia, "Times New Roman", serif;
     font-style: italic;
     font-weight: 400;
     font-size: clamp(5.5rem, 23vw, 20.5rem);
@@ -1538,6 +1542,10 @@
     pointer-events: none;
     opacity: var(--fp);
     translate: 0 calc((1 - var(--fp)) * 70px);
+  }
+
+  .footer-mark.is-serif {
+    font-family: var(--font-serif);
   }
 
   .footer-mark-ch {

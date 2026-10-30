@@ -11,8 +11,10 @@ import {
   SKILLS,
 } from "@/data/constants";
 import { MAX_PINNED_PROJECTS } from "@/data/projects";
+import { useT } from "@/i18n/LocaleProvider";
 
-const SiteJsonLd = ({ projects = [] }) => {
+const SiteJsonLd = ({ projects = [], locale = "en" }) => {
+  const { t } = useT();
   const pinnedProjects = projects.slice(0, MAX_PINNED_PROJECTS);
   const personId = `${SITE_URL}/#person`;
   const websiteId = `${SITE_URL}/#website`;
@@ -34,7 +36,7 @@ const SiteJsonLd = ({ projects = [] }) => {
       },
       sameAs: SOCIAL_LINKS.map((link) => link.href),
       knowsAbout: SKILLS.map((skill) => skill.name),
-      knowsLanguage: ["en", "es"],
+      knowsLanguage: ["en", "es", "pt"],
     },
     {
       "@type": "WebSite",
@@ -42,7 +44,7 @@ const SiteJsonLd = ({ projects = [] }) => {
       url: SITE_URL,
       name: `${SITE_NAME} portfolio`,
       description: SITE_DESCRIPTION,
-      inLanguage: "en",
+      inLanguage: locale,
       publisher: { "@id": personId },
     },
     {
@@ -51,7 +53,7 @@ const SiteJsonLd = ({ projects = [] }) => {
       url: SITE_URL,
       name: `${SITE_NAME}, ${PERSON_JOB_TITLE} in ${PERSON_LOCALITY}`,
       description: SITE_DESCRIPTION,
-      inLanguage: "en",
+      inLanguage: locale,
       isPartOf: { "@id": websiteId },
       about: { "@id": personId },
       primaryImageOfPage: `${SITE_URL}/profile-hero.webp`,
@@ -62,7 +64,7 @@ const SiteJsonLd = ({ projects = [] }) => {
     graph.push({
       "@type": "ItemList",
       "@id": `${SITE_URL}/#work`,
-      name: "Selected work",
+      name: t("work.eyebrow"),
       numberOfItems: pinnedProjects.length,
       itemListElement: pinnedProjects.map((project, index) => ({
         "@type": "ListItem",

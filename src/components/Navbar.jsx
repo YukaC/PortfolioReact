@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import Link from "next/link";
+import LanguageSwitcher from "@/components/LanguageSwitcher";
 import Magnetic from "@/components/Magnetic";
 import SiteLogo from "@/components/SiteLogo";
 import { NAV_LINKS } from "@/data/constants";
+import { useT } from "@/i18n/LocaleProvider";
 import { DURATION, EASE, STAGGER } from "@/motion/config";
 import { prefersReducedMotion } from "@/motion/prefersReducedMotion";
 import { gsap, registerMotion, ScrollTrigger } from "@/motion/register";
@@ -78,42 +80,50 @@ function applySpyId(linkNodes, activeId) {
   }
 }
 
-const NavLinks = ({ scrollToSection, isMobile = false }) => (
-  <>
-    {NAV_LINKS.map((link) => (
+const NavLinks = ({ scrollToSection, isMobile = false }) => {
+  const { t } = useT();
+
+  return (
+    <>
+      {NAV_LINKS.map((link) => (
+        <a
+          key={link.name}
+          href={link.href}
+          onClick={(e) => scrollToSection(e, link.href)}
+          data-nav-href={link.href}
+          data-menu-item={isMobile ? "" : undefined}
+          className={
+            isMobile
+              ? "focus-ring block py-4 font-heading text-3xl tracking-[0.01em] text-white/75 hover:text-white"
+              : "nav-link focus-ring"
+          }
+          {...(isMobile && { role: "menuitem" })}
+        >
+          {t(`nav.links.${link.href.replace("#", "")}`)}
+        </a>
+      ))}
+    </>
+  );
+};
+
+const ContactButton = ({ scrollToSection, isMobile = false }) => {
+  const { t } = useT();
+
+  return (
+    <Magnetic>
       <a
-        key={link.name}
-        href={link.href}
-        onClick={(e) => scrollToSection(e, link.href)}
-        data-nav-href={link.href}
+        href="#contact"
+        onClick={(e) => scrollToSection(e, "#contact")}
+        data-nav-href="#contact"
         data-menu-item={isMobile ? "" : undefined}
-        className={
-          isMobile
-            ? "focus-ring block py-4 font-heading text-3xl tracking-[0.01em] text-white/75 hover:text-white"
-            : "nav-link focus-ring"
-        }
+        className={`nav-cta focus-ring ${isMobile ? "mt-8 w-full justify-center" : ""}`}
         {...(isMobile && { role: "menuitem" })}
       >
-        {link.name}
+        {t("nav.contact")}
       </a>
-    ))}
-  </>
-);
-
-const ContactButton = ({ scrollToSection, isMobile = false }) => (
-  <Magnetic>
-    <a
-      href="#contact"
-      onClick={(e) => scrollToSection(e, "#contact")}
-      data-nav-href="#contact"
-      data-menu-item={isMobile ? "" : undefined}
-      className={`nav-cta focus-ring ${isMobile ? "mt-8 w-full justify-center" : ""}`}
-      {...(isMobile && { role: "menuitem" })}
-    >
-      Get in Touch
-    </a>
-  </Magnetic>
-);
+    </Magnetic>
+  );
+};
 
 const MenuToggleIcon = ({ isOpen }) => (
   <span
@@ -134,6 +144,7 @@ const MenuToggleIcon = ({ isOpen }) => (
  * reader is actually in.
  */
 const Navbar = () => {
+  const { t } = useT();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuId = useId();
   const panelRef = useRef(null);
@@ -359,7 +370,7 @@ const Navbar = () => {
             href="#home"
             className="logo-link focus-ring rounded-sm"
             onClick={(e) => scrollToSection(e, "#home")}
-            aria-label="Go to home section"
+            aria-label={t("nav.home")}
           >
             <SiteLogo priority showStroke className="h-8 w-auto md:h-9" />
           </Link>
@@ -374,7 +385,7 @@ const Navbar = () => {
             <nav
               ref={linksRef}
               className="nav-links"
-              aria-label="Main navigation"
+              aria-label={t("nav.main")}
               onPointerLeave={() => {
                 isHoveringRef.current = false;
                 placeOnActive();
@@ -394,11 +405,13 @@ const Navbar = () => {
                   data-nav-href={link.href}
                   className="nav-link focus-ring"
                 >
-                  {link.name}
+                  {t(`nav.links.${link.href.replace("#", "")}`)}
                 </a>
               ))}
               <ContactButton scrollToSection={scrollToSection} />
             </nav>
+
+            <LanguageSwitcher className="ml-2" />
           </div>
 
           <button
@@ -407,7 +420,7 @@ const Navbar = () => {
             onClick={() => setIsMenuOpen((open) => !open)}
             aria-expanded={isMenuOpen}
             aria-controls={menuId}
-            aria-label={isMenuOpen ? "Close menu" : "Open menu"}
+            aria-label={isMenuOpen ? t("nav.closeMenu") : t("nav.openMenu")}
           >
             <MenuToggleIcon isOpen={isMenuOpen} />
           </button>
@@ -424,6 +437,9 @@ const Navbar = () => {
         <div className="site-shell flex h-full flex-col justify-center pt-24">
           <NavLinks scrollToSection={scrollToSection} isMobile />
           <ContactButton scrollToSection={scrollToSection} isMobile />
+          <div data-menu-item="" className="mt-6 flex justify-center">
+            <LanguageSwitcher />
+          </div>
         </div>
       </div>
     </>
