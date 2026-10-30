@@ -30,15 +30,19 @@ const SIM_QUALITY = { resolution: 0.32, iterationsPoisson: 12 };
    improves. No NetworkInformation API means no guessing: the field mounts. */
 const SLOW_EFFECTIVE_TYPES = new Set(["slow-2g", "2g", "3g"]);
 
-/* What counts as the reader engaging with a page that is only ornament away from
-   being complete: any of these means "the browser can afford the shader now". */
-const ENGAGEMENT_EVENTS = [
-  "scroll",
-  "wheel",
-  "touchstart",
-  "pointerdown",
-  "keydown",
-];
+/* Events that mean "this reader is deliberately using the page", so the shader
+   can compile right away. A scroll is deliberately NOT in this list: see
+   SCROLL_END_MS. */
+const ENGAGEMENT_EVENTS = ["touchstart", "pointerdown", "keydown"];
+
+/* A scroll starts a gesture that the reader is watching. Mounting the field on
+   the first scroll event put three's eval plus the shader compile (measured at
+   177-228 ms on a 4x-throttled phone) inside that gesture, which is exactly the
+   hitch that reads as "the reveal animations are lagging": the scroll stumbles
+   and the next reveal lands late. So a scroll only arms a timer and the field
+   mounts once the reader has stopped. */
+const SCROLL_EVENTS = ["scroll", "wheel", "touchmove"];
+const SCROLL_END_MS = 180;
 
 /* After `load`, how long the field may keep asking for an idle slice before it
    mounts anyway, and the fallback when the browser has no requestIdleCallback. */
@@ -142,38 +146,71 @@ const AppBackground = () => {
     let timer = 0;
     let idleId = 0;
     let eagerTimer = 0;
+    let scrollEndTimer = 0;
     let engaged = false;
+    let lastScrollAt = -Infinity;
 
-    const mount = () => {
+    /* Compiled only in a real gap between gestures: `requestIdleCallback` can
+       report the deadline while the reader is scrolling, and mounting there put
+       the 177-228 ms compile inside the gesture anyway. `lastScrollAt` is the
+       arbiter, so a busy scroll keeps deferring instead of stalling. */
+    const mountWhenQuiet = () => {
+      if (performance.now() - lastScrollAt < SCROLL_END_MS) {
+        window.clearTimeout(scrollEndTimer);
+        scrollEndTimer = window.setTimeout(mountWhenQuiet, SCROLL_END_MS);
+        return;
+      }
       if (typeof requestIdleCallback === "function") {
-        idleId = requestIdleCallback(enableWebgl, {
-          timeout: FIELD_MOUNT_DEADLINE_MS,
-        });
+        idleId = requestIdleCallback(
+          () => {
+            if (performance.now() - lastScrollAt < SCROLL_END_MS) {
+              mountWhenQuiet();
+              return;
+            }
+            enableWebgl();
+          },
+          { timeout: FIELD_MOUNT_DEADLINE_MS },
+        );
         return;
       }
       timer = window.setTimeout(enableWebgl, FIELD_MOUNT_FALLBACK_MS);
     };
 
+    const release = () => {
+      for (const type of [...ENGAGEMENT_EVENTS, ...SCROLL_EVENTS]) {
+        window.removeEventListener(type, onEngage, { capture: true });
+        window.removeEventListener(type, onScroll, { capture: true });
+      }
+      window.clearTimeout(eagerTimer);
+      window.clearTimeout(scrollEndTimer);
+    };
+
     const onEngage = () => {
       if (engaged) return;
       engaged = true;
-      for (const type of ENGAGEMENT_EVENTS) {
-        window.removeEventListener(type, onEngage, { capture: true });
-      }
-      window.clearTimeout(eagerTimer);
-      mount();
+      release();
+      mountWhenQuiet();
+    };
+
+    // A scroll does not mount anything by itself: it only says "not yet, the
+    // reader is mid-gesture". The field lands once the scroll comes to rest.
+    const onScroll = () => {
+      lastScrollAt = performance.now();
+      if (engaged) return;
+      window.clearTimeout(scrollEndTimer);
+      scrollEndTimer = window.setTimeout(onEngage, SCROLL_END_MS);
     };
 
     for (const type of ENGAGEMENT_EVENTS) {
       window.addEventListener(type, onEngage, { capture: true, passive: true });
     }
-    eagerTimer = window.setTimeout(onEngage, FIELD_EAGER_MS);
+    for (const type of SCROLL_EVENTS) {
+      window.addEventListener(type, onScroll, { capture: true, passive: true });
+    }
+    eagerTimer = window.setTimeout(onScroll, FIELD_EAGER_MS);
 
     return () => {
-      for (const type of ENGAGEMENT_EVENTS) {
-        window.removeEventListener(type, onEngage, { capture: true });
-      }
-      window.clearTimeout(eagerTimer);
+      release();
       if (idleId) cancelIdleCallback(idleId);
       if (timer) window.clearTimeout(timer);
     };
