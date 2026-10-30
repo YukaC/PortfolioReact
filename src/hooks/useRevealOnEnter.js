@@ -19,6 +19,7 @@ export function useRevealOnEnter() {
       (entries) => {
         entries.forEach((entry) => {
           if (!entry.isIntersecting) return;
+          entry.target.classList.remove("is-pending");
           entry.target.classList.add("is-in");
           observer.unobserve(entry.target);
         });
@@ -29,7 +30,23 @@ export function useRevealOnEnter() {
     // `data-r="paint"` already animated itself in CSS: observing it would only
     // re-add `is-in` after hydration and fight the running animation.
     const nodes = document.querySelectorAll('[data-r]:not([data-r="paint"])');
-    nodes.forEach((node) => observer.observe(node));
+
+    nodes.forEach((node) => {
+      // Anything the reader can already see is revealed as-is: hiding it here
+      // would make this observer responsible for content that CSS had painted,
+      // and a slow hydration would read as a page that empties itself.
+      const rect = node.getBoundingClientRect();
+      const inView = rect.top < window.innerHeight && rect.bottom > 0;
+      if (inView) {
+        node.classList.add("is-in");
+        return;
+      }
+
+      // Off screen, the hidden state is free: the reader cannot see the flip, and
+      // the entrance is ready for the moment the node scrolls in.
+      node.classList.add("is-pending");
+      observer.observe(node);
+    });
 
     return () => observer.disconnect();
   }, []);
