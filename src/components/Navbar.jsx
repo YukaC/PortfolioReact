@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useId, useRef, useState } from "react";
-import Link from "next/link";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import Magnetic from "@/components/Magnetic";
 import SiteLogo from "@/components/SiteLogo";
@@ -410,14 +409,19 @@ const Navbar = () => {
     <>
       <header ref={headerRef} className="site-header">
         <div className="nav-pill">
-          <Link
+          {/* A plain anchor, not `next/link`: this is a same-page hash and the
+              click is intercepted anyway. `Link` resolved `#home` against the
+              live URL on the client (`/?lang=es#home`) and against the route on
+              the server (`/es#home`), which hydrated as a mismatch on every
+              locale page. */}
+          <a
             href="#home"
             className="logo-link focus-ring rounded-sm"
             onClick={(e) => scrollToSection(e, "#home")}
             aria-label={t("nav.home")}
           >
             <SiteLogo priority showStroke className="h-8 w-auto md:h-9" />
-          </Link>
+          </a>
 
           <div
             className="hidden items-center md:flex"
