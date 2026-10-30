@@ -27,7 +27,7 @@ const es = {
     home: "Ir al inicio",
     openMenu: "Abrir menú",
     closeMenu: "Cerrar menú",
-    contact: "Hablemos",
+    contact: "Contacto",
     links: {
       portfolio: "Proyectos",
       about: "Sobre mí",

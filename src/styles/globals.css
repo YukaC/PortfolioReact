@@ -12,8 +12,13 @@
   --color-mist: #16233d;
   --color-fog: #c9d6ea;
   --color-paper: #eef2ff;
-  --color-mut: #a9b6d3;
-  --color-dim: #93a2ba;
+  /* Mut carries the readable copy that sits straight on the field (lead, status,
+     stackline), so it has to clear AA 4.5:1 over the lightest backdrop the blob
+     core can put behind it — measured worst case rgb(27 81 147), where it reads
+     4.97:1. Dim is lifted with it to keep one ramp; the same backdrop puts it
+     at 3.4:1, so it stays on the meta tone. */
+  --color-mut: #c2cde4;
+  --color-dim: #9eabc4;
   --color-sky: #8fcbff;
   --color-ice: #8fcbff;
   --color-coral: #e2727f;
@@ -138,6 +143,14 @@
     border-radius: 6px;
   }
 
+  /* The components already carry `focus-ring` on every interactive node, but
+     the class had no rule anywhere: make it real instead of renaming a dozen
+     call sites. */
+  .focus-ring:focus-visible {
+    outline: 2px solid var(--color-sky);
+    outline-offset: 3px;
+  }
+
   #__next,
   #next {
     padding: 0 !important;
@@ -199,12 +212,12 @@
     top: -22vw;
     --blob-start: radial-gradient(
       circle,
-      hsl(212 88% 52% / 0.42),
+      hsl(212 88% 52% / 0.36),
       transparent 68%
     );
     --blob-end: radial-gradient(
       circle,
-      hsl(222 88% 52% / 0.42),
+      hsl(222 88% 52% / 0.36),
       transparent 68%
     );
     translate: calc(var(--px) * 30px) calc(var(--p) * -30vh + var(--py) * 20px);
@@ -373,7 +386,7 @@
     font-weight: 500;
     line-height: 1.6;
     letter-spacing: 0.04em;
-    color: var(--color-dim);
+    color: var(--color-mut);
     text-wrap: pretty;
   }
 
@@ -988,6 +1001,12 @@
     color: #fff;
   }
 
+  /* The selected filter also has to read without colour: a 2.6:1 hue shift
+     alone is invisible to a reader who cannot separate the two. */
+  .work-tab[aria-pressed="true"] {
+    box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.35);
+  }
+
   .work-tab:active {
     scale: 0.94;
   }
@@ -1189,7 +1208,7 @@
 
   @media (hover: hover) and (pointer: fine) {
     .work-list:has(.work-row:hover) .work-row:not(:hover) {
-      --o: 0.32;
+      --o: 0.6;
     }
 
     .work-row:hover::before {
@@ -1319,6 +1338,19 @@
   @media (scripting: none) {
     .statement .sw {
       opacity: 1;
+    }
+
+    /* Same reason, one level up: `[data-r]` starts at opacity 0 and is revealed
+       by hydration, so without JS everything below the hero would stay
+       invisible. `[data-r="paint"]` keeps its choreography as a keyframe
+       animation, which is script-free, but nothing gates it either. */
+    [data-r],
+    [data-r="paint"] {
+      opacity: 1;
+      transform: none;
+      filter: none;
+      animation: none;
+      transition: none;
     }
   }
 
@@ -1923,6 +1955,16 @@
   .work-tab-ind,
   .work-body > *,
   .footer-mark-ch {
+    transition: none;
+  }
+
+  /* The gaps left in the group above: the toggle crosses into an X, the filter
+     tabs change colour, and the button carries its light sweep on the two
+     pseudo-elements — none of which is inside `.btn`'s own transition. */
+  .menu-toggle-bar,
+  .work-tab,
+  .btn::before,
+  .btn::after {
     transition: none;
   }
 

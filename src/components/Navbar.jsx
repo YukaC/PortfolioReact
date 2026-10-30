@@ -97,7 +97,6 @@ const NavLinks = ({ scrollToSection, isMobile = false }) => {
               ? "focus-ring block py-4 font-heading text-3xl tracking-[0.01em] text-white/75 hover:text-white"
               : "nav-link focus-ring"
           }
-          {...(isMobile && { role: "menuitem" })}
         >
           {t(`nav.links.${link.href.replace("#", "")}`)}
         </a>
@@ -117,7 +116,6 @@ const ContactButton = ({ scrollToSection, isMobile = false }) => {
         data-nav-href="#contact"
         data-menu-item={isMobile ? "" : undefined}
         className={`nav-cta focus-ring ${isMobile ? "mt-8 w-full justify-center" : ""}`}
-        {...(isMobile && { role: "menuitem" })}
       >
         {t("nav.contact")}
       </a>
@@ -148,6 +146,8 @@ const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuId = useId();
   const panelRef = useRef(null);
+  const toggleRef = useRef(null);
+  const hasOpenedRef = useRef(false);
   const headerRef = useRef(null);
   const linksRef = useRef(null);
   const indicatorRef = useRef(null);
@@ -288,6 +288,50 @@ const Navbar = () => {
     };
   }, [isMenuOpen]);
 
+  // Focus follows the disclosure: opening moves the reader into the drawer, and
+  // closing hands the cursor back to the toggle that opened it. The drawer is a
+  // plain <nav> disclosure, not a menu widget, so there is no roving focus and
+  // no motion of its own here — the panel reveal stays the only movement.
+  useEffect(() => {
+    const panel = panelRef.current;
+    const toggle = toggleRef.current;
+
+    if (isMenuOpen) {
+      hasOpenedRef.current = true;
+      // The panel is `visibility: hidden` until the reveal renders its first
+      // frame, and a hidden node refuses focus, so the first link is focused as
+      // soon as the panel accepts it — under reduced motion that is the very
+      // first frame (the reveal is an instant set).
+      const focusable =
+        'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])';
+      let frame = 0;
+      const focusFirst = (attempt = 0) => {
+        const target = panel?.querySelector(focusable);
+        if (!target) return;
+        target.focus({ preventScroll: true });
+        if (document.activeElement === target) return;
+        // Retry only while focus sits where the reader already put it — the
+        // toggle they pressed, or the body — so the loop can never fight a Tab
+        // the reader made while the panel was still revealing.
+        const active = document.activeElement;
+        const untouched = !active || active === document.body || active === toggle;
+        if (untouched && attempt < 30) {
+          frame = requestAnimationFrame(() => focusFirst(attempt + 1));
+        }
+      };
+      frame = requestAnimationFrame(focusFirst);
+      return () => cancelAnimationFrame(frame);
+    }
+
+    // Guarded so the initial mount — where the drawer has never been open — does
+    // not steal focus from the page on load.
+    if (hasOpenedRef.current) {
+      hasOpenedRef.current = false;
+      toggle?.focus({ preventScroll: true });
+    }
+    return undefined;
+  }, [isMenuOpen]);
+
   useEffect(() => {
     const panel = panelRef.current;
     if (!panel) return undefined;
@@ -415,6 +459,7 @@ const Navbar = () => {
           </div>
 
           <button
+            ref={toggleRef}
             type="button"
             className="btn-icon focus-ring md:hidden"
             onClick={() => setIsMenuOpen((open) => !open)}
@@ -431,7 +476,6 @@ const Navbar = () => {
         ref={panelRef}
         id={menuId}
         className="mobile-menu-panel fixed inset-0 z-40 md:hidden"
-        role="menu"
         aria-hidden={!isMenuOpen}
       >
         <div className="site-shell flex h-full flex-col justify-center pt-24">

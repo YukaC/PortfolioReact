@@ -26,7 +26,7 @@ const pt = {
     home: "Ir para o início",
     openMenu: "Abrir menu",
     closeMenu: "Fechar menu",
-    contact: "Fale comigo",
+    contact: "Contato",
     links: {
       portfolio: "Projetos",
       about: "Sobre mim",

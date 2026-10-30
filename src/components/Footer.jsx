@@ -211,7 +211,7 @@ const Footer = () => {
               role="button"
               className="tagline focus-ring max-w-fit cursor-help select-none touch-none"
               title={t("footer.triggerTitle")}
-              aria-label={t("footer.triggerAria")}
+              aria-label={`${t("footer.tagline")} — ${t("footer.triggerAria")}`}
               onMouseEnter={handleTriggerEnter}
               onMouseLeave={handleTriggerLeave}
               onPointerDown={handleTriggerPointerDown}

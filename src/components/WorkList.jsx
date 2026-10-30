@@ -302,22 +302,26 @@ const WorkList = ({ projects = PINNED_FALLBACK }) => {
           ))}
         </div>
 
-        <ul className="work-list" ref={listRef} key={filter}>
-          {visible.length > 0 ? (
-            visible.map((project, index) => (
-              <WorkRow
-                key={project.name ?? project.repoLink}
-                project={project}
-                index={index}
-              />
-            ))
-          ) : (
-            <li className="work-row">
-              <span className="work-num">—</span>
-              <p className="work-problem">{t("work.empty")}</p>
-            </li>
-          )}
-        </ul>
+        {/* The live region outlives the list: `key={filter}` remounts the rows,
+            and a region swapped out with its own content announces nothing. */}
+        <div aria-live="polite">
+          <ul className="work-list" ref={listRef} key={filter}>
+            {visible.length > 0 ? (
+              visible.map((project, index) => (
+                <WorkRow
+                  key={project.name ?? project.repoLink}
+                  project={project}
+                  index={index}
+                />
+              ))
+            ) : (
+              <li className="work-row">
+                <span className="work-num">—</span>
+                <p className="work-problem">{t("work.empty")}</p>
+              </li>
+            )}
+          </ul>
+        </div>
 
         <Reveal style={{ marginTop: "2.125rem" }}>
           <a
