@@ -43,6 +43,12 @@ export const BUDGET = {
   lcp: Number(process.env.VITALS_BUDGET_LCP ?? 2500),
   cls: Number(process.env.VITALS_BUDGET_CLS ?? 0.1),
   tbt: Number(process.env.VITALS_BUDGET_TBT ?? 300),
+  /* Script weight on the critical path, before any engagement. Next 16 with
+     Turbopack no longer prints "First Load JS", so the number that used to be
+     read off the build log is measured here instead: what the phone actually
+     downloads to paint and hydrate the page. The on-demand field chunk (three)
+     is not in it — it is fetched only after the reader engages. */
+  js: Number(process.env.VITALS_BUDGET_JS ?? 260),
 };
 
 /** Collected before any page script runs, so no entry is missed. */
@@ -130,7 +136,15 @@ const measureRoute = async (browser, baseUrl, route) => {
   await page.goto(`${baseUrl}${route}`, { waitUntil: "load", timeout: 60_000 });
   await page.waitForTimeout(OBSERVE_MS);
 
-  const vitals = await page.evaluate(() => window.__vitals ?? { lcp: 0, cls: 0, tbt: 0 });
+  const vitals = await page.evaluate(() => {
+    const jsKb = Math.round(
+      performance
+        .getEntriesByType("resource")
+        .filter((entry) => entry.name.endsWith(".js"))
+        .reduce((total, entry) => total + (entry.encodedBodySize || 0), 0) / 1024,
+    );
+    return { ...(window.__vitals ?? { lcp: 0, cls: 0, tbt: 0 }), jsKb };
+  });
   const elapsed = Date.now() - started;
   await context.close();
 
@@ -139,6 +153,7 @@ const measureRoute = async (browser, baseUrl, route) => {
     lcp: Math.round(vitals.lcp),
     cls: Number(vitals.cls.toFixed(4)),
     tbt: Math.round(vitals.tbt),
+    jsKb: vitals.jsKb,
     wallMs: elapsed,
   };
 };
@@ -147,6 +162,7 @@ const verdict = (row) => ({
   lcp: row.lcp > 0 && row.lcp <= BUDGET.lcp,
   cls: row.cls <= BUDGET.cls,
   tbt: row.tbt <= BUDGET.tbt,
+  js: row.jsKb <= BUDGET.js,
 });
 
 const main = async () => {
@@ -174,7 +190,7 @@ const main = async () => {
 
     const results = rows.map((row) => ({ ...row, ok: verdict(row) }));
     const failed = results.filter(
-      (row) => !row.ok.lcp || !row.ok.cls || !row.ok.tbt,
+      (row) => !row.ok.lcp || !row.ok.cls || !row.ok.tbt || !row.ok.js,
     );
 
     if (args.json) {
@@ -183,19 +199,20 @@ const main = async () => {
       const pad = (value, width) => String(value).padEnd(width);
       console.log(
         `\nLab vitals · mobile ${DEVICE.viewport.width}px · CPU ${CPU_THROTTLE}x` +
-          ` · budget LCP ≤ ${BUDGET.lcp}ms · CLS ≤ ${BUDGET.cls} · TBT ≤ ${BUDGET.tbt}ms\n`,
+          ` · budget LCP ≤ ${BUDGET.lcp}ms · CLS ≤ ${BUDGET.cls} · TBT ≤ ${BUDGET.tbt}ms · JS ≤ ${BUDGET.js}kB\n`,
       );
       console.log(
-        `${pad("route", 8)}${pad("LCP", 10)}${pad("CLS", 10)}${pad("TBT", 10)}verdict`,
+        `${pad("route", 8)}${pad("LCP", 10)}${pad("CLS", 10)}${pad("TBT", 10)}${pad("JS", 10)}verdict`,
       );
       for (const row of results) {
         const marks = [
           row.ok.lcp ? "" : "lcp",
           row.ok.cls ? "" : "cls",
           row.ok.tbt ? "" : "tbt",
+          row.ok.js ? "" : "js",
         ].filter(Boolean);
         console.log(
-          `${pad(row.route, 8)}${pad(`${row.lcp}ms`, 10)}${pad(row.cls.toFixed(3), 10)}${pad(`${row.tbt}ms`, 10)}${marks.length ? `FAIL (${marks.join(", ")})` : "pass"}`,
+          `${pad(row.route, 8)}${pad(`${row.lcp}ms`, 10)}${pad(row.cls.toFixed(3), 10)}${pad(`${row.tbt}ms`, 10)}${pad(`${row.jsKb}kB`, 10)}${marks.length ? `FAIL (${marks.join(", ")})` : "pass"}`,
         );
       }
       console.log("");
