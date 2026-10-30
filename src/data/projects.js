@@ -24,12 +24,12 @@ export const PROJECT_OVERRIDES = {
   PortfolioReact: {
     title: "Professional Portfolio",
     description:
-      "Personal website featuring Server-Side Rendering for optimized SEO, built with modular and reusable Tailwind CSS components.",
+      "The site you are reading: server rendering for SEO, a hand-built visual system, and a WebGL easter egg.",
     problem: "This site needed to read as a working practice, not a template.",
     outcome:
-      "Next.js SSG/ISR, a Bocanada visual system, and a WebGL easter egg.",
-    imgSrc: "/img3.webp",
-    alt: "Portfolio Screenshot",
+      "Next.js App Router with ISR, a Tailwind design system, and a WebGL easter egg.",
+    imgSrc: "/portfolio.webp",
+    alt: "Portfolio home page screenshot",
     tags: ["React", "Next.js", "Tailwind CSS"],
   },
   MuniDgoSaaS: {
@@ -40,9 +40,48 @@ export const PROJECT_OVERRIDES = {
       "A municipality needed one place to take appointments across tenants.",
     outcome:
       "A Flask and React app with live validation, an admin dashboard, and ECharts.",
-    imgSrc: "/img1.webp",
+    imgSrc: "/munidgo.webp",
     alt: "Turnos App Screenshot",
     tags: ["JavaScript", "Python", "Flask", "MySQL"],
+    isFeatured: true,
+  },
+  OpenBalance: {
+    title: "OpenBalance",
+    description:
+      "Month-first personal finance: income, expenses, categories, and a weekly breakdown, no account required.",
+    problem:
+      "Most budgeting apps bury the monthly picture behind a week-based model.",
+    outcome:
+      "A local-first Next.js app with Zustand persistence that runs without a backend.",
+    imgSrc: "/openbalance.webp",
+    alt: "OpenBalance monthly summary screenshot",
+    tags: ["React", "Next.js", "TypeScript"],
+    isFeatured: true,
+  },
+  TrabajoFinal_Ciucani_Grecco: {
+    title: "Pelis en Casa",
+    description:
+      "Movie catalog and review site: search, genre and director filters, film detail, and reader comments.",
+    problem:
+      "A 2022 academic project (HTML + jQuery + Flask) that could not be shown as it was.",
+    outcome:
+      "Rebuilt as a static React app with embedded data and spring-based motion.",
+    imgSrc: "/peliscasa.webp",
+    alt: "Pelis en Casa movie catalog screenshot",
+    tags: ["React", "Vite", "Motion"],
+    isFeatured: true,
+  },
+  WLandStudio: {
+    title: "Myrk Studio",
+    description:
+      "Brand site for a narrative Minecraft series: editorial single scroll, WebGL hero, and a whitelist flow.",
+    problem:
+      "A fictional series needed a site that felt like a studio, not a template.",
+    outcome:
+      "React, Vite, and Tailwind with GSAP/Three atmosphere, tuned for mobile scrolling.",
+    imgSrc: "/myrkstudio.webp",
+    alt: "Myrk Studio home page screenshot",
+    tags: ["React", "Vite", "Tailwind CSS", "Three.js"],
     isFeatured: true,
   },
   btrfs2ext4: {
@@ -72,7 +111,7 @@ export const PROJECT_OVERRIDES = {
     problem:
       "A pantry store needed sales, cash, and stock without a SaaS bill.",
     outcome: "A local-first PWA POS on React, Node, and PostgreSQL.",
-    imgSrc: "/AppDespensa.webp",
+    imgSrc: "/appdespensa.webp",
     alt: "App Despensa admin dashboard screenshot",
     tags: ["React", "Node", "PostgreSQL", "PWA"],
   },
@@ -109,7 +148,7 @@ export const PROJECT_OVERRIDES = {
     problem: "This site needed to read as a working practice, not a template.",
     outcome:
       "Next.js SSG/ISR, a Bocanada visual system, and a WebGL easter egg.",
-    imgSrc: "/img3.webp",
+    imgSrc: "/portfolio.webp",
     alt: "Portfolio Screenshot",
     tags: ["React", "Next.js", "Tailwind CSS"],
     repoLink: "https://github.com/YukaC/PortfolioReact",
@@ -124,7 +163,7 @@ export const PROJECT_OVERRIDES = {
       "A municipality needed one place to take appointments across tenants.",
     outcome:
       "A Flask and React app with live validation, an admin dashboard, and ECharts.",
-    imgSrc: "/img1.webp",
+    imgSrc: "/munidgo.webp",
     alt: "Turnos App Screenshot",
     tags: ["JavaScript", "Python", "Flask", "MySQL"],
     repoLink: "https://github.com/YukaC/MuniDgoSaaS",
@@ -164,7 +203,7 @@ export const PROJECT_OVERRIDES = {
     problem:
       "A pantry store needed sales, cash, and stock without a SaaS bill.",
     outcome: "A local-first PWA POS on React, Node, and PostgreSQL.",
-    imgSrc: "/AppDespensa.webp",
+    imgSrc: "/appdespensa.webp",
     alt: "App Despensa admin dashboard screenshot",
     tags: ["React", "Node", "PostgreSQL", "PWA"],
     repoLink: "https://github.com/YukaC/AppDespensa",
