@@ -189,3 +189,21 @@ detectó: los e2e corren contra el dev server y solo verifican `/` en inglés.
 | click ES → PT → EN en el navegador | idioma, `<html lang>`, `aria-current` y cookie cambian en cada click |
 
 Gates: test 27/27 · e2e:a11y 16 OK · build OK (`ƒ Proxy (Middleware)`) · vitals 3/3 pass.
+
+**L13 — bug reportado por el usuario (verbatim):**
+> el botón de copiar mail debe copiar justamente el mail al portapapeles
+
+**Causa raíz.** `navigator.clipboard` solo existe en contexto seguro. Abriendo el sitio por LAN
+(`http://192.168.0.234:3000`, el caso del celu) `window.isSecureContext` es `false`, el API no
+existe, el `await` tiraba de entrada y el botón caía siempre en "Seleccionalo arriba". En
+`localhost` sí funcionaba — por eso en la compu parecía andar.
+
+**Fix.** `legacyCopy()` en `src/components/Contact.jsx`: textarea fuera de pantalla + selección +
+`document.execCommand("copy")`, restaurando la selección previa del lector. Se elige **antes de
+cualquier `await`**, para que el click siga contando como gesto del usuario (iOS y Firefox lo
+exigen). El mensaje "Seleccionalo arriba" queda solo para cuando fallan las dos vías.
+
+**Verificado en el origen inseguro (el que fallaba):** al hacer click, la selección del documento y
+el textarea enfocado contenían exactamente `agusyuk25@gmail.com`, el botón pasa a "Copiado ✓" y el
+live region anuncia "Mail copiado al portapapeles"; no queda ningún textarea en el DOM.
+Gates: test 27/27 · e2e:a11y 16 OK · build OK · vitals 3/3 pass.
