@@ -341,3 +341,43 @@ en :3000 (reiniciado enseguida) y un `next start -p 3007` ajeno. Para los servid
 
 Gates: lint limpio · test 28/28 · e2e:runtime 7 OK · e2e:a11y 16 OK · e2e:motion 13 OK ·
 vitals 3/3 pass (JS crítico bajó a 209 kB al sacar `next/link`).
+
+**L19 — ¿video en vez de WebGL en mobile? (pregunta del usuario).**
+> Para mejorar el rendimiento en Mobile no sería mejor poner un video o una animación ya grabada y no interactiva? Cosa de aligerar la carga en mobile
+
+Medido en perfil teléfono (390x844, DPR 3, CPU 4x, red 4G emulada, GPU real):
+
+| Opción | Bytes extra | Main thread | Por frame | Reacciona al lector |
+|---|---|---|---|---|
+| WebGL | **+190 kB** (399 vs 209) | **+216 ms** de compilación | ~0,5 ms | sí |
+| Video loop 6 s | +114–133 kB (VP9 CRF38 / H.264 CRF26) | ~0 (decoder HW) | decode continuo | no |
+| Solo CSS | **0** | 0 | ~0 | sí (blobs siguen `--p`/`--px`) |
+
+El video **sí pesa menos en bytes**, pero: un loop de 6 s del humo tiene costura visible (el fluido
+no cicla), un loop sin costura (15–20 s) se va a 300–400 kB y pierde la ventaja, suma un asset que
+alguien debe regenerar, y pierde lo único que distingue al field: responder al scroll y al puntero.
+El shader además se auto-frena a ~7 fps cuando el puntero está quieto; un video tiene que seguir
+decodificando.
+
+**Decisión (aprobada por el usuario): CSS en mobile, WebGL en desktop.** El gate de
+`AppBackground` suma `SIM_MEDIA_QUERY = "(min-width: 64rem) and (pointer: fine)"` y se re-evalúa con
+el `change` de ese media query (rotación, resize, tablet con mouse), no solo con el de conexión.
+Verificado con build chequeado (ver L20):
+
+| perfil | canvas | JS |
+|---|---|---|
+| phone 390 touch | no | **209 kB** |
+| tablet 834 touch | no | **209 kB** |
+| desktop 1440 mouse | sí | 399 kB |
+| desktop 1024 mouse | sí | 399 kB |
+
+La pluma de humo en el teléfono se pierde; el campo navy/cobalt, los tres blobs que siguen al scroll
+y la grilla coral quedan igual (captura revisada a 390x844 DPR2).
+
+**L20 — lección de método (tercera vez).** Tres mediciones seguidas quedaron inválidas porque un
+`next-server` huérfano de una corrida anterior seguía escuchando en el puerto de prueba y servía un
+**build viejo** (chunks con 400, `buildId` distinto al de disco). `pkill -f "next start -p N"` no
+mata al hijo (`next-server`), y `kill -9 -PGID` a veces mata al shell. Helper definitivo:
+`/tmp/with-prod.sh <puerto> <cmd>` — mata al PID que realmente escucha (`ss -ltnp`), arranca el
+server, **compara el `buildId` servido contra `.next/BUILD_ID` y aborta si no coinciden**, y al
+final mata al listener. Regla: nunca medir contra un servidor sin verificar el build.
