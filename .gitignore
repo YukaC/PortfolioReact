@@ -14,6 +14,8 @@ node_modules/
 out/
 build/
 .swc/
+# Local SSD worktree marker (pnpm setup:ssd)
+.ssd-cache
 
 # ============================================
 # Testing
@@ -106,5 +108,32 @@ refBebop.md
 *.original.png
 scripts/bebop-source-frames/
 
+# Python bytecode from the RA check tooling
+__pycache__/
+
 # CodeGraph local index
 .codegraph/
+
+# Engram project marker is tracked (.engram/config.json); ignore local DB crumbs
+.engram/*.db
+.engram/*.db-*
+.engram/*.lock
+
+# Gentle skill registry (generated per machine)
+.atl/
+# Local AI runtime state
+.atl/
+
+# design-taste-frontend inspector output (screenshots + report)
+.taste-skill/
+
+# Completed ODD task archive
+odd/tasks/archive/
+
+# browser-verify artifacts (screenshots + report)
+.browser-verify/
+
+# Playwright MCP session artifacts (console log + page snapshot)
+.playwright-mcp/
+.vercel
+.env*
