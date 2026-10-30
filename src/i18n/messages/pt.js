@@ -3,12 +3,15 @@
  *
  * Any key missing here falls back to the English dictionary — that fallback is
  * explicit in `getMessages`, never silent in the components.
+ *
+ * Voice: full-stack React/Next. Frases curtas, o verbo primeiro, sem adjetivo
+ * que não possa ser medido.
  */
 const pt = {
   meta: {
-    title: "Agustin Ciucani, desenvolvedor full-stack em Buenos Aires",
+    title: "Agustin Ciucani — Desenvolvedor full-stack em Buenos Aires",
     description:
-      "Agustin Ciucani é desenvolvedor full-stack em Buenos Aires, Argentina. Ele cria produtos em React e Next.js com interfaces acessíveis e animações que não atrapalham.",
+      "Desenvolvedor full-stack em Buenos Aires. Levo produto React e Next.js do painel ao deploy: PWAs, painéis e as APIs por trás deles.",
     imageAlt:
       "Retrato de Agustin Ciucani, desenvolvedor full-stack em Buenos Aires",
   },
@@ -23,7 +26,7 @@ const pt = {
     home: "Ir para o início",
     openMenu: "Abrir menu",
     closeMenu: "Fechar menu",
-    contact: "Vamos conversar",
+    contact: "Fale comigo",
     links: {
       portfolio: "Projetos",
       about: "Sobre mim",
@@ -35,29 +38,22 @@ const pt = {
   },
   hero: {
     status: "Disponível para freelance e tempo integral",
-    title: "Transformo problemas reais em software que funciona",
-    accent: "funciona",
+    title: "Do painel ao deploy, sem intermediários",
+    accent: "intermediários",
     lead:
-      "Agustin Ciucani. Desenvolvedor full-stack em Buenos Aires. Crio produtos em React e Next.js que as pessoas realmente usam.",
-    seeWork: "Ver projetos",
-    getInTouch: "Falar comigo",
+      "Agustin Ciucani, desenvolvedor full-stack em Buenos Aires. Construo o painel, a API e o deploy que mantém tudo de pé.",
+    seeWork: "Ver o trabalho",
+    getInTouch: "Fale comigo",
     stackLabel: "Stack",
   },
   marquee: {
-    traits: [
-      "Interfaces",
-      "Painéis",
-      "PWAs",
-      "Full-stack",
-      "Acessível",
-      "Responsivo",
-    ],
+    traits: ["Painéis", "APIs", "PWAs", "React", "Next.js", "Postgres"],
   },
   work: {
     eyebrow: "Trabalhos selecionados",
-    title: "Software que está em produção",
+    title: "Software real, rodando em produção",
     accent: "produção",
-    lead: "Interfaces, painéis e ferramentas. Cada um com seu código-fonte.",
+    lead: "Painéis, apps e ferramentas. Cada um com seu código-fonte.",
     filterLabel: "Filtrar projetos",
     filters: {
       all: "Todos",
@@ -66,7 +62,7 @@ const pt = {
       systems: "Sistemas",
       pwa: "PWA",
     },
-    empty: "Ainda não há nada aqui.",
+    empty: "Nada com esse filtro.",
     viewDemo: "Ver demo",
     github: "GitHub",
     githubProfile: "Perfil no GitHub",
@@ -75,18 +71,17 @@ const pt = {
   },
   about: {
     eyebrow: "Sobre mim",
-    title: "Como eu trabalho e onde aprendi",
-    accent: "aprendi",
+    title: "Como eu trabalho: uma pessoa, o ciclo completo",
+    accent: "completo",
     statement:
-      "Atuo em interfaces, painéis, PWAs e produtos full-stack em React e Next.js. Acessíveis, responsivos e sem sustos ao usar.",
+      "Levo interfaces, painéis e PWAs do brief ao deploy em React e Next.js, e depois mantenho tudo de pé.",
     portraitAlt: "Retrato de {name}",
     role: "Desenvolvedor full-stack",
     socialAria: "{name} (abre em uma nova aba)",
-    workTitle: "Como eu gosto de trabalhar",
+    workTitle: "Como eu trabalho",
     introStrong: "Trabalho em produção com React, Next.js e Tailwind.",
-    introRest: "Acessível, responsivo e sem sustos ao usar.",
-    offClock:
-      "Fora do horário eu escuto música, toco guitarra e mexo num Ford Fiesta 95.",
+    introRest: "Acessível, responsivo e previsível onde previsível é o certo.",
+    offClock: "Fora do horário: música, um Ford Fiesta 95 e o violão.",
     skillsLabel: "Ferramentas",
     source: "Ver o código",
     educationTitle: "Formação",
@@ -95,7 +90,7 @@ const pt = {
         title: "Tecnólogo Universitário em Tecnologias da Programação",
         company: "Universidad Provincial del Sudoeste (UPSO)",
         description:
-          "Formação em desenvolvimento de software, bancos de dados, metodologias ágeis e boas práticas de programação.",
+          "Desenvolvimento de software, bancos de dados, métodos ágeis e prática de programação.",
       },
       {
         title: "Técnico em Informática Pessoal e Profissional",
@@ -107,15 +102,15 @@ const pt = {
   },
   contact: {
     eyebrow: "Contato",
-    title: "Me conta o que você está construindo.",
-    accent: "construindo.",
+    title: "Manda o problema. Eu devolvo o plano.",
+    accent: "plano.",
     lead:
-      "Freelance ou tempo integral. Me manda o problema, a stack e o prazo que eu respondo como seguir.",
-    copy: "Copiar endereço",
+      "Freelance ou tempo integral. Com o objetivo, a stack e o prazo já dá para começar.",
+    copy: "Copiar e-mail",
     copied: "Copiado ✓",
     manual: "Selecione acima",
-    copiedAnnouncement: "Endereço copiado para a área de transferência",
-    manualAnnouncement: "Não foi possível copiar. Selecione o endereço acima.",
+    copiedAnnouncement: "E-mail copiado para a área de transferência",
+    manualAnnouncement: "Não foi possível copiar. Selecione o e-mail acima.",
     mailSubject: "Consulta de projeto",
   },
   footer: {
