@@ -1,6 +1,6 @@
 # Mobile load budget
 
-Status: **open** — three fixes measured; T4 verification green, delivery open.
+Status: **open** — four fixes measured (T1–T4, T6); T7 dropped by measurement; delivery open.
 
 ## Problem
 
@@ -51,6 +51,8 @@ the CSS field. Four long tasks, 272 ms blocking, during load.
 | T3 | S6 | inline | DONE | `a8db502` |
 | T4 | S1-S7 | inline | DONE | this slice |
 | T5 | S5, S7 | inline | DONE | this slice |
+| T6 | S6 | inline | DONE | `e08ab22` |
+| T7 | S4 | — | DROPPED | measured as already satisfied |
 
 ## Results
 
@@ -77,7 +79,7 @@ loading, because the field chunk was always requested after `load`:
 | first WebGL frame | 13416 ms | never (CSS field) |
 
 Fraunces is no longer preloaded: two font preloads instead of three, FCP 2320 ->
-2232 ms on Slow 3G. The font itself still arrives when the footer needs it.
+2232 ms on Slow 3G. The preload was only half of it — see T6.
 
 Scroll at 4x CPU throttle, same session, base commit against this change, two
 runs each: base 59.8 / 59.9 fps, 0 janky, 0 longtasks, main 46.8% / 46.3%, style
@@ -93,6 +95,35 @@ remains on Slow 3G is React and GSAP (`react-dom` 260 KB raw, GSAP + ScrollTrigg
 134 KB raw). Cutting further means rewriting the animation layer, which is a
 different feature with a different risk.
 
+### T6 — the serif left the load window
+
+`preload: false` stopped the preload, but not the request. The wordmark already
+sits in the server HTML with `font-family: var(--font-serif)`, so the browser
+fetched Fraunces (45 KB italic) during the first layout of every load, competing
+with the hero. Now `.footer-mark` starts on the system serif and the family only
+switches when the footer observer reports it within 150% of a viewport
+(`.footer-mark.is-serif`); nothing above the fold reads the family, so the
+request does not exist until the footer is close. `document.fonts` `loadingdone`
+re-measures the letter centres, because the pointer wave animates from cached
+offsets and Fraunces has different metrics than Georgia.
+
+Same harness, 390x844 DPR3, CPU 4x, prod build, base commit against this change:
+
+| network | font KB before | font KB after | load before | load after | CLS |
+| --- | --- | --- | --- | --- | --- |
+| none | 92.3 | **47.1** | 628 ms | 375 ms | 0 / 0 |
+| Fast 3G | 92.3 | **47.1** | 2197 ms | 1975 ms | 0 / 0 |
+| Slow 3G | 92.3 | **47.1** | 8698 ms | **7792 ms** | 0.002 / 0.002 |
+
+FCP and LCP are unchanged within the harness's own noise (244/276, 880/888,
+2248/2236 ms) and LCP is still FCP. The wordmark is the only reader, so the
+load window drops one 45 KB file and Slow 3G finishes 906 ms earlier.
+
+T7 (a `downlink`/`rtt` gate on top of `effectiveType`) was dropped after
+measuring: a 180 KB/s, 562 ms link reports `effectiveType: "3g"`, which the
+existing gate already blocks (`canvas 0`, JS 211.5 KB), so the only effect of a
+byte threshold would be to take the field away from a link that carries it.
+
 ## Log
 
 L1. "escucha, pero al final que implementaste? no hiciste el loop de anim que
@@ -106,3 +137,26 @@ L3. Reframed against the earlier bake decision: the bake saves idle CPU
 (2490 ms vs 2480 ms with the canvas removed) and adds payload, so it cannot fix
 a slow first load. The measured bottleneck on 3G is LCP and the initial JS
 transfer, not the simulation loop.
+
+L4. "analiza los puntos deficientes y mejoralos" — over a Chrome DevTools
+performance trace of the site
+(`Trace-20261026T140350.json`, dev server, Pixel 9, CPU 4x, "Slow 4G").
+
+L5. Choosing what that trace can still improve. It is a **dev** capture: 29 Low
+priority Turbopack chunks, 1.96 s of `v8::Debugger::AsyncTaskRun`, 589 ms of
+`V8Console::runTask` against 1,880 ms of real script. Its two headline
+complaints were already fixed before it was taken (`LCP == FCP == 4240 ms` is
+the T1 paint gate working; no `LayoutShift` events; 0 frames over 16.7 ms in
+8.5 s of script). Its own network profile, 180 KB/s with 562 ms latency, also
+reports `effectiveType: "3g"`, so the field it shows at 5.6 s would be gated
+by the code as it stands. What the trace does prove is that a font request sits
+inside the load window on every profile, and that is T6.
+
+L6. Route: inline. The change is one component and one rule, the evidence was
+one bounded read of `Footer.jsx` plus the probe baseline, and no product
+decision was open. Verified with `next build`, `eslint .`,
+`check-motion-aliases.mjs`, `e2e-a11y.mjs` (16 OK), `e2e-footer-motion.mjs`
+against the production build (13 OK, including `motion/falloff`, which depends
+on the cached letter centres the font swap now re-measures), the load probe on
+three profiles and a six second coarse-pointer scroll at 4x: 59.5 fps, p95
+16.8 ms, 2 janky frames, 0 long tasks, main 48.7%.
