@@ -9,6 +9,6 @@
   "allow": {
     "disk_paths": ["data/", "tmp/", "storage/", "uploads/", "cache/"],
     "endpoints": ["/api/health", "/healthz", "/health", "/api/healthz", "/readyz"],
-    "disable": []
+    "disable": ["ui_states"]
   }
 }
