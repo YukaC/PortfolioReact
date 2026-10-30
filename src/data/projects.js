@@ -117,7 +117,7 @@ export const PROJECT_OVERRIDES = {
       },
     },
   },
-  TrabajoFinal_Ciucani_Grecco: {
+  PelisEnCasa: {
     title: "Pelis en Casa",
     description:
       "Movie catalog and review site: search, genre and director filters, film detail, and reader comments.",
