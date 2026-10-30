@@ -1,7 +1,7 @@
-import { useInView } from "@/hooks/useInView";
-
 /**
- * Fade/slide-up when scrolled into view. Children stay in the tree (SSR-safe).
+ * Reveal marker. The animation itself lives in CSS (`[data-r]`) and the trigger
+ * is the page-wide observer in `useRevealOnEnter` — a component here only
+ * declares where a beat starts and how late it lands.
  */
 const Reveal = ({
   children,
@@ -9,23 +9,10 @@ const Reveal = ({
   delayMs = 0,
   as: Tag = "div",
   ...rest
-}) => {
-  const [ref, isVisible] = useInView();
-  const { style: restStyle, ...restProps } = rest;
-
-  return (
-    <Tag
-      ref={ref}
-      className={`reveal ${isVisible ? "reveal-visible" : ""} ${className}`.trim()}
-      {...restProps}
-      style={{
-        ...restStyle,
-        ...(delayMs ? { transitionDelay: `${delayMs}ms` } : null),
-      }}
-    >
-      {children}
-    </Tag>
-  );
-};
+}) => (
+  <Tag data-r="" style={{ "--d": `${delayMs}ms` }} className={className} {...rest}>
+    {children}
+  </Tag>
+);
 
 export default Reveal;

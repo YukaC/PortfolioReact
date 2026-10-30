@@ -1,16 +1,27 @@
+/**
+ * Keep default distDir `.next`. For HDD checkouts use `pnpm setup:ssd` (NVMe
+ * git worktree) — do not symlink node_modules/.next across filesystems (Turbopack).
+ */
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
   // Allow LAN / alternate localhost hosts to hit HMR + /_next/* in `next dev`
   // (avoids blocked cross-origin + noisy allowedDevOrigins warnings).
+  // 100.120.254.30 + yuka.tail901e3b.ts.net are this machine over Tailscale, for
+  // opening the dev server on a phone; update them if the tailnet name changes.
   allowedDevOrigins: [
     "127.0.0.1",
     "localhost",
     "192.168.0.233",
+    "192.168.0.234",
+    "100.120.254.30",
+    "yuka.tail901e3b.ts.net",
   ],
   images: {
     formats: ["image/avif", "image/webp"],
+    // Hero/work-card images request quality 70 — allow it beside the 75 default.
+    qualities: [70, 75],
   },
   experimental: {
     // Barrel opt for drei only — three/gsap OPI can break under Turbopack.
