@@ -2,6 +2,28 @@
 
 ## Unreleased
 
+### The portfolio arrives already translated
+
+- The visitor's language configuration decides the language, not a click: the edge
+  middleware reads `Accept-Language` and `/` answers with the matching prerendered page
+  (`/es`, `/pt`) through an internal rewrite, so the public URL stays `/`, and
+  `?lang=` → cookie → `Accept-Language` → English is the resolution order.
+- "De antemano" is literal: the three pages are prerendered by `next build`, so the HTML
+  that arrives already carries the translated copy, title, description and social tags.
+  There is no client-side dictionary swap and no flash of English; the page prop the
+  server sent is the dictionary the first client render uses, which is also why there is
+  no hydration mismatch.
+- `<html lang>` ships as `es` because a static file cannot know a region, and is refined to
+  `es-AR` / `pt-BR` from the stored tag after mount — attribute only, text untouched.
+  `es-419` keeps the language and drops the region: HTML has no exact regional tag for it.
+- One pure module (`src/i18n/locale.js`) holds every decision, shared by the edge runtime,
+  the document shell and React. Dictionaries fall back to English key by key; a parity
+  test fails if an English key is missing in Spanish or Portuguese.
+- GitHub pins translate per field from the `i18n` block that already owns each slug, so a
+  project's English copy and its translations cannot drift apart.
+- Also fixed in passing: the work-list aria labels were hardcoded Spanish
+  (`"… en GitHub"`, `"ver demo"`) on an English page. Task notes: `odd/tasks/auto-locale.md`.
+
 ### The hero paints before it is hydrated
 
 - The lead paragraph was the largest paint on the page and it started at
