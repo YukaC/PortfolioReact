@@ -61,28 +61,23 @@ const FieldBlob = ({ index }) => (
  * Bocanada field, retoned for the glass-motion system.
  *
  * Layers, back to front: the navy cobalt sky, three blobs whose hue travels
- * with the reading progress, the coral lattice, the WebGL dye (the same lattice
- * plus its spring flares live in the shader), the cursor light, then grain.
+ * with the reading progress, the WebGL dye (smoke + the coral lattice and its
+ * spring flares live in the shader), the cursor light, then grain.
  *
- * The lattice is painted by the served HTML as well as by the shader, and the
- * two are the same geometry on purpose: the canvas only takes over once it has
- * presented its first frame, so the field never changes shape after paint.
- * Without WebGL, or under reduced motion, the CSS lattice is what shows.
+ * The coral lattice never leaves: without WebGL, or under reduced motion, the
+ * CSS stand-in paints the same dots.
  */
 const AppBackground = () => {
+  const [isReducedMotion, setIsReducedMotion] = useState(false);
   const [simQuality, setSimQuality] = useState(null);
   const [canUseWebgl, setCanUseWebgl] = useState(false);
-  /* Set from the canvas itself, not from a timer: it means the shader has drawn
-     and the CSS lattice may fade out under it. Cleared whenever the canvas goes
-     away, so a field that loses its canvas gets its lattice back. */
-  const [fieldLive, setFieldLive] = useState(false);
 
   useEffect(() => {
     const applyMotionPreference = (isReduced) => {
+      setIsReducedMotion(isReduced);
       if (isReduced) {
         setSimQuality(null);
         setCanUseWebgl(false);
-        setFieldLive(false);
         return;
       }
       setSimQuality(getSimQuality());
@@ -97,10 +92,7 @@ const AppBackground = () => {
       if (prefersReducedMotion()) return;
       const next = getSimQuality();
       setSimQuality(next);
-      if (!next) {
-        setCanUseWebgl(false);
-        setFieldLive(false);
-      }
+      if (!next) setCanUseWebgl(false);
     };
     connection?.addEventListener?.("change", applyConnection);
 
@@ -127,7 +119,7 @@ const AppBackground = () => {
 
   return (
     <div
-      className={`pointer-events-none fixed inset-0 z-0 overflow-hidden${fieldLive ? " is-live" : ""}`}
+      className="pointer-events-none fixed inset-0 z-0 overflow-hidden"
       style={{ backgroundColor: FIELD_INK }}
       aria-hidden="true"
     >
@@ -135,9 +127,8 @@ const AppBackground = () => {
       <FieldBlob index={1} />
       <FieldBlob index={2} />
       <FieldBlob index={3} />
-      <div className="bocanada-sparks field-sparks absolute inset-0" />
       {canUseWebgl && simQuality ? (
-        <div className="field-canvas absolute inset-0">
+        <div className="absolute inset-0">
           <LiquidEther
             className="h-full w-full"
             colors={BOCANADA_SMOKE_COLORS}
@@ -155,9 +146,11 @@ const AppBackground = () => {
             autoRampDuration={0.85}
             resolution={simQuality.resolution}
             iterationsPoisson={simQuality.iterationsPoisson}
-            onFirstFrame={() => setFieldLive(true)}
           />
         </div>
+      ) : null}
+      {isReducedMotion || !canUseWebgl ? (
+        <div className="bocanada-sparks absolute inset-0" />
       ) : null}
       <div className="field-glow" />
       <div className="field-grain" />

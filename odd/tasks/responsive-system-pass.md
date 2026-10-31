@@ -48,7 +48,7 @@ que un defecto responsive lo exija.
 |---|---|---|---|
 | T1 | S1 | inline — `.hero-title` ya no escapa el shell (196 px a 1920) | DONE · `d1915a4` |
 | T2 | S1 | inline — `.lang-link` y `.footer-links a` con objetivo ≥24 px | DONE · `d1915a4` |
-| T3 | S2 | worker `gentle-ai-worker` — retícula base en HTML + cross-fade del canvas | DONE · `d1915a4` |
+| T3 | S2 | worker `gentle-ai-worker` — retícula base + cross-fade del canvas | **REVERTIDO** · `d1915a4` → ver L3 |
 | T4 | S1 | inline — filas de trabajo a ancho completo bajo 560 px | DONE · `d1915a4` |
 | T5 | S1, S3 | inline — evidencia: barrido, sin JS, cross-fade | DONE · `d1915a4` |
 | T6 | S4 | inline — gates y vitals | DONE · `d1915a4` |
@@ -145,3 +145,26 @@ WebGL en teléfono (decisión de L23), la copia y la paleta. Lo que queda abiert
 2. El presupuesto mobile (JS ≤ 260 kB · TBT ≤ 300 ms) sigue en deuda mientras el teléfono monte el
    shader; es el mismo trato que el deploy.
 3. `.orn` roza los glifos del hero a 1024 px (629 px²). Sin impacto legible medido; no se tocó.
+
+## Log
+
+**L3 — el cross-fade duplicaba la retícula (regresión de T3, 2026-10-31).**
+El dueño reportó: *"se te duplicaron los puntos del fondo"*. Correcto, y la causa es de diseño: T3 dejó
+la retícula CSS dibujada **debajo** del canvas y la apagaba con `is-live`, así que existía un estado en
+el que las dos retículas se pintan juntas — y **no comparten origen**: la CSS es una grilla de 48 px en
+(0,0), la del shader arranca en otro offset (medido en el perfil teléfono: columnas en 71, 215, 359,
+503 px de dispositivo, período 144 px = 48 CSS px). Reproducido forzando `.field-sparks{opacity:.55}`:
+la masa de píxeles coral pasa de **1 141 a 3 014** en el mismo recorte, es decir dos grillas corridas.
+
+**Decisión: una sola retícula, nunca dos.** Se revierten `AppBackground.jsx` y `LiquidEther.jsx` a
+`8164756` (capas exclusivas: canvas cuando hay WebGL, retícula CSS cuando no) y se borran `.field-sparks`,
+`.field-canvas` e `is-live` del CSS. Se pierde el cross-fade; se gana que la duplicación sea imposible
+por construcción. Verificado en 320/390/768/1440/1920: `.bocanada-sparks` en el DOM = **0** con canvas
+presente, `canvas` = 1, sin overflow, sin objetivos < 24 px, cero errores de consola, a11y **16 OK**.
+El conteo de puntos coincide con el deploy en el mismo perfil (misma grilla, mismas columnas).
+
+**Deuda que este cambio NO toca** (existe igual en el deploy, verificado con WebGL bloqueado en ambos:
+`sparks 0 · canvas 0`): si el navegador expone WebGL pero la creación del contexto falla —Brave con
+escudos, driver roto—, `canUseWebgl` queda en `true`, `LiquidEther` no logra renderer y el campo queda
+sin retícula. Arreglarlo pide un callback de fallo desde `LiquidEther` (`onUnavailable`) que devuelva el
+control a la capa CSS; no se hizo en este turno para no volver a introducir dos retículas a la vez.

@@ -296,11 +296,10 @@
     background: linear-gradient(90deg, var(--color-sky), var(--color-paper));
   }
 
-  /* Reduced-motion / no-WebGL stand-in for the shader lattice, and the base
-     layer in the served HTML. The shader draws the same dots, so the two never
-     differ in shape: the canvas fades in over this one and only then does this
-     one fade out. Without WebGL, or under reduced motion, nothing takes over and
-     the lattice simply stays. */
+  /* Reduced-motion / no-WebGL stand-in for the shader lattice. It is also what
+     the served HTML paints, and it is deliberately NOT kept under the canvas:
+     the two grids do not share an origin, so keeping both drawn reads as
+     doubled dots. One lattice at a time, never two. */
   .bocanada-sparks {
     background-image:
       radial-gradient(circle 2px at 50% 50%, rgb(255 226 228 / 0.9), transparent 100%),
@@ -309,23 +308,6 @@
       192px 192px,
       48px 48px;
     opacity: 0.55;
-  }
-
-  .field-sparks {
-    transition: opacity 600ms var(--ease);
-  }
-
-  .is-live .field-sparks {
-    opacity: 0;
-  }
-
-  .field-canvas {
-    opacity: 0;
-    transition: opacity 600ms var(--ease);
-  }
-
-  .is-live .field-canvas {
-    opacity: 1;
   }
 
   /* --- layout ------------------------------------------------------------- */
@@ -2106,9 +2088,7 @@
   .nav-ind,
   .work-tab-ind,
   .work-body > *,
-  .footer-mark-ch,
-  .field-sparks,
-  .field-canvas {
+  .footer-mark-ch {
     transition: none;
   }
 
