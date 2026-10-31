@@ -168,3 +168,20 @@ El conteo de puntos coincide con el deploy en el mismo perfil (misma grilla, mis
 escudos, driver roto—, `canUseWebgl` queda en `true`, `LiquidEther` no logra renderer y el campo queda
 sin retícula. Arreglarlo pide un callback de fallo desde `LiquidEther` (`onUnavailable`) que devuelva el
 control a la capa CSS; no se hizo en este turno para no volver a introducir dos retículas a la vez.
+
+**L4 — fallback de WebGL perdido: implementado (2026-10-31).** `LiquidEther` acepta `onUnavailable` y
+lo reporta una sola vez por montaje desde dos lugares: el `try/catch` que envuelve la creación del
+`WebGLManager` (contexto rechazado) y un listener `webglcontextlost` en el canvas (GPU reiniciada o
+contexto perdido después de arrancar). `AppBackground` guarda `webglFailed` y en ese caso no monta el
+canvas y devuelve el campo a la retícula CSS — capas exclusivas, nunca las dos.
+
+Tres escenarios medidos en `:3001` (390×844 @DPR2), con el recorte de campo contando píxeles coral:
+
+| escenario | `.bocanada-sparks` | `canvas` | errores de página | píxeles coral |
+|---|---:|---:|---|---:|
+| normal | 0 | 1 | 0 | — (shader) |
+| contexto rechazado (`getContext('webgl') → null`) | **1** (op. 0.55) | **0** | **0** | 887 |
+| `webglcontextlost` después de arrancar | **1** (op. 0.55) | **0** | **0** | 887 |
+
+Antes de este fix, el caso "contexto rechazado" dejaba `sparks 0 · canvas 0`: fondo sin retícula y un
+error de página. Gates tras el cambio: lint 0 · test 31/31 · a11y 16 OK · motion 13 OK · runtime 7 OK.

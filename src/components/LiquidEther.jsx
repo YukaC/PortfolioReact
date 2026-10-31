@@ -54,7 +54,8 @@ export default function LiquidEther({
   autoResumeDelay = 1000,
   autoRampDuration = 0.6,
   backgroundColor = '#FFFFFF',
-  lightMode = false
+  lightMode = false,
+  onUnavailable = null
 }) {
   const mountRef = useRef(null);
   const webglRef = useRef(null);
@@ -63,6 +64,12 @@ export default function LiquidEther({
   const intersectionObserverRef = useRef(null);
   const isVisibleRef = useRef(true);
   const resizeRafRef = useRef(null);
+  // Latest value, so a parent arrow that changes every render neither remounts
+  // the field nor leaves the fallback calling a stale handler.
+  const onUnavailableRef = useRef(onUnavailable);
+  useEffect(() => {
+    onUnavailableRef.current = onUnavailable;
+  }, [onUnavailable]);
 
   useEffect(() => {
     if (!mountRef.current) return;
@@ -1474,15 +1481,33 @@ export default function LiquidEther({
     container.style.position = container.style.position || 'relative';
     container.style.overflow = container.style.overflow || 'hidden';
 
-    const webgl = new WebGLManager({
-      $wrapper: container,
-      autoDemo,
-      autoSpeed,
-      autoIntensity,
-      takeoverDuration,
-      autoResumeDelay,
-      autoRampDuration
-    });
+    /* A browser can expose WebGL and still refuse a context: Brave shields, a
+       broken driver, or too many live contexts. Nothing would ever be drawn, so
+       the field must hand control back to the CSS lattice instead of staying
+       empty. Reported once per mount, from either the constructor or a later
+       `webglcontextlost`. */
+    let unavailableReported = false;
+    const reportUnavailable = () => {
+      if (unavailableReported) return;
+      unavailableReported = true;
+      onUnavailableRef.current?.();
+    };
+
+    let webgl = null;
+    try {
+      webgl = new WebGLManager({
+        $wrapper: container,
+        autoDemo,
+        autoSpeed,
+        autoIntensity,
+        takeoverDuration,
+        autoResumeDelay,
+        autoRampDuration
+      });
+    } catch (error) {
+      reportUnavailable(error);
+      return undefined;
+    }
     webglRef.current = webgl;
 
     const applyOptionsFromProps = () => {
@@ -1509,6 +1534,15 @@ export default function LiquidEther({
     applyOptionsFromProps();
 
     webgl.start();
+
+    /* The context can also die later (GPU reset, driver crash, the tab parked
+       for a long time). Same answer: let the CSS lattice take over. */
+    const fieldCanvas = container.querySelector('canvas');
+    const handleContextLost = (event) => {
+      event.preventDefault?.();
+      reportUnavailable();
+    };
+    fieldCanvas?.addEventListener('webglcontextlost', handleContextLost, false);
 
     // IntersectionObserver to pause rendering when not visible
     const io = new IntersectionObserver(
@@ -1543,6 +1577,7 @@ export default function LiquidEther({
     resizeObserverRef.current = ro;
 
     return () => {
+      fieldCanvas?.removeEventListener('webglcontextlost', handleContextLost, false);
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
       if (resizeRafRef.current) cancelAnimationFrame(resizeRafRef.current);
       resizeRafRef.current = null;
