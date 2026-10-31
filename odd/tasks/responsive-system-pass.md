@@ -46,12 +46,12 @@ que un defecto responsive lo exija.
 
 | ID | Specs | Ruta | Commit |
 |---|---|---|---|
-| T1 | S1 | inline — `.hero-title` ya no escapa el shell (196 px a 1920) | DONE · mismo commit |
-| T2 | S1 | inline — `.lang-link` y `.footer-links a` con objetivo ≥24 px | DONE · mismo commit |
-| T3 | S2 | worker `gentle-ai-worker` — retícula base en HTML + cross-fade del canvas | DONE · mismo commit |
-| T4 | S1 | inline — filas de trabajo a ancho completo bajo 560 px | DONE · mismo commit |
-| T5 | S1, S3 | inline — evidencia: barrido, sin JS, cross-fade | DONE · mismo commit |
-| T6 | S4 | inline — gates y vitals | DONE · mismo commit |
+| T1 | S1 | inline — `.hero-title` ya no escapa el shell (196 px a 1920) | DONE · `d1915a4` |
+| T2 | S1 | inline — `.lang-link` y `.footer-links a` con objetivo ≥24 px | DONE · `d1915a4` |
+| T3 | S2 | worker `gentle-ai-worker` — retícula base en HTML + cross-fade del canvas | DONE · `d1915a4` |
+| T4 | S1 | inline — filas de trabajo a ancho completo bajo 560 px | DONE · `d1915a4` |
+| T5 | S1, S3 | inline — evidencia: barrido, sin JS, cross-fade | DONE · `d1915a4` |
+| T6 | S4 | inline — gates y vitals | DONE · `d1915a4` |
 
 ## Evidencia inicial (2026-10-31, build `Rf48BOhCZ9rsKWQIom6iZ` en `:3001`)
 
