@@ -212,12 +212,12 @@
     top: -22vw;
     --blob-start: radial-gradient(
       circle,
-      hsl(212 88% 52% / 0.36),
+      hsl(212 88% 52% / 0.42),
       transparent 68%
     );
     --blob-end: radial-gradient(
       circle,
-      hsl(222 88% 52% / 0.36),
+      hsl(222 88% 52% / 0.42),
       transparent 68%
     );
     translate: calc(var(--px) * 30px) calc(var(--p) * -30vh + var(--py) * 20px);
@@ -305,64 +305,6 @@
       192px 192px,
       48px 48px;
     opacity: 0.55;
-  }
-
-  /* The flare: what the shader draws where the lattice is struck. Opacity and
-     scale only, so the compositor carries it and the main thread never sees it;
-     a `filter: blur()` glow would cost more than the whole layer. */
-  .spark-flare {
-    position: absolute;
-    left: var(--fx);
-    top: var(--fy);
-    width: 3.25rem;
-    height: 3.25rem;
-    margin: -1.625rem 0 0 -1.625rem;
-    border-radius: 50%;
-    /* A bright core on the dot, then the bloom: a soft round gradient the size of
-       the lattice cell reads as fog, not as a struck dot. */
-    background: radial-gradient(
-      circle,
-      rgb(255 244 245 / 0.98) 0%,
-      rgb(255 214 219 / 0.6) 14%,
-      rgb(226 114 127 / 0.26) 38%,
-      rgb(226 114 127 / 0) 72%
-    );
-    /* A resting glow, so a struck dot reads as alive between strikes instead of
-       flashing once and vanishing. */
-    opacity: 0.22;
-    scale: calc(var(--fs, 1) * 0.82);
-    animation: spark-flare 5.5s var(--ease) infinite;
-    animation-delay: var(--fd, 0s);
-  }
-
-  /* Two strikes per cycle, close enough together that a reader sees the lattice
-     breathe within the first second instead of waiting for one sparse flash. */
-  @keyframes spark-flare {
-    0%,
-    100% {
-      opacity: 0.22;
-      scale: calc(var(--fs, 1) * 0.82);
-    }
-
-    12% {
-      opacity: 0.85;
-      scale: var(--fs, 1);
-    }
-
-    24% {
-      opacity: 0.3;
-      scale: calc(var(--fs, 1) * 0.86);
-    }
-
-    58% {
-      opacity: 1;
-      scale: calc(var(--fs, 1) * 1.08);
-    }
-
-    76% {
-      opacity: 0.28;
-      scale: calc(var(--fs, 1) * 0.84);
-    }
   }
 
   /* --- layout ------------------------------------------------------------- */
@@ -2030,14 +1972,6 @@
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;
-  }
-
-  /* A flare is a pulse, so under reduced motion it settles into a faint static
-     glow instead of blinking. */
-  .spark-flare {
-    animation: none;
-    opacity: 0.45;
-    scale: var(--fs, 1);
   }
 
   [data-r],

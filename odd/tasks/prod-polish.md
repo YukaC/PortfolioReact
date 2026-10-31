@@ -451,3 +451,47 @@ y todas las cajas miden 0. El invariante es del CSS, así que se protege leyendo
 
 Gates: lint limpio · test **31/31** · e2e:runtime 7 OK · e2e:a11y 16 OK · e2e:motion 13 OK ·
 vitals 3/3 pass (209 kB · LCP 216 ms · CLS 0.000 · TBT 143 ms).
+
+**L23 — "no están ligados los flares a los puntos" (usuario, 2026-10-31).**
+> hiciste cagadas, cambiaste tanto el fondo y la anim de los flares de los puntos del fondo que ahora no estan ligado los flares a los puntos. restaura la version original del fondo que se encuentra en el deploy de la web en https://ciucani.vercel.app/
+
+**Regresión real y mía, de L19 + L21.** El deploy (`main`) monta el shader en **todos** los
+dispositivos y los flares del retículo coral los dibuja `coverGrid` dentro del canvas. En L19 le saqué
+el shader a los teléfonos (`SIM_MEDIA_QUERY = "(min-width: 64rem) and (pointer: fine)"`) y en L21 quise
+taparlo con seis `.spark-flare` en CSS: están posicionados en porcentajes del viewport sobre una
+retícula de 48 px fijos, así que **no pueden caer sobre los puntos** — de ahí "los flares no están
+ligados a los puntos". En desktop el shader seguía, pero el montaje diferido (engagement / 5 s eager)
+dejaba el campo ausente varios segundos, y el blob había bajado a 0.36 por el pase de contraste.
+
+**Fingerprint medido (Playwright, `.field-fingerprint.mjs`, 6 s de settle) — antes del fix:**
+
+| perfil | deploy | branch (antes) |
+|---|---|---|
+| phone 390×844 @2 | canvas **1** · spark-flare 0 · blob `rgba(25,125,240,0.42)` | canvas **0** · spark-flare **6** · blob `0.36` |
+| desktop 1440×900 | canvas 1 · spark-flare 0 · blob `0.42` | canvas 1 · spark-flare 0 · blob `0.36` |
+
+**Restauración (el fondo queda idéntico al deploy, no "parecido"):**
+- `src/components/AppBackground.jsx` ← `main` (diff vacío contra `main`): shader en todos los
+  dispositivos por `requestIdleCallback` (timeout 400 ms / fallback 200 ms), sin `SIM_MEDIA_QUERY`,
+  sin `SPARK_FLARES`, sin el montaje diferido por gesto.
+- `globals.css`: fuera el bloque `.spark-flare`, sus `@keyframes` y su caso de reduced motion (68
+  líneas); los dos blobs vuelven a `hsl(212/222 88% 52% / 0.42)`.
+- `LiquidEther.jsx` **no** se revirtió: es idéntico a `main` salvo los imports con nombre en vez de
+  `* as THREE` (verificado normalizando el prefijo `THREE.`), o sea mismo shader y mismos flares, pero
+  11 kB menos que el deploy (399 vs 410 kB de JS cargado en teléfono).
+- Se conservan los cambios que **no** son fondo: reveal "visible primero" (L22) y la salida sin
+  `blur` en pantallas chicas/puntero grueso.
+
+**Verificación posterior:** fingerprint idéntico al deploy en los dos perfiles (canvas 1 · spark-flare
+0 · blob 0.42 · `blur(110px)`), y captura a 390×844 con el mismo bloom en los mismos puntos.
+
+**Costo que vuelve, medido:** `measure:vitals` en teléfono (390×844, 4×, 4G) contra el build de esta
+rama da **399 kB · TBT 376–431 ms**, y el propio deploy da **410 kB · TBT 419–444 ms**: el presupuesto
+`JS ≤ 260 kB` y `TBT ≤ 300 ms` de S4/S10 **no lo cumple el diseño original**, lo cumplía el field CSS
+para teléfonos de L19. Los dos objetivos son incompatibles: 190 kB de `three` más ~200 ms de compilación
+del shader sólo desaparecen si el teléfono no monta el canvas. Queda restaurado el diseño del deploy
+(decisión del usuario en este turno) y el presupuesto se reporta como deuda, no como verde.
+
+Gates: lint 0 · test 31/31 · check:motion 0 · validate:bebop 0 · e2e:runtime 7 OK ·
+e2e:a11y 16 OK · e2e:motion 13 OK (los tres últimos medidos contra el build de producción de :3001;
+el dev server de :3000 quedó con SSR viejo y hay que reiniciarlo para que hidrate sin mismatch).

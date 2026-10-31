@@ -30,45 +30,11 @@ const SIM_QUALITY = { resolution: 0.32, iterationsPoisson: 12 };
    improves. No NetworkInformation API means no guessing: the field mounts. */
 const SLOW_EFFECTIVE_TYPES = new Set(["slow-2g", "2g", "3g"]);
 
-/* Events that mean "this reader is deliberately using the page", so the shader
-   can compile right away. A scroll is deliberately NOT in this list: see
-   SCROLL_END_MS. */
-const ENGAGEMENT_EVENTS = ["touchstart", "pointerdown", "keydown"];
-
-/* A scroll starts a gesture that the reader is watching. Mounting the field on
-   the first scroll event put three's eval plus the shader compile (measured at
-   177-228 ms on a 4x-throttled phone) inside that gesture, which is exactly the
-   hitch that reads as "the reveal animations are lagging": the scroll stumbles
-   and the next reveal lands late. So a scroll only arms a timer and the field
-   mounts once the reader has stopped. */
-const SCROLL_EVENTS = ["scroll", "wheel", "touchmove"];
-const SCROLL_END_MS = 180;
-
-/* After `load`, how long the field may keep asking for an idle slice before it
-   mounts anyway, and the fallback when the browser has no requestIdleCallback. */
-const FIELD_MOUNT_DEADLINE_MS = 1200;
-const FIELD_MOUNT_FALLBACK_MS = 600;
-/* A visitor who reads and never touches anything still gets the live field: the
-   smoke is part of the identity, not a reward for scrolling. */
-const FIELD_EAGER_MS = 5000;
-
-/* Where the live dye is worth its price: a screen with room for it and a real
-   pointer. Measured on a phone profile (390x844, DPR 3, CPU 4x, 4G): mounting it
-   costs 190 kB of JS on top of the 209 kB the page needs anyway, plus a 216 ms
-   shader compile on the first gesture. The CSS field below — the same navy sky,
-   the same three blobs, the same coral lattice — costs nothing, is already in
-   the bundle, and `useFieldMotion` keeps driving it from scroll and pointer, so
-   a phone loses the plume and none of the response. */
-const SIM_MEDIA_QUERY = "(min-width: 64rem) and (pointer: fine)";
-
 function getConnection() {
   return typeof navigator === "undefined" ? null : navigator.connection;
 }
 
 function getSimQuality() {
-  if (typeof window === "undefined") return null;
-  if (!window.matchMedia(SIM_MEDIA_QUERY).matches) return null;
-
   const connection = getConnection();
   if (!connection) {
     return SIM_QUALITY;
@@ -78,18 +44,6 @@ function getSimQuality() {
   }
   return SLOW_EFFECTIVE_TYPES.has(connection.effectiveType) ? null : SIM_QUALITY;
 }
-
-/* Where the stand-in field flares and how long each one waits between strikes.
-   Hand-placed on the 48px lattice the `.bocanada-sparks` background draws, so a
-   flare always lands on a dot instead of floating between them. */
-const SPARK_FLARES = [
-  { x: 18, y: 22, delay: 0, scale: 1 },
-  { x: 72, y: 14, delay: 0.9, scale: 0.8 },
-  { x: 42, y: 46, delay: 1.7, scale: 1.2 },
-  { x: 86, y: 58, delay: 2.6, scale: 0.9 },
-  { x: 26, y: 74, delay: 3.4, scale: 1.1 },
-  { x: 62, y: 88, delay: 4.2, scale: 0.85 },
-];
 
 /**
  * One blob of the field: the hue is two fixed gradients cross-faded by
@@ -142,15 +96,9 @@ const AppBackground = () => {
     };
     connection?.addEventListener?.("change", applyConnection);
 
-    // The device class can change without a reload: a rotated tablet, a resized
-    // window, a keyboard folio. Re-read it instead of deciding once.
-    const deviceQuery = window.matchMedia(SIM_MEDIA_QUERY);
-    deviceQuery.addEventListener?.("change", applyConnection);
-
     return () => {
       offMotion();
       connection?.removeEventListener?.("change", applyConnection);
-      deviceQuery.removeEventListener?.("change", applyConnection);
     };
   }, []);
 
@@ -160,90 +108,13 @@ const AppBackground = () => {
     if (!simQuality) {
       return undefined;
     }
-
-    /* The field is ornament, so it is never allowed to bid for the first second
-       and never for a frame the reader is scrolling.
-
-       Measured with scripts/measure-vitals.mjs (390x844, CPU 4x): three's module
-       eval plus the shader compile is 380 ms of blocking work in two long tasks.
-       Mounting it on the first idle slot put that on top of hydration — the part
-       the reader is actually waiting for — and a scroll that landed in that
-       window stuttered. So the mount waits for either the first real engagement
-       (a scroll, a wheel, a touch, a key) or FIELD_EAGER_MS of a visitor who is
-       only reading, then takes an idle slice. The CSS field below already paints
-       the same colours, so nothing looks missing while it waits. */
     const enableWebgl = () => setCanUseWebgl(true);
-    let timer = 0;
-    let idleId = 0;
-    let eagerTimer = 0;
-    let scrollEndTimer = 0;
-    let engaged = false;
-    let lastScrollAt = -Infinity;
-
-    /* Compiled only in a real gap between gestures: `requestIdleCallback` can
-       report the deadline while the reader is scrolling, and mounting there put
-       the 177-228 ms compile inside the gesture anyway. `lastScrollAt` is the
-       arbiter, so a busy scroll keeps deferring instead of stalling. */
-    const mountWhenQuiet = () => {
-      if (performance.now() - lastScrollAt < SCROLL_END_MS) {
-        window.clearTimeout(scrollEndTimer);
-        scrollEndTimer = window.setTimeout(mountWhenQuiet, SCROLL_END_MS);
-        return;
-      }
-      if (typeof requestIdleCallback === "function") {
-        idleId = requestIdleCallback(
-          () => {
-            if (performance.now() - lastScrollAt < SCROLL_END_MS) {
-              mountWhenQuiet();
-              return;
-            }
-            enableWebgl();
-          },
-          { timeout: FIELD_MOUNT_DEADLINE_MS },
-        );
-        return;
-      }
-      timer = window.setTimeout(enableWebgl, FIELD_MOUNT_FALLBACK_MS);
-    };
-
-    const release = () => {
-      for (const type of [...ENGAGEMENT_EVENTS, ...SCROLL_EVENTS]) {
-        window.removeEventListener(type, onEngage, { capture: true });
-        window.removeEventListener(type, onScroll, { capture: true });
-      }
-      window.clearTimeout(eagerTimer);
-      window.clearTimeout(scrollEndTimer);
-    };
-
-    const onEngage = () => {
-      if (engaged) return;
-      engaged = true;
-      release();
-      mountWhenQuiet();
-    };
-
-    // A scroll does not mount anything by itself: it only says "not yet, the
-    // reader is mid-gesture". The field lands once the scroll comes to rest.
-    const onScroll = () => {
-      lastScrollAt = performance.now();
-      if (engaged) return;
-      window.clearTimeout(scrollEndTimer);
-      scrollEndTimer = window.setTimeout(onEngage, SCROLL_END_MS);
-    };
-
-    for (const type of ENGAGEMENT_EVENTS) {
-      window.addEventListener(type, onEngage, { capture: true, passive: true });
+    if (typeof requestIdleCallback === "function") {
+      const idleId = requestIdleCallback(enableWebgl, { timeout: 400 });
+      return () => cancelIdleCallback(idleId);
     }
-    for (const type of SCROLL_EVENTS) {
-      window.addEventListener(type, onScroll, { capture: true, passive: true });
-    }
-    eagerTimer = window.setTimeout(onScroll, FIELD_EAGER_MS);
-
-    return () => {
-      release();
-      if (idleId) cancelIdleCallback(idleId);
-      if (timer) window.clearTimeout(timer);
-    };
+    const timeoutId = window.setTimeout(enableWebgl, 200);
+    return () => window.clearTimeout(timeoutId);
   }, [simQuality]);
 
   return (
@@ -279,26 +150,7 @@ const AppBackground = () => {
         </div>
       ) : null}
       {isReducedMotion || !canUseWebgl ? (
-        <div className="bocanada-sparks absolute inset-0">
-          {/* The shader draws a flare wherever the coral lattice is struck; the
-              stand-in used to be flat dots, which is why the field read as
-              "missing the flares" the moment phones stopped mounting WebGL.
-              Six positioned glows on the same 48px lattice, animated on opacity
-              and scale only, give the layer its pulse back for no measurable
-              cost — a radial gradient is a paint, not a per-frame filter. */}
-          {SPARK_FLARES.map((flare) => (
-            <i
-              key={`${flare.x}-${flare.y}`}
-              className="spark-flare"
-              style={{
-                "--fx": `${flare.x}%`,
-                "--fy": `${flare.y}%`,
-                "--fd": `${flare.delay}s`,
-                "--fs": flare.scale,
-              }}
-            />
-          ))}
-        </div>
+        <div className="bocanada-sparks absolute inset-0" />
       ) : null}
       <div className="field-glow" />
       <div className="field-grain" />
