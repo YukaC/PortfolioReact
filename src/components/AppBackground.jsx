@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import dynamic from "next/dynamic";
 import {
   prefersReducedMotion,
@@ -71,6 +71,15 @@ const AppBackground = () => {
   const [isReducedMotion, setIsReducedMotion] = useState(false);
   const [simQuality, setSimQuality] = useState(null);
   const [canUseWebgl, setCanUseWebgl] = useState(false);
+  /* WebGL can be advertised and still refuse a context, or lose it later. When
+     that happens the canvas draws nothing, so the field falls back to the CSS
+     lattice for good instead of showing an empty background. */
+  const [webglFailed, setWebglFailed] = useState(false);
+
+  const handleUnavailable = useCallback(() => {
+    setWebglFailed(true);
+    setCanUseWebgl(false);
+  }, []);
 
   useEffect(() => {
     const applyMotionPreference = (isReduced) => {
@@ -127,9 +136,10 @@ const AppBackground = () => {
       <FieldBlob index={1} />
       <FieldBlob index={2} />
       <FieldBlob index={3} />
-      {canUseWebgl && simQuality ? (
+      {canUseWebgl && simQuality && !webglFailed ? (
         <div className="absolute inset-0">
           <LiquidEther
+            onUnavailable={handleUnavailable}
             className="h-full w-full"
             colors={BOCANADA_SMOKE_COLORS}
             backgroundColor={FIELD_INK}
@@ -149,7 +159,7 @@ const AppBackground = () => {
           />
         </div>
       ) : null}
-      {isReducedMotion || !canUseWebgl ? (
+      {isReducedMotion || !canUseWebgl || webglFailed ? (
         <div className="bocanada-sparks absolute inset-0" />
       ) : null}
       <div className="field-glow" />
