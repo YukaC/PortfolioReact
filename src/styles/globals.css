@@ -296,7 +296,11 @@
     background: linear-gradient(90deg, var(--color-sky), var(--color-paper));
   }
 
-  /* Reduced-motion / no-WebGL stand-in for the shader lattice. */
+  /* Reduced-motion / no-WebGL stand-in for the shader lattice, and the base
+     layer in the served HTML. The shader draws the same dots, so the two never
+     differ in shape: the canvas fades in over this one and only then does this
+     one fade out. Without WebGL, or under reduced motion, nothing takes over and
+     the lattice simply stays. */
   .bocanada-sparks {
     background-image:
       radial-gradient(circle 2px at 50% 50%, rgb(255 226 228 / 0.9), transparent 100%),
@@ -305,6 +309,23 @@
       192px 192px,
       48px 48px;
     opacity: 0.55;
+  }
+
+  .field-sparks {
+    transition: opacity 600ms var(--ease);
+  }
+
+  .is-live .field-sparks {
+    opacity: 0;
+  }
+
+  .field-canvas {
+    opacity: 0;
+    transition: opacity 600ms var(--ease);
+  }
+
+  .is-live .field-canvas {
+    opacity: 1;
   }
 
   /* --- layout ------------------------------------------------------------- */
@@ -792,6 +813,23 @@
     color: #fff;
   }
 
+  /* WCAG 2.5.8 (AA) asks for 24×24 hit areas. The codes are 10px type, so the
+     links measured 27×21: the visible pill stays small, the target grows inside
+     it, and on a coarse pointer (the drawer) it reaches 44px for a thumb. */
+  .lang-link {
+    display: grid;
+    place-items: center;
+    min-width: 1.5rem;
+    min-height: 1.5rem;
+  }
+
+  @media (pointer: coarse) {
+    .lang-link {
+      min-width: 2.75rem;
+      min-height: 2.75rem;
+    }
+  }
+
   .nav-ind {
     position: absolute;
     left: 0;
@@ -883,8 +921,12 @@
        keeps the box on screen where the line has to wrap anyway. */
     /* The subtraction is the page gutter plus a hair: the heading may reach into
        the gutter, never past the viewport edge, so an explicit width cannot
-       introduce a horizontal scrollbar. */
-    width: min(30ch, calc(100vw - clamp(2.75rem, 6vw, 8rem) - 0.75rem));
+       introduce a horizontal scrollbar. The room it may borrow is measured from
+       its own left edge — half of what the shell leaves on both sides — because
+       `100vw` on its own assumed the box started at x=0 and pushed the headline
+       196px past the viewport once the capped shell sat centred on a 1920px
+       screen. */
+    width: min(30ch, calc(100% + (100vw - 100%) / 2 - 0.75rem));
     max-width: none;
   }
 
@@ -1599,6 +1641,11 @@
   }
 
   .footer-links a {
+    /* 22px tall as plain inline text, under the 24px AA target minimum; the
+       underline stays on the text baseline and the box only gets taller. */
+    display: inline-flex;
+    align-items: center;
+    min-height: 1.5rem;
     padding-bottom: 3px;
     background-image: linear-gradient(currentColor, currentColor);
     background-position: 0 100%;
@@ -1922,6 +1969,38 @@
    one line without breaking the role into a three-line column. Socials drop to
    their own line, aligned under the name. */
 @media (max-width: 560px) {
+  /* Below 560px the row kept three columns, so the copy column measured ~160px
+     (25ch) on a 320px screen and every project read as a stack of two-word
+     lines. The number steps above the title and the body spans the full row;
+     the thumb stays on top. */
+  .work-row {
+    grid-template-columns: minmax(0, 1fr) 2.5rem;
+    grid-template-areas:
+      "thumb thumb"
+      "num go"
+      "body body";
+    row-gap: 0.625rem;
+    column-gap: 0.75rem;
+    align-items: center;
+  }
+
+  .work-thumb {
+    grid-area: thumb;
+    order: 0;
+  }
+
+  .work-num {
+    grid-area: num;
+  }
+
+  .work-go {
+    grid-area: go;
+  }
+
+  .work-body {
+    grid-area: body;
+  }
+
   .about-portrait {
     flex-wrap: wrap;
     row-gap: 1rem;
@@ -2027,7 +2106,9 @@
   .nav-ind,
   .work-tab-ind,
   .work-body > *,
-  .footer-mark-ch {
+  .footer-mark-ch,
+  .field-sparks,
+  .field-canvas {
     transition: none;
   }
 

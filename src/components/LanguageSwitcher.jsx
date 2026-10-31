@@ -32,7 +32,7 @@ const LanguageSwitcher = ({ className = "" }) => {
             aria-label={LOCALE_LABELS[code]}
             aria-current={isCurrent ? "true" : undefined}
             title={LOCALE_LABELS[code]}
-            className={`focus-ring rounded-full px-1.5 py-0.5 transition-colors ${
+            className={`lang-link focus-ring rounded-full px-1.5 transition-colors ${
               isCurrent
                 ? "bg-white/10 text-white"
                 : "text-white/55 hover:text-white/90"
