@@ -1,0 +1,147 @@
+# responsive-system-pass — pulir responsive y consistencia de render
+
+Feature branch: `feat/prod-polish` (continúa el trabajo del portfolio listo para prod; sin push).
+Alcance: sistema responsive completo (320–1920), consistencia de primer render del fondo, y
+verificación medible. No re-tematiza: extiende el diseño del deploy (`https://ciucani.vercel.app/`).
+
+## Specs
+
+**S1 — Responsive pulido, no mayormente roto.** Texto del usuario, verbatim:
+> pasa que, aunque este modelo sea un poco mas pesado, es mas responsivness. aunque le falta bastante. dicho eso. quiero que trabajes y pulas toda la web y el sistema responsivness.
+
+El field WebGL se queda en todos los dispositivos (decidido en L23: el costo de bytes y TBT se acepta
+a cambio de que el fondo responda). Criterio de aceptación medible, en 320/360/390/414/480/600/768/834/
+1024/1280/1440/1920: `scrollWidth == clientWidth` (cero scroll horizontal), ningún bloque de texto
+escapa el ancho de su contenedor, ningún objetivo interactivo mide menos de 24×24 px (WCAG 2.5.8 AA) y
+44×44 en puntero grueso, y ninguna decoración tapa copy de lectura.
+
+**S2 — El primer render no cambia de forma.** Texto del usuario, verbatim:
+> además, creo que estas haciendo lazy loading con la web, causando sobrecarga con los shaders, los textos, las sombras, etc. creo que lo mejor seria que el skeleton, o minimqmente los textos se rendericen de antemano para evitar inconsistencias visuales.
+
+Todo texto visible tiene que estar en el HTML servido (visible sin JS), y el fondo no puede cambiar de
+forma después del primer paint: la retícula coral que se pinta en HTML se mantiene como capa base y el
+canvas entra con un cross-fade cuando presenta su primer cuadro. Ningún texto ni sombra puede aparecer
+"después" por hidratación.
+
+**S3 — Render en servidor con React.** Texto del usuario, verbatim:
+> ademas esta web tiene que ser server side rendering, para eso utilizamos react...
+
+El HTML servido lo renderiza React en el servidor y contiene la copia de la página; se documenta el
+mecanismo real (SSG con `getStaticProps` en `src/pages/*`) y se prueba con evidencia (HTML sin JS +
+captura con `javaScriptEnabled: false`). Lo único que puede llegar por chunk diferido es el shader.
+
+**S4 — Gates en verde, deuda declarada.** `pnpm lint`, `pnpm test`, `pnpm build`, `pnpm e2e:a11y`,
+`pnpm e2e:motion`, `pnpm e2e:runtime`, `pnpm check:motion`, `pnpm validate:bebop`; y
+`pnpm measure:vitals` medido y reportado (con el shader en teléfono el presupuesto de JS/TBT queda como
+deuda conocida de L23, no como verde).
+
+**S5 — Extender, no re-tematizar.** Paleta, tipografías, componentes y orden de secciones quedan.
+Solo se toca lo que las reglas de S1/S2/S3 exijan, y cada cambio se justifica con la medición que lo
+provocó.
+
+**S6 — Artefactos en inglés.** Código, comentarios y commits en inglés; copy de UI sin cambios salvo
+que un defecto responsive lo exija.
+
+## Tasks
+
+| ID | Specs | Ruta | Commit |
+|---|---|---|---|
+| T1 | S1 | inline — `.hero-title` ya no escapa el shell (196 px a 1920) | DONE · mismo commit |
+| T2 | S1 | inline — `.lang-link` y `.footer-links a` con objetivo ≥24 px | DONE · mismo commit |
+| T3 | S2 | worker `gentle-ai-worker` — retícula base en HTML + cross-fade del canvas | DONE · mismo commit |
+| T4 | S1 | inline — filas de trabajo a ancho completo bajo 560 px | DONE · mismo commit |
+| T5 | S1, S3 | inline — evidencia: barrido, sin JS, cross-fade | DONE · mismo commit |
+| T6 | S4 | inline — gates y vitals | DONE · mismo commit |
+
+## Evidencia inicial (2026-10-31, build `Rf48BOhCZ9rsKWQIom6iZ` en `:3001`)
+
+Barrido Playwright (`.resp-sweep.mjs`, 12 anchos, 2.2 s de settle):
+
+| ancho | scrollW−vw | defecto |
+|---:|---:|---|
+| 320–834 | 0 px | sin scroll horizontal; `pageH` 6 616–7 928 px |
+| 1024–1440 | 0 px | h1 escapa su contenedor (1342 px dentro de 1255) pero no el viewport |
+| 1920 | **+196 px** | `section.hero > .site-shell` se desborda: el `h1` mide 1793 px dentro de un shell de 1280 px centrado |
+
+- `.hero-title` usa `width: min(30ch, calc(100vw - gutter))`: el término `100vw` asume que la caja
+  arranca en x=0, pero arranca en el borde del shell centrado (x≈317 a 1920), así que
+  `317 + 1793 = 2110 = scrollWidth`. A 1440 el mismo error da 87 px y queda oculto por el viewport.
+- `LanguageSwitcher`: cada opción mide **27×21 px** (`text-[0.625rem] px-1.5 py-0.5`) → bajo el mínimo
+  AA de 24×24.
+- El swap de fondo (`LiquidEther` reemplaza a `.bocanada-sparks`) es el cambio de forma que el usuario
+  percibe como "lazy loading": la retícula CSS (48 px, dots planos) se sustituye por la del shader
+  (~400 ms después, con flare), dos geometrías distintas sin transición.
+- SSG confirmado: `curl :3001/` (75 231 B) ya trae hero, lead, email y footer; `canvas` no aparece
+  (WebGL necesita JS) e `is-pending` tampoco (nada oculto en el HTML).
+
+## Results (2026-10-31, build `tm2G3m5O8gj3a9aOoYcc5` en `:3001`)
+
+**T1 — el titular ya no escapa el contenedor.** `width: min(30ch, calc(100% + (100vw - 100%) / 2 - 0.75rem))`:
+el espacio que puede tomar se mide desde su propio borde izquierdo (la mitad de lo que el shell deja a
+cada lado) en vez de asumir x=0. Medido con un `style` inyectado, tres candidatos:
+
+| ancho | antes (right / líneas) | `100% + half-gutter` | **elegido** (`100% + (100vw − 100%)/2`) |
+|---|---|---|---|
+| 390 | 356 / 3 | 380 / 3 | 375 / 3 |
+| 768 | 759 / 2 | 649 / **3** | 753 / 2 |
+| 1440 | 1431 / 2 | 1226 / **3** | 1425 / 2 |
+| 1920 | **2110 / 2** (desborda 190) | 1479 / 3 | **1905 / 2** |
+
+El corte dictado del titular se mantiene (2 líneas a 768/1440/1920) y el 1920 deja de desbordar.
+
+**T2 — objetivos táctiles.** `.lang-link` (24 px, 44 px en `pointer: coarse`) y `.footer-links a`
+(22 px → 24 px con `inline-flex`): el barrido pasa de `smallTap:10` (con falsos positivos de `.sr-only`)
+a **0 objetivos bajo 24×24** en los 12 anchos.
+
+**T3 — el fondo no cambia de forma después del primer paint.** La retícula coral se sirve en el HTML
+sin gate de estado y el canvas entra encima con un cross-fade de 600 ms disparado por `onFirstFrame`
+(callback nuevo en `LiquidEther`, invocado después del `render()` del primer frame presentado, con
+guarda por montaje y anulada en `dispose()`). Muestreo de opacidades en `:3001`:
+
+| t | `.field-sparks` | `.field-canvas` | `is-live` |
+|---:|---:|---:|---|
+| 125 ms | 0.550 | — (sin canvas) | no |
+| 403 ms | 0.129 | 0.766 | sí |
+| 1 203 ms | 0 | 1 | sí |
+| 3 011 ms | 0 | 1 | sí |
+
+**T4 — filas de trabajo a 320 px.** Bajo 560 px la fila tenía tres columnas y la copia quedaba en
+~160 px (25 ch). Ahora el thumb va arriba, número y flecha en una línea, y el cuerpo ocupa el ancho
+completo: la descripción pasa de 4 líneas de dos palabras a 2–3 líneas legibles y los tags entran en una.
+
+**T5 — evidencia de render en servidor (S3) y de primer render (S2).** Con `javaScriptEnabled: false`
+contra el build de producción: `h1` = "I build your software,end to end" **visible**, `.lead` visible,
+1 `mailto:`, `.bocanada-sparks` presente con opacidad 0.55 y **0 canvas**. El HTML servido (75 kB) ya
+trae hero, lead, email y footer: la copia la renderiza React en el servidor; lo único diferido es el
+chunk del shader.
+
+**Barrido final, 12 anchos (320→1920):** `scrollWidth == clientWidth` en todos, `elsOver` 0 sin falsos
+positivos, `smallTap` 0, `clipped` 0, `canvas` 1 por viewport, cero errores de consola. La única
+superposición decorativa medida (cluster `.orn` contra glifos reales) da **0 px² a 1440** y 629 px² a
+1024 (una esquina de 22×22), que no toca copy.
+
+**Gates** (contra el build de producción `:3001`, con `browser-verify` apuntado por un root temporal):
+lint 0 · test **31/31** · check:motion 0 · validate:bebop 0 · e2e:runtime **7 OK** · e2e:a11y **16 OK** ·
+e2e:motion **13 OK**.
+
+**Vitals (deuda declarada, no regresión de este pase):** teléfono 390×844, CPU 4x, 4G →
+`/` LCP 336 ms · CLS 0.000 · TBT 392 ms · JS 399 kB; `/es` 324/0.000/415/399; `/pt` 324/0.000/385/399.
+Sigue fallando `TBT ≤ 300 ms` y `JS ≤ 260 kB` por la decisión de L23 (shader en teléfono), igual que
+el deploy (410 kB / TBT 419–444 ms). No empeoró con este pase.
+
+## Log
+**L1 — pedido del usuario, verbatim (2026-10-31).**
+> pasa que, aunque este modelo sea un poco mas pesado, es mas responsivness. aunque le falta bastante. dicho eso. quiero que trabajes y pulas toda la web y el sistema responsivness. además, creo que estas haciendo lazy loading con la web, causando sobrecarga con los shaders, los textos, las sombras, etc. creo que lo mejor seria que el skeleton, o minimqmente los textos se rendericen de antemano para evitar inconsistencias visuales. ademas esta web tiene que ser server side rendering, para eso utilizamos react...
+
+Decisión de lectura: el modelo "más pesado" (field WebGL en teléfono, L23) queda; lo que se corrige es el
+sistema responsive y la consistencia del primer render. "SSR" se interpreta como el contrato de S3
+(el HTML lo renderiza React en el servidor, con la copia dentro), no como cambiar SSG por SSR por
+request.
+
+**L2 — cierre del pase, con lo que queda abierto (2026-10-31).**
+Leído el pedido de L1 como S1/S2/S3 y ejecutado T1–T6. Lo que **no** se tocó, a propósito: el field
+WebGL en teléfono (decisión de L23), la copia y la paleta. Lo que queda abierto y es del usuario:
+1. El dev server de `:3000` quedó con SSR viejo y hay que reiniciarlo para que hidrate sin mismatch.
+2. El presupuesto mobile (JS ≤ 260 kB · TBT ≤ 300 ms) sigue en deuda mientras el teléfono monte el
+   shader; es el mismo trato que el deploy.
+3. `.orn` roza los glifos del hero a 1024 px (629 px²). Sin impacto legible medido; no se tocó.

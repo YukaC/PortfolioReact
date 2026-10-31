@@ -54,15 +54,23 @@ export default function LiquidEther({
   autoResumeDelay = 1000,
   autoRampDuration = 0.6,
   backgroundColor = '#FFFFFF',
-  lightMode = false
+  lightMode = false,
+  onFirstFrame = null
 }) {
   const mountRef = useRef(null);
+  const onFirstFrameRef = useRef(onFirstFrame);
   const webglRef = useRef(null);
   const resizeObserverRef = useRef(null);
   const rafRef = useRef(null);
   const intersectionObserverRef = useRef(null);
   const isVisibleRef = useRef(true);
   const resizeRafRef = useRef(null);
+
+  // Held in a ref so a parent that passes a fresh arrow every render neither
+  // remounts the whole field nor leaves the first frame calling a stale one.
+  useEffect(() => {
+    onFirstFrameRef.current = onFirstFrame;
+  }, [onFirstFrame]);
 
   useEffect(() => {
     if (!mountRef.current) return;
@@ -1319,6 +1327,7 @@ export default function LiquidEther({
         Mouse.init(props.$wrapper);
         Mouse.autoIntensity = props.autoIntensity;
         Mouse.takeoverDuration = props.takeoverDuration;
+        this.onFirstFrame = props.onFirstFrame || null;
         this.lastUserInteraction = performance.now();
         this.frameIndex = 0;
         this.idleTimer = null;
@@ -1405,6 +1414,9 @@ export default function LiquidEther({
         if (mustPresent || present) {
           this.needsPresent = false;
           this.render(mustPresent ? true : advance, true);
+          // Present is the moment the shader has drawn: the only point where
+          // another layer may safely hand the field over to this canvas.
+          if (this.onFirstFrame) this.onFirstFrame();
         }
         this.scheduleNext(idleMs);
       }
@@ -1446,6 +1458,9 @@ export default function LiquidEther({
       dispose() {
         try {
           this.pause();
+          // A frame can never be presented after unmount, so the handover can
+          // never fire after unmount either.
+          this.onFirstFrame = null;
           window.removeEventListener('resize', this._resize);
           document.removeEventListener('visibilitychange', this._onVisibility);
           if (this.reallocTimer) {
@@ -1474,8 +1489,18 @@ export default function LiquidEther({
     container.style.position = container.style.position || 'relative';
     container.style.overflow = container.style.overflow || 'hidden';
 
+    // Once per mount: the first frame that is actually presented, guarded so a
+    // resume after an idle pause or a visibility change cannot fire it again.
+    let firstFrameFired = false;
+    const notifyFirstFrame = () => {
+      if (firstFrameFired) return;
+      firstFrameFired = true;
+      onFirstFrameRef.current?.();
+    };
+
     const webgl = new WebGLManager({
       $wrapper: container,
+      onFirstFrame: notifyFirstFrame,
       autoDemo,
       autoSpeed,
       autoIntensity,
