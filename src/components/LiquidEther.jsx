@@ -55,7 +55,11 @@ export default function LiquidEther({
   autoRampDuration = 0.6,
   backgroundColor = '#FFFFFF',
   lightMode = false,
-  onUnavailable = null
+  onUnavailable = null,
+  // A phone's plume trailing the finger reads as a smudge chasing the thumb while
+  // the reader is trying to scroll, so touch input does not drive the dye unless
+  // a design explicitly asks for it. Mouse movement is unaffected.
+  touchSmoke = false
 }) {
   const mountRef = useRef(null);
   const webglRef = useRef(null);
@@ -198,6 +202,7 @@ export default function LiquidEther({
         this.takeoverActive = false;
         this.takeoverStartTime = 0;
         this.takeoverDuration = 0.25;
+        this.touchSmoke = false;
         this.takeoverFrom = new Vector2();
         this.takeoverTo = new Vector2();
         this.onInteract = null;
@@ -316,6 +321,7 @@ export default function LiquidEther({
         this.queuePointer(event.clientX, event.clientY);
       }
       onDocumentTouchStart(event) {
+        if (!this.touchSmoke) return;
         if (event.touches.length !== 1) return;
         const t = event.touches[0];
         if (!this.updateHoverState(t.clientX, t.clientY)) return;
@@ -324,6 +330,7 @@ export default function LiquidEther({
         this.hasUserControl = true;
       }
       onDocumentTouchMove(event) {
+        if (!this.touchSmoke) return;
         if (event.touches.length !== 1) return;
         const t = event.touches[0];
         if (!this.updateHoverState(t.clientX, t.clientY)) return;
@@ -1326,6 +1333,7 @@ export default function LiquidEther({
         Mouse.init(props.$wrapper);
         Mouse.autoIntensity = props.autoIntensity;
         Mouse.takeoverDuration = props.takeoverDuration;
+        Mouse.touchSmoke = props.touchSmoke === true;
         this.lastUserInteraction = performance.now();
         this.frameIndex = 0;
         this.idleTimer = null;
@@ -1502,7 +1510,8 @@ export default function LiquidEther({
         autoIntensity,
         takeoverDuration,
         autoResumeDelay,
-        autoRampDuration
+        autoRampDuration,
+        touchSmoke
       });
     } catch (error) {
       reportUnavailable(error);
@@ -1619,7 +1628,8 @@ export default function LiquidEther({
     autoResumeDelay,
     autoRampDuration,
     backgroundColor,
-    lightMode
+    lightMode,
+    touchSmoke
   ]);
 
   useEffect(() => {
@@ -1648,6 +1658,7 @@ export default function LiquidEther({
       if (webgl.autoDriver.mouse) {
         webgl.autoDriver.mouse.autoIntensity = autoIntensity;
         webgl.autoDriver.mouse.takeoverDuration = takeoverDuration;
+        webgl.autoDriver.mouse.touchSmoke = touchSmoke === true;
       }
     }
     if (resolution !== prevRes) {

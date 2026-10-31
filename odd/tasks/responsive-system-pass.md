@@ -185,3 +185,21 @@ Tres escenarios medidos en `:3001` (390×844 @DPR2), con el recorte de campo con
 
 Antes de este fix, el caso "contexto rechazado" dejaba `sparks 0 · canvas 0`: fondo sin retícula y un
 error de página. Gates tras el cambio: lint 0 · test 31/31 · a11y 16 OK · motion 13 OK · runtime 7 OK.
+
+**L5 — el humo ya no rastrea los dedos en mobile (2026-10-31).** Pedido del dueño al revisar el fondo
+restaurado: *"devolviste el fondo y los shaders originales del live de prod, pero no tuviste en cuenta de
+sacar el humo que rastrea los toques en mobile"*. `LiquidEther` gana `touchSmoke` (default `false`): los
+handlers `touchstart`/`touchmove` del cursor de la simulación vuelven sin tocar `coords`, así que el tinte
+no sigue al dedo. El puntero fino sigue igual.
+
+Prueba A/B con arrastre sintético sobre el mismo recorte de campo (390×844 @DPR2, diferencia de luminancia
+antes/después del gesto):
+
+| gesto | mean | max | px con Δ>12 |
+|---|---:|---:|---:|
+| arrastre táctil (CDP `dispatchTouchEvent`) | **0.03** | 11 | **0** |
+| arrastre de mouse (control: el método sí ve una pluma) | 7.58 | 22 | 79 475 |
+| deploy, arrastre táctil (referencia) | 0.47 | 6 | 0 |
+
+El control con mouse prueba que la medición detecta una pluma cuando existe; el arrastre táctil ya no
+deja ninguna. Gates: lint 0 · test 31/31 · a11y 16 OK · motion 13 OK · build 0.
