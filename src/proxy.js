@@ -28,6 +28,11 @@ import {
  * `/` and the language is never part of the public address. The decision also
  * travels to the server as `x-pf-locale` / `x-pf-html-lang`.
  *
+ * Only `/` is language-negotiated, and only `/` answers with a cookie. `/es`
+ * and `/pt` are prerendered documents whose language is in the path: they vary
+ * on `Accept-Language` (the region the document may borrow) and on nothing
+ * else, so a shared cache can serve them to everybody (audit.md §24 S3).
+ *
  * Since the App Router migration (audit.md §16), `<html lang>` is the *route's*
  * language and no longer a header read: the root layouts are `(en)` and
  * `(intl)/[lang]`, so `/es` is a prerendered document that says `es` in its
@@ -106,11 +111,23 @@ export function proxy(request) {
     ? NextResponse.rewrite(url, { request: { headers } })
     : NextResponse.next({ request: { headers } });
 
-  // Persist the detected or selected tag (`es-AR`) so the next visit skips
-  // detection and the client can refine `<html lang>` to the region.
-  response.headers.append("Set-Cookie", serializeLocaleCookie(htmlLang));
-  // The answer depends on these two inputs; keep caches honest.
-  response.headers.append("Vary", "Accept-Language, Cookie");
+  // Persist the detected or selected tag (`es-AR`) so the next visit to `/`
+  // skips detection and the client can refine `<html lang>` to the region.
+  //
+  // Only `/` sets it. `/es` and `/pt` are prerendered documents whose language
+  // is in the path, so a cookie is not part of their representation: answering
+  // them with `Set-Cookie` made one URL produce a visitor-specific response
+  // (audit.md §24 S3 — one URL per language, deterministic). The cookie is
+  // written where it is read, and it is read on `/`.
+  if (pathname === "/") {
+    response.headers.append("Set-Cookie", serializeLocaleCookie(htmlLang));
+  }
+  // `/` varies by the request's language and by nothing else. `Cookie` used to
+  // be listed here, which fragments every shared cache for a header only `/`
+  // reads, and which §24 S3 rejects outright: `Vary` has to describe the
+  // representation, and the two path-addressed documents do not depend on a
+  // cookie at all.
+  response.headers.append("Vary", "Accept-Language");
   response.headers.set("Content-Language", locale);
 
   return response;

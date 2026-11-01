@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -60,7 +60,8 @@ import {
  *   2. the sitemap (S1): three homes + one entry per project per language,
  *      `lastmod` from the snapshot, reciprocal alternates including x-default;
  *   3. the Q&A (S6): four questions from the repository's own data, and the
- *      visible array and the `FAQPage` node holding the *same strings*;
+ *      page's visible Q&A required to appear verbatim in the prerendered HTML
+ *      (plus the `FAQPage` node carrying those same strings);
  *   4. the graph (S4): parses, every property and type is a real schema.org
  *      one, and every URL comes from the snapshot or the config;
  *   5. the `<head>` (S2, S3): the language's canonical, the reciprocal
@@ -131,6 +132,21 @@ test("every project has one URL, and it is the repository name", () => {
     assert.equal(projectPath("en", project), `/work/${slug}`);
     assert.equal(projectPath("es", project), `/es/work/${slug}`);
     assert.equal(projectPath("pt", project), `/pt/work/${slug}`);
+  }
+});
+
+test("a regional tag resolves to its language's URL, never to `/es-AR/…`", () => {
+  const project = projects[0];
+  const slug = projectSlug(project);
+
+  for (const [locale, expected] of [
+    ["es-AR", `/es/work/${slug}`],
+    ["pt-BR", `/pt/work/${slug}`],
+    ["en-US", `/work/${slug}`],
+    ["en", `/work/${slug}`],
+    ["", `/work/${slug}`],
+  ]) {
+    assert.equal(projectPath(locale, project), expected, `${JSON.stringify(locale)}`);
   }
 });
 
@@ -283,6 +299,82 @@ test("the visible Q&A and the FAQPage graph are the same strings", () => {
   }
 });
 
+/**
+ * §24 S6, as a statement about the *document*.
+ *
+ * Comparing `faqEntries()` with a graph built from the same call proves one
+ * thing: the function is deterministic. It cannot see the page. So this reads
+ * the HTML `next build` actually emitted (`src/app/**` →
+ * `.next/server/app/**`) and requires every `Question.name` and every
+ * `Answer.text` to appear verbatim in the page's visible text — the 1:1 the
+ * audit asks for, checked against the artefact a crawler receives.
+ *
+ * The suite does not build (that is the `build` job's cost, and a unit run must
+ * stay a unit run), so a checkout without build output skips with the command
+ * that produces it instead of passing on nothing.
+ */
+const APP_OUTPUT = path.join(ROOT, ".next", "server", "app");
+
+/** The prerendered project page for one language, or null without a build. */
+function prerenderedProjectPage(locale) {
+  const slug = projectSlug(projects[0]);
+  const file =
+    locale === DEFAULT_LOCALE
+      ? path.join(APP_OUTPUT, "work", `${slug}.html`)
+      : path.join(APP_OUTPUT, locale, "work", `${slug}.html`);
+
+  return existsSync(file) ? readFileSync(file, "utf8") : null;
+}
+
+/** The text a reader sees: no scripts, no styles, no tags, entities decoded. */
+function visibleText(html) {
+  return html
+    .replace(/<script[\s\S]*?<\/script>/gi, " ")
+    .replace(/<style[\s\S]*?<\/style>/gi, " ")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&#x([0-9a-f]+);/gi, (_, hex) => String.fromCodePoint(parseInt(hex, 16)))
+    .replace(/&#(\d+);/g, (_, dec) => String.fromCodePoint(Number(dec)))
+    .replace(/&quot;/g, '"')
+    .replace(/&apos;/g, "'")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+const prerendered = new Map(
+  SUPPORTED_LOCALES.map((locale) => [locale, prerenderedProjectPage(locale)]),
+);
+const missingPages = SUPPORTED_LOCALES.filter((locale) => !prerendered.get(locale));
+
+test(
+  "every Question.name and Answer.text is in the prerendered page",
+  {
+    skip:
+      missingPages.length > 0
+        ? `no prerendered project page for ${missingPages.join(", ")} under .next/server/app — run \`pnpm build\``
+        : false,
+  },
+  () => {
+    for (const locale of SUPPORTED_LOCALES) {
+      const text = visibleText(prerendered.get(locale));
+
+      for (const { question, answer } of faqEntries(locale)) {
+        assert.ok(
+          text.includes(question),
+          `${locale}: the page never shows the question ${JSON.stringify(question)}`,
+        );
+        assert.ok(
+          text.includes(answer),
+          `${locale}: the page never shows the answer ${JSON.stringify(answer)}`,
+        );
+      }
+    }
+  },
+);
+
 test("the page labels exist in every language, with no key left English", () => {
   const keys = Object.keys(PROJECT_PAGE_COPY.en).sort();
   const faqKeys = Object.keys(FAQ_COPY.en).sort();
@@ -405,6 +497,7 @@ test("every URL in the graph comes from the snapshot or the config", () => {
     SITE_URL,
     ...SOCIAL_LINKS.map((link) => link.href),
     ...projects.map((project) => project.repoLink),
+    ...projects.map((project) => project.siteUrl).filter(Boolean),
     `mailto:${CONTACT_EMAIL}`,
   ]);
 
@@ -472,8 +565,10 @@ test("each project node carries the stack, the repository and a category", () =>
 test("applicationCategory is derived from the groups the work list already uses", () => {
   const categories = projects.map((project) => applicationCategoryFor(project));
   assert.ok(categories.every((category) => /Application$/.test(category)));
-  // A systems project is not filed as a business app, and a PWA is.
-  const btrfs = projects.find((project) => project.name === "btrfs2ext4");
+  // A systems project is not filed as a business app, and a PWA is. The fixture
+  // is literal on purpose: the rule must hold for a shape the snapshot may not
+  // carry on the day it runs (the pinned set changes; the grouping does not).
+  const btrfs = { name: "btrfs2ext4", tags: ["C", "Linux", "btrfs", "ext4"] };
   assert.equal(applicationCategoryFor(btrfs), "DeveloperApplication");
   assert.equal(
     applicationCategoryFor({ name: "nothing-matches", tags: [] }),

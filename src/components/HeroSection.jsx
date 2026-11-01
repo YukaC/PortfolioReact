@@ -27,8 +27,13 @@ const HeroSection = ({ locale = "en" }) => {
     >
       <div className="site-shell">
         <div className="hero-copy">
+          {/* `status` is not decoration: it is the class the stylesheet's dot
+              and its pulse hang off (`.status i` + `.status i::before`, and the
+              reduced-motion reset that silences both). The layout and the type
+              stay inline utilities; without the class the `<i>` is an empty box
+              and the live indicator disappears. */}
           <span
-            className="inline-flex items-center gap-2.5 text-[0.8125rem] text-mut"
+            className="status inline-flex items-center gap-2.5 text-[0.8125rem] text-mut"
             data-r="paint"
           >
             <i aria-hidden="true" />

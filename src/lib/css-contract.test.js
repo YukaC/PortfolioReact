@@ -243,6 +243,39 @@ test("reduced motion resets the same states the scripted reveal hides", () => {
   assert.match(block, /animation:\s*none/, "reduced motion leaves animations running");
 });
 
+test("the reveal is cheap: no blur, a short beat, a tight stagger", () => {
+  // The owner's report was that the reveal still felt poor. The entrance was
+  // `opacity + translateY(28px) + blur(6px)` over 1.1 s with a 70 ms per-word
+  // stagger; a blur per revealed node is the most expensive thing one entrance
+  // asks of a phone GPU, and the beat was long enough to feel like work. These
+  // numbers are the contract (docs/css-map.md §reveal).
+  const hidden = rulesFor('html.js [data-r]:not(.is-in):not([data-r="paint"])');
+  assert.ok(hidden.length > 0, "the scripted hidden state is missing");
+  hidden.forEach((rule) => {
+    assert.equal(/filter\s*:/.test(rule.body), false, "the hidden reveal still carries a filter");
+    assert.equal(/blur\(/.test(rule.body), false, "the hidden reveal still blurs");
+    assert.equal(
+      /will-change\s*:/.test(rule.body),
+      false,
+      "the hidden reveal keeps a permanent layer hint",
+    );
+  });
+
+  const transition = rulesFor('html.js [data-r]:not([data-r="paint"])');
+  assert.ok(transition.length > 0, "the reveal transition is missing");
+  transition.forEach((rule) => {
+    assert.equal(/blur\(/.test(rule.body), false, "the reveal still transitions a blur");
+    assert.equal(/will-change\s*:/.test(rule.body), false, "the reveal still carries a layer hint");
+  });
+
+  const reveal = /--duration-reveal:\s*([\d.]+)s/.exec(css);
+  assert.ok(reveal, "--duration-reveal is not declared");
+  assert.ok(parseFloat(reveal[1]) <= 0.6, `the reveal takes ${reveal[1]}s; 0.6 s is the ceiling`);
+  const stagger = /--stagger-word:\s*([\d.]+)ms/.exec(css);
+  assert.ok(stagger, "--stagger-word is not declared");
+  assert.ok(parseFloat(stagger[1]) <= 50, `the word stagger is ${stagger[1]}ms; 50 ms is the ceiling`);
+});
+
 /* ===========================================================================
    §13.3 S3–S7 (spec S14) — the invariants the Tailwind migration created.
    Text-only like the rest of the suite: no build, no browser, so a regression
@@ -535,7 +568,7 @@ test("radius and blur literals live in the token block (S2b)", () => {
   ["--radius-pill", "--radius-card", "--radius-spot", "--radius-thumb", "--radius-sm"].forEach(
     (token) => assert.ok(themeDeclarations.has(token), `${token} is not declared`),
   );
-  ["--blur-field", "--blur-glass", "--blur-panel", "--blur-soft", "--blur-reveal"].forEach(
+  ["--blur-field", "--blur-glass", "--blur-panel", "--blur-soft"].forEach(
     (token) => assert.ok(themeDeclarations.has(token), `${token} is not declared`),
   );
 });

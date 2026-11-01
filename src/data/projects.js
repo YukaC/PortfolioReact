@@ -1,10 +1,11 @@
 /**
- * GitHub profile used for pinned repos (source of truth for the grid).
- * Optional overrides polish title / copy / screenshot / tags per repo slug.
+ * GitHub profile used for pinned repos. The cards themselves are NOT read from
+ * GitHub here: `src/data/pinned-projects.json` is the served snapshot (§17).
+ * `PROJECT_OVERRIDES` below is the copy and the screenshot for a pinned slug.
  */
 export const GITHUB_USERNAME = "YukaC";
 
-/** GitHub profile pins cap at six; ISR refreshes the list hourly. */
+/** GitHub profile pins cap at six; the CI job refreshes the snapshot every 6 h. */
 export const MAX_PINNED_PROJECTS = 6;
 
 /**
@@ -296,102 +297,13 @@ export const PROJECT_OVERRIDES = {
   },
 };
 
-/**
- * Used when the public profile scrape fails.
- * Keep in sync with current profile pins when possible.
- */
-export const PINNED_FALLBACK = [
-  {
-    name: "PortfolioReact",
-    title: "Professional Portfolio",
-    description:
-      "This site: server-rendered Next.js, a hand-built Tailwind system, and a WebGL field the GPU draws.",
-    problem: "It had to read as working practice, not as a template.",
-    outcome:
-      "Next.js with ISR, design tokens as the single source of truth, and a shader-driven background.",
-    imgSrc: "/portfolio.webp",
-    alt: "Portfolio Screenshot",
-    tags: ["React", "Next.js", "Tailwind CSS"],
-    repoLink: "https://github.com/YukaC/PortfolioReact",
-    isFeatured: false,
-  },
-  {
-    name: "MuniDgoSaaS",
-    title: "Turnos App",
-    description:
-      "Multi-tenant appointment booking with live validation, an admin dashboard, and ECharts reporting.",
-    problem: "One municipality, several areas, no shared place to take appointments.",
-    outcome: "Flask and React on MySQL: live validation, a dashboard, and ECharts.",
-    imgSrc: "/munidgo.webp",
-    alt: "Turnos App Screenshot",
-    tags: ["JavaScript", "Python", "Flask", "MySQL"],
-    repoLink: "https://github.com/YukaC/MuniDgoSaaS",
-    isFeatured: true,
-  },
-  {
-    name: "btrfs2ext4",
-    title: "btrfs2ext4",
-    description:
-      "In-place Btrfs to Ext4 converter for block devices and images: crash-recovery journal, rollback, memory-aware scaling.",
-    problem: "Move a live filesystem from Btrfs to Ext4 without copying it again.",
-    outcome: "In-place conversion with a recovery journal and rollback.",
-    imgSrc: "/btrfs2ext4.webp",
-    alt: "btrfs2ext4 dry-run terminal screenshot",
-    tags: ["C", "Linux", "btrfs", "ext4"],
-    repoLink: "https://github.com/YukaC/btrfs2ext4",
-    isFeatured: false,
-  },
-  {
-    name: "cowboy-bebop-grub-theme",
-    title: "Cowboy Bebop GRUB Theme",
-    description: "Cowboy Bebop GRUB theme: series type and stills on the boot menu.",
-    problem: "A boot menu that matched a Cowboy Bebop lockscreen.",
-    outcome: "A GRUB theme built from the series type and stills.",
-    imgSrc: "/cowboy-bebop-grub-theme.webp",
-    alt: "Cowboy Bebop GRUB theme boot menu screenshot",
-    tags: ["Shell", "GRUB", "Linux"],
-    repoLink: "https://github.com/YukaC/cowboy-bebop-grub-theme",
-    isFeatured: false,
-  },
-  {
-    name: "AppDespensa",
-    title: "App Despensa",
-    description:
-      "Local-first PWA point of sale for a pantry store: sales, cash drawer, products, and stock intake on React, Node, and PostgreSQL.",
-    problem: "A pantry store needed sales, cash, and stock without a SaaS bill.",
-    outcome: "A local-first PWA POS on React, Node, and PostgreSQL.",
-    imgSrc: "/appdespensa.webp",
-    alt: "App Despensa admin dashboard screenshot",
-    tags: ["React", "Node", "PostgreSQL", "PWA"],
-    repoLink: "https://github.com/YukaC/AppDespensa",
-    isFeatured: false,
-  },
-  {
-    name: "cleanupDiskW11",
-    title: "cleanupDiskW11",
-    description: "Windows 11 disk cleanup helper with a small GUI.",
-    problem: "Windows upgrades leaving disk clutter behind.",
-    outcome: "A Python helper with a minimal GUI for the cleanup tasks.",
-    imgSrc: "/cleanupDiskW11.webp",
-    alt: "cleanupDiskW11 Windows 11 cleaner GUI screenshot",
-    tags: ["Python", "Windows"],
-    repoLink: "https://github.com/YukaC/cleanupDiskW11",
-    isFeatured: false,
-  },
-  {
-    name: "AhorrAR",
-    title: "AhorrAR",
-    description:
-      "Live price comparison across Argentine stores: ranked real offers with confirmed shipping (Scrapling, Express, React).",
-    problem: "Grocery prices scattered across store sites.",
-    outcome: "A live ranking with confirmed shipping.",
-    imgSrc: "/ahorrar.webp",
-    alt: "AhorrAR price comparison landing page screenshot",
-    tags: ["React", "TypeScript", "Express"],
-    repoLink: "https://github.com/YukaC/AhorrAR",
-    isFeatured: false,
-  },
-];
+/* The cards the site serves are NOT here: `src/data/pinned-projects.json` is
+   the one source (validated by `src/lib/validate-projects.js`, refreshed by
+   `scripts/sync-projects.mjs`). A second, unvalidated copy used to live in
+   this file as `PINNED_FALLBACK`, and because `WorkList` defaulted to it, a
+   call site that forgot the prop rendered seven stale rows instead of the six
+   the snapshot serves. It is gone: the render path has one input, and
+   `WorkList` throws when it is missing. */
 
 /** Work filters: a project joins a group when its tags or repo name match. */
 export const WORK_FILTERS = [

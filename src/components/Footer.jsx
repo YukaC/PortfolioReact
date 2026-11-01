@@ -26,6 +26,21 @@ const WORDMARK = "CIUCANI";
 const clamp01 = (value) => Math.min(1, Math.max(0, value));
 
 /**
+ * The copyright year, as a constant instead of `new Date().getFullYear()`.
+ *
+ * This page is prerendered and revalidated every 6 h, and the footer is a
+ * Client Component: the server computed the year at build time and the browser
+ * recomputed it at hydration, so on 1 January the two disagreed for up to six
+ * hours — a hydration mismatch and a visible "© 2025" under a page built in
+ * 2026. A constant is the same string in the HTML and in the client bundle.
+ *
+ * It is the year the served snapshot belongs to (`generatedAt` in
+ * `src/data/pinned-projects.json`): bump it with the first refresh of a new
+ * year, in the same commit that moves the snapshot.
+ */
+const COPYRIGHT_YEAR = 2026;
+
+/**
  * "Is a script actually running?" — the honest answer for a control only a
  * script can back. The server cannot know, so it answers `false` and the client
  * flips to `true` after hydration; `useSyncExternalStore` is React's own way to
@@ -45,7 +60,6 @@ const onServer = () => false;
  */
 const Footer = () => {
   const { t } = useT();
-  const currentYear = new Date().getFullYear();
   const footerRef = useRef(null);
   const markRef = useRef(null);
   // The wordmark's serif is a 45 KB italic; it is only worth a request when the
@@ -283,7 +297,7 @@ const Footer = () => {
           </nav>
 
           <p className="text-right text-sm text-dim max-wide:text-left">
-            {t("footer.copyright", { year: currentYear })}
+            {t("footer.copyright", { year: COPYRIGHT_YEAR })}
           </p>
         </div>
       </div>

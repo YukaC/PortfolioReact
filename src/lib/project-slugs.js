@@ -12,7 +12,13 @@
  * Nothing here reads a file or a locale: the same slug answers for `/work/…`,
  * `/es/work/…` and `/pt/work/…`, so the three URLs of a project can never
  * drift apart. Pure by design, so `src/lib/seo.test.js` can pin the derivation.
+ *
+ * The locale goes through `localeKey()` — the same normaliser `seo.js` uses —
+ * because the locale reaching this module is not always a bare key: the cookie
+ * and `Accept-Language` carry regions (`es-AR`), and `locale !== "en"` built
+ * `/es-AR/work/…`, a URL no route answers.
  */
+import { localeKey } from "./seo.js";
 
 /** A slug has to survive a URL path unchanged: no empty segment, no `.`/`..`. */
 export const SLUG_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._-]*$/;
@@ -95,6 +101,7 @@ export function findProjectBySlug(projects, slug) {
  * @returns {string}
  */
 export function projectPath(locale, project) {
-  const prefix = locale && locale !== "en" ? `/${locale}` : "";
+  const key = localeKey(locale);
+  const prefix = key === "en" ? "" : `/${key}`;
   return `${prefix}/work/${projectSlug(project)}`;
 }

@@ -13,7 +13,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { MAX_PINNED_PROJECTS, PROJECT_OVERRIDES } from "../data/projects.js";
-import { validate } from "./validate-projects.js";
+import { MAX_TAG_LENGTH, validate } from "./validate-projects.js";
 import { commitProjectsSnapshot, readProjectsSnapshot } from "./projects-snapshot.js";
 
 /**
@@ -103,6 +103,82 @@ expectRejected(
   [item({ siteUrl: "https://evil.example/portfolio" })],
   "url-host",
 );
+
+expectRejected(
+  "a host that only ends in the allowlisted suffix is rejected",
+  [item({ siteUrl: "https://vercel.app.evil.tld/portfolio" })],
+  "url-host",
+);
+
+expectRejected(
+  "the bare vercel.app apex is rejected, like the bare github.io apex",
+  [item({ siteUrl: "https://vercel.app/portfolio" })],
+  "url-host",
+);
+
+// A real deployment is `<project>.vercel.app`, which the exact list refused
+// while it accepted the apex nobody deploys on: the sync then dropped every
+// demo link in silence and the cards served `siteUrl: null`.
+test("a real vercel.app deployment is accepted as a demo link", () => {
+  const result = validate([item({ siteUrl: "https://portfolio-yuka.vercel.app/" })]);
+
+  assert.equal(result.ok, true, JSON.stringify(result.errors));
+  assert.equal(result.items[0].siteUrl, "https://portfolio-yuka.vercel.app/");
+});
+
+// PRESERVE: the `*.github.io` shape that already worked, unchanged.
+test("a github.io project page is still accepted, and the bare apex still is not", () => {
+  const accepted = validate([item({ siteUrl: "https://yuka.github.io/portfolio/" })]);
+  assert.equal(accepted.ok, true, JSON.stringify(accepted.errors));
+  assert.equal(accepted.items[0].siteUrl, "https://yuka.github.io/portfolio/");
+
+  const refused = validate([item({ siteUrl: "https://github.io/portfolio/" })]);
+  assert.equal(refused.ok, false);
+  assert.ok(refused.errors.some((error) => error.code === "url-host"));
+});
+
+// ——— the stored URL is the parsed one, not the trimmed input ———————————————
+
+test("a tab inside a URL cannot survive into the snapshot", () => {
+  const result = validate([
+    item({ repoLink: "https://github.com/YukaC/Port\tfolio" }),
+  ]);
+
+  assert.equal(result.ok, true, JSON.stringify(result.errors));
+  // `trim()` keeps an interior tab; the WHATWG parser drops it, so the parsed
+  // `href` is the only form that cannot smuggle whitespace into the markup.
+  assert.equal(result.items[0].repoLink, "https://github.com/YukaC/Portfolio");
+  assert.doesNotMatch(result.items[0].repoLink, /[\u0000-\u001f\u007f]/);
+});
+
+// ——— rule 2, tags: they reach /llms.txt (line-oriented) and the JSON-LD ————
+
+expectRejected(
+  "a control character in a tag is rejected, not collapsed away",
+  [item({ tags: ["React\n\n## Fake heading"] })],
+  "tag-control",
+);
+
+expectRejected(
+  "markup in a tag is rejected",
+  [item({ tags: ["<b>React</b>"] })],
+  "tag-markup",
+);
+
+expectRejected(
+  `a tag over ${MAX_TAG_LENGTH} characters is rejected`,
+  [item({ tags: ["a".repeat(MAX_TAG_LENGTH + 1)] })],
+  "tag-too-long",
+);
+
+test("tags are collapsed, deduplicated and otherwise untouched", () => {
+  const result = validate([
+    item({ tags: ["  Tailwind   CSS ", "Tailwind CSS", "C#", "  "] }),
+  ]);
+
+  assert.equal(result.ok, true, JSON.stringify(result.errors));
+  assert.deepEqual(result.items[0].tags, ["Tailwind CSS", "C#"]);
+});
 
 expectRejected(
   "a protocol-relative URL is rejected",
@@ -212,13 +288,12 @@ test("a valid refresh writes atomically and logs the sha256", () => {
   assert.match(written, /^\{\n {2}"\$comment":/, "the file keeps its provenance note");
 });
 
-// ——— rule 5 (render path): no network in the modules the pages import ————
+// ——— rule 5 (render path): no network in the module the pages import ————
 
-test("the render-path modules contain no network call", () => {
-  for (const relative of [
-    "src/lib/fetch-pinned-projects.js",
-    "src/lib/projects-snapshot.js",
-  ]) {
+// `fetch-pinned-projects.js` (the old scrape) is deleted: this is the only
+// module left between the snapshot on disk and the rendered card.
+test("the render-path module contains no network call", () => {
+  for (const relative of ["src/lib/projects-snapshot.js"]) {
     const source = readFileSync(path.join(ROOT, relative), "utf8");
     // Comments keep the history of what this replaced ("api.github.com", the 403
     // build); the assertion is about code, so read the module without them.
