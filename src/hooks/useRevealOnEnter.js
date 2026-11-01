@@ -1,5 +1,8 @@
 import { useEffect } from "react";
-import { prefersReducedMotion } from "@/motion/prefersReducedMotion";
+import {
+  prefersReducedMotion,
+  subscribeReducedMotion,
+} from "@/motion/prefersReducedMotion";
 
 /**
  * One observer for the whole page: every `[data-r]` node reveals itself the
@@ -8,42 +11,65 @@ import { prefersReducedMotion } from "@/motion/prefersReducedMotion";
  * The rules it has to keep (audit.md §10 P0-1, P1-3; S1/S4):
  *
  *   1. It only ever ADDS `.is-in`. Hidden states belong to the stylesheet and
- *      hang off `html.js`, so a node the script never reaches is visible, not
- *      blank. Nothing here masks content that CSS already painted.
+ *      hang off `html.js`, so a node this effect never reaches must be visible,
+ *      not blank — which is why the effect has no early return for a missing
+ *      `IntersectionObserver`: without one it reveals everything at once
+ *      instead of leaving the page hidden below the fold.
  *   2. It keeps looking. A filter change in `WorkList` remounts its rows, and
  *      the rows that replaced them were never observed by the single pass this
  *      used to do — they simply never revealed.
- *   3. Reduced motion skips observation entirely: CSS leaves those nodes
- *      visible and there is nothing to reveal.
+ *   3. Reduced motion is a *state*, not a load-time decision. The observer runs
+ *      either way (under reduced motion `.is-in` is a no-op: the stylesheet has
+ *      already shown everything), and turning the preference on mid-session
+ *      reveals the whole document once, so flipping it back off can never strand
+ *      a node the observer skipped. This is the same subscribe-and-react the
+ *      field, the background and the marquee do.
  *
  * `data-r="paint"` is not observed: it carries a CSS keyframe entrance of its
- * own, and adding `.is-in` would only compete with it.
+ * own, and adding `.is-in` would only compete with it. The class it never gets
+ * is also the one the reveal contract (`src/lib/css-contract.test.js`) reads, so
+ * the two agree on which nodes the script may hide.
  */
 const REVEAL_SELECTOR = '[data-r]:not([data-r="paint"])';
 
 export function useRevealOnEnter() {
   useEffect(() => {
-    if (typeof IntersectionObserver !== "function") return undefined;
-    if (prefersReducedMotion()) return undefined;
+    const body = document.body;
 
-    const observer = new IntersectionObserver(
-      (entries) => {
-        for (const entry of entries) {
-          if (!entry.isIntersecting) continue;
-          entry.target.classList.add("is-in");
-          observer.unobserve(entry.target);
-        }
-      },
-      // `threshold: 0` means "any part of it is on screen"; the margin keeps the
-      // trigger from firing on the last 8% of the viewport, where a node would
-      // be revealed already half past the fold.
-      { threshold: 0, rootMargin: "0px 0px -8% 0px" },
-    );
+    /** Every reveal in the document right now, revealed and unobserved. */
+    const revealAll = (observer) => {
+      for (const node of body.querySelectorAll(REVEAL_SELECTOR)) {
+        node.classList.add("is-in");
+        observer?.unobserve(node);
+      }
+    };
+
+    let observer = null;
+
+    if (typeof IntersectionObserver === "function") {
+      observer = new IntersectionObserver(
+        (entries) => {
+          for (const entry of entries) {
+            if (!entry.isIntersecting) continue;
+            entry.target.classList.add("is-in");
+            observer.unobserve(entry.target);
+          }
+        },
+        // `threshold: 0` means "any part of it is on screen"; the margin keeps the
+        // trigger from firing on the last 8% of the viewport, where a node would
+        // be revealed already half past the fold.
+        { threshold: 0, rootMargin: "0px 0px -8% 0px" },
+      );
+    }
 
     const observe = (node) => {
       // Already revealed: adding it again would be a no-op, and observing it
       // again would cost a callback for nothing.
       if (node.classList.contains("is-in")) return;
+      if (!observer) {
+        node.classList.add("is-in");
+        return;
+      }
       observer.observe(node);
     };
 
@@ -53,7 +79,7 @@ export function useRevealOnEnter() {
       for (const child of node.querySelectorAll(REVEAL_SELECTOR)) observe(child);
     };
 
-    scan(document.body);
+    scan(body);
 
     // Late nodes (a filtered list, a section mounted after hydration) get the
     // same treatment as the ones that were in the first paint.
@@ -65,11 +91,19 @@ export function useRevealOnEnter() {
             }
           })
         : null;
-    mutations?.observe(document.body, { childList: true, subtree: true });
+    mutations?.observe(body, { childList: true, subtree: true });
+
+    // Reduced motion can change while the page is open. When it does — in either
+    // direction — everything is revealed once: the stylesheet shows those nodes
+    // anyway, and this is what makes turning the preference back off unable to
+    // leave a node hidden with nobody left to release it.
+    const unsubscribe = subscribeReducedMotion(() => revealAll(observer));
+    if (prefersReducedMotion()) revealAll(observer);
 
     return () => {
+      unsubscribe();
       mutations?.disconnect();
-      observer.disconnect();
+      observer?.disconnect();
     };
   }, []);
 }
