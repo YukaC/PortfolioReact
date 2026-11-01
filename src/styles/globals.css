@@ -1,19 +1,46 @@
 @import "tailwindcss";
 
-/* ---------------------------------------------------------------------------
-   Tokens, layer 1 (§14.1): what generates a utility or feeds hand-written CSS.
+/* ===========================================================================
+   The stylesheet's contract (audit.md §13.2, §13.3 S3–S6; spec S14)
 
-   The field is the page: a navy cobalt sky (Bocanada) that the smoke, the
-   coral lattice and its spring flares live on. Every surface here is cut from
-   that sky — there is no white plate anywhere in the system.
+   Tailwind owns everything it can express: box, type, colour and the states
+   that are variants of them live as utilities in the JSX. This file owns what
+   utilities cannot, and every block below says which of those it is. The four
+   reasons a rule is still here:
+
+     1. keyframes and the machines built on them (`[data-r]`, `.w > span`,
+        `.flare`, `.section-flash`, `.timeline`);
+     2. composition — `filter` + `mix-blend-mode` + `isolation`, gradients
+        over instance data, `background-clip: text` with `calc()`, the
+        `::before`/`::after` stencils (`mask-composite`), `mask-image`;
+     3. state a script owns by writing inline geometry or a class this sheet
+        reads (`.is-on`, `.is-serif`, `.is-nav-active`, `--p`, `--tlp`,
+        `--fp`) plus the parent-state selectors those need (`:has()`);
+     4. conditions with no variant — `(scripting: none)`,
+        `(prefers-reduced-transparency)`, `@supports not (backdrop-filter)`.
+
+   A recipe used more than once, or one whose name is what makes the JSX
+   readable, is a single `@utility` definition (bucket B in §13.2). A block
+   that is one node's box is utilities in the JSX (bucket A). Nothing else is
+   allowed in: `pnpm check:css` fails on a colour literal, a class with no
+   rule, an orphan token or a sheet that grows.
+
+   Order: the sections below follow the document (field → layout → reveal →
+   nav → hero → marquee → work → about → contact → footer → chrome), the
+   keyframes are grouped at the end of the components layer, and the
+   condition blocks come last.
+
+   Tokens, layer 1 (§14.1): what generates a utility or feeds hand-written
+   CSS. The field is the page: a navy cobalt sky (Bocanada) that the smoke,
+   the coral lattice and its spring flares live on. Every surface here is cut
+   from that sky — there is no white plate anywhere in the system.
 
    `@theme static` emits every variable declared in this block whether or not
    something reads it, so a token with no consumer is not free: it is bytes
    plus an API nobody asked for (`bg-bg`, `text-text-muted`, `bg-available`).
-   The rule is therefore one line long — a colour enters here only together
-   with the rule or utility that consumes it. The type, spacing, radius, blur,
-   shadow, motion, z-index and breakpoint scales land in this same block.
---------------------------------------------------------------------------- */
+   The rule is one line long — a token enters here only together with the rule
+   or utility that consumes it.
+   ======================================================================== */
 @theme static {
   --color-ink: #060b1a;
   --color-deep: #0e1830;
@@ -47,6 +74,32 @@
   --font-mono: ui-monospace, "Cascadia Mono", "Segoe UI Mono", monospace;
 }
 
+/* Conditions and widths the framework does not ship, declared once.
+
+   The design's two widths are 560 px (`xs`) and 900 px (`wide`, the width every
+   touch layout switches at). They are custom variants rather than
+   `--breakpoint-*` tokens for one concrete reason: `scripts/check-css.mjs`
+   accepts a `@theme` token only when some `var(--token)` or a class of the same
+   name consumes it, and a breakpoint is consumed from a media query, where
+   `var()` cannot go — the token would be reported as an orphan and the gate
+   would fail on the rule that is supposed to enforce it. Moving them to
+   `--breakpoint-*` belongs to S9/T2, together with the single JS module that
+   derives the widths for `matchMedia`, and needs that check to grow a
+   breakpoint case first.
+
+   `pointer-fine`, `pointer-coarse`, `motion-reduce` and the other pointer
+   conditions are the framework's own variants, so a hover that must not fire on
+   touch is `pointer-fine:hover:` in the JSX or `@variant pointer-fine` in the
+   blocks this sheet keeps. */
+@custom-variant no-hover (@media (hover: none));
+@custom-variant max-xs (@media (max-width: 35rem)); /* 560px, narrow phones */
+@custom-variant wide (@media (min-width: 56.25rem)); /* 900px, the touch line */
+@custom-variant max-wide (@media (max-width: 56.25rem));
+/* The reveal drops its blur on anything that is either narrow or touched
+   (`max-width: 64rem` OR `pointer: coarse`). One custom variant, because an
+   OR between a breakpoint and a pointer query has no built-in spelling. */
+@custom-variant narrow-or-touch (@media (max-width: 64rem), (pointer: coarse));
+
 /* The composite stacks resolve their `var()` at the element that declares
    them, so they have to live on the element that carries the next/font
    variables — the wrapper `_app` renders. Declared on `:root` they would be
@@ -79,7 +132,44 @@
   --hover: rgb(255 255 255 / 0.1);
   --soft: rgb(255 255 255 / 0.13);
   --strong: rgb(255 255 255 / 0.22);
-  --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+
+  /* --- motion, layer 3 (§14.1, §14.7 S2c) -------------------------------
+     One ramp, read by both sides: every `transition`/`animation` below asks
+     for one of these, and `src/motion/config.js` resolves the same properties
+     at module scope, so "make the UI faster" is one edit in one file. They
+     live here instead of `@theme` because none of them generates a utility
+     (`duration-fast` is not a class anybody writes) — §14.1 puts the motion
+     layer in `@theme` *or* its own block, and a `@theme` token with no
+     consumer would be bytes plus a phantom API.
+
+     The ramp is the union of what the two layers actually used: the CSS beats
+     (0.3–2.4 s, §13.1) and the GSAP beats (0.14–0.62 s). The two collapses
+     §14.4 sanctions are here on purpose: `.work-tab`'s 0.35 s and
+     `.menu-toggle`'s 0.36 s become `--duration-fast` (50/60 ms shorter, only
+     visible mid-transition), and `.btn-icon`'s 160 ms and the toggle's 220 ms
+     land on `--duration-ui-fast` / `--duration-ui`. */
+  --duration-instant: 0.14s; /* config.reduced: the shortened beat */
+  --duration-ui-fast: 0.18s; /* config.uiFast · the icon button */
+  --duration-ui: 0.26s; /* config.ui · the toggle's cross-fade */
+  --duration-fast: 0.3s; /* the shortest beat the page uses */
+  --duration-ui-slow: 0.34s; /* config.uiSlow · the drawer */
+  --duration-base: 0.4s; /* the default hover */
+  --duration-slow: 0.5s; /* buttons, the nav pill, the preview */
+  --duration-narrative: 0.55s; /* config.narrative */
+  --duration-slower: 0.6s; /* the rolling label, the logo dash */
+  --duration-drift: 0.7s; /* the work row's own travel */
+  --duration-draw: 0.9s; /* the mail underline, the section flash */
+  --duration-reveal: 1.1s; /* the entrance, painted or observed */
+  --duration-orn: 1.15s; /* the hero ornament */
+  --duration-ping: 2.4s; /* the status pulse */
+  --stagger-word: 70ms; /* between the words of a split heading */
+  --stagger-phrase: 40ms; /* config STAGGER.phrase */
+  --stagger-min: 30ms; /* config STAGGER.min, the floor for a sibling beat */
+  /* The three curves the sheet owns. The springs stay in `motion/config.js`:
+     they are sampled CustomEases, not cubic-beziers (§14.4). */
+  --ease-out-field: cubic-bezier(0.2, 0.7, 0.2, 1);
+  --ease-snap: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
 
   /* Motion channel. `useFieldMotion` writes each property on the elements that
      read it (see the hook), ScrollTrigger owns `--tlp` and `--fp`. These are the
@@ -163,9 +253,11 @@
     color: inherit;
   }
 
-  /* One ring for the whole document. `.focus-ring` stays in the markup as the
-     intent of a call site, but it draws nothing of its own: two rule sets for
-     the same state is how the two offsets drifted apart (3px against 4px). */
+  /* One ring for the whole document (S14: "exactly one `:focus-visible`
+     path"). `.focus-ring` stays in the markup as the intent of a call site and
+     draws nothing of its own — making it a `@utility` would be the second rule
+     set for the same state, which is how the two offsets drifted apart before
+     (3px against 4px). The first definition it names is this one. */
   :focus-visible {
     outline: 2px solid var(--color-sky);
     outline-offset: 4px;
@@ -179,6 +271,535 @@
   #next {
     padding: 0;
     margin: 0;
+  }
+}
+
+/* ===========================================================================
+   Bucket B (§13.2, §13.3 S4): one definition per reusable recipe.
+
+   A recipe lands here once when more than one node uses the same set, or when
+   its name is what keeps the JSX legible. `@utility` also means what it says:
+   the class exists only if a JSX file asks for it, it lands in the utilities
+   layer, and a variant written in the markup (`max-wide:px-3`,
+   `pointer-fine:hover:`) can still override it without a specificity war.
+
+   States travel with their recipe. A hover that must not fire on touch is
+   nested in `@variant pointer-fine`, and a state the parent owns (the row
+   under the pointer, the scrolled header) is a nested `&` selector — that is
+   the only way for a rule in this layer to follow the class that a script
+   turns on, instead of losing to the utility it is meant to modify.
+   ======================================================================== */
+
+/* The one surface of the system. The three nodes that sit on it (the work
+   preview, its tag, the scrolled pill) each carry their own hairline and
+   depth, and they override them through `--glass-line`/`--glass-shadow`
+   instead of re-declaring the surface — one definition, no copy. */
+@utility glass {
+  background-color: var(--glass);
+  border: 1px solid var(--glass-line, var(--line));
+  backdrop-filter: blur(26px) saturate(150%);
+  /* literal: the depth shadows are black; the ladder is the white scale
+     (§14.4). */
+  box-shadow: var(
+    --glass-shadow,
+    0 24px 60px -24px rgb(0 0 0 / 0.6),
+    inset 0 1px 0 var(--hover)
+  );
+}
+
+/* The buttons. `::before`/`::after` (the pointer light and the masked edge)
+   stay in the components layer: they are stencils over instance data, not a
+   box. What lives here is the surface a pointer change repaints — the box, the
+   transition and the state — because that is what the JSX has to be able to
+   override. */
+@utility btn {
+  position: relative;
+  isolation: isolate;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.625rem;
+  padding: 0.875rem 1.625rem;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background-color: transparent;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition:
+    background-color var(--duration-slow) var(--ease-out-field),
+    border-color var(--duration-slow) var(--ease-out-field),
+    box-shadow var(--duration-slow) var(--ease-out-field),
+    scale var(--duration-fast) var(--ease-out-field);
+
+  &:active {
+    scale: 0.965;
+  }
+
+  @variant pointer-fine {
+    &:hover {
+      /* literal: a hover fill just under `--glass` and a border under
+         `--strong` — both deliberately off the ladder (§14.4). */
+      background-color: rgb(255 255 255 / 0.04);
+      border-color: rgb(255 255 255 / 0.2);
+    }
+  }
+}
+
+@utility btn-solid {
+  background-color: var(--color-white);
+  color: var(--color-on-solid);
+  border-color: transparent;
+  font-weight: 600;
+
+  @variant pointer-fine {
+    &:hover {
+      background-color: var(--color-white);
+      border-color: transparent;
+      box-shadow: 0 16px 44px -14px
+        color-mix(in srgb, var(--color-sky) 80%, transparent);
+    }
+  }
+}
+
+@utility btn-ok {
+  border-color: color-mix(in srgb, var(--color-live) 55%, transparent);
+  background-color: color-mix(in srgb, var(--color-live) 10%, transparent);
+}
+
+/* The floating nav pill: transparent at rest, glass once the page moves. The
+   scrolled state belongs to the header, so it is nested here — a rule in the
+   components layer would lose to this utility's `border` shorthand. */
+@utility nav-pill {
+  width: min(calc(var(--shell) + 1rem), 100% - 1.5rem);
+  margin-inline: auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem 0.5rem 0.5rem 1.25rem;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  pointer-events: auto;
+  transition:
+    background-color var(--duration-slow) var(--ease-out-field),
+    border-color var(--duration-slow) var(--ease-out-field),
+    box-shadow var(--duration-slow) var(--ease-out-field);
+
+  .site-header.is-scrolled & {
+    background-color: var(--glass);
+    border-color: var(--line);
+    backdrop-filter: blur(26px) saturate(150%);
+    /* literal: depth shadow in black; the ladder is the white scale (§14.4). */
+    box-shadow: 0 18px 44px -20px rgb(0 0 0 / 0.6);
+  }
+}
+
+@utility nav-link {
+  position: relative;
+  z-index: 1;
+  padding: 0.5625rem 1rem;
+  border-radius: 999px;
+  color: var(--color-mut);
+  font-size: 0.875rem;
+  transition: color var(--duration-fast) var(--ease-out-field);
+
+  /* The scroll spy writes `aria-current` on the link it resolves, so the
+     active state is the attribute itself and not a second class to keep in
+     sync: `.is-nav-active` stays in the script as the query hook the sliding
+     indicator reads. */
+  &:hover,
+  &[aria-current="true"] {
+    color: var(--color-white);
+  }
+}
+
+/* WCAG 2.5.8 (AA) asks for 24×24 hit areas. The codes are 10px type, so the
+   links measured 27×21: the visible pill stays small, the target grows inside
+   it, and on a coarse pointer (the drawer) it reaches 44px for a thumb. */
+@utility lang-link {
+  display: grid;
+  place-items: center;
+  min-width: 1.5rem;
+  min-height: 1.5rem;
+
+  @variant pointer-coarse {
+    min-width: 2.75rem;
+    min-height: 2.75rem;
+  }
+}
+
+@utility nav-cta {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 0.5rem;
+  padding: 0.6875rem 1rem;
+  border-radius: 999px;
+  background-color: var(--color-white);
+  color: var(--color-on-solid);
+  font-size: 0.875rem;
+  font-weight: 600;
+  transition: box-shadow var(--duration-base) var(--ease-out-field);
+
+  @variant pointer-fine {
+    &:hover {
+      box-shadow: 0 10px 30px -10px
+        color-mix(in srgb, var(--color-sky) 70%, transparent);
+    }
+  }
+}
+
+/* The pill that slides under the pointed link. Its geometry is written inline
+   by the nav; only the surface and the transition are a recipe. */
+@utility nav-ind {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 0;
+  border-radius: 999px;
+  background-color: var(--hover);
+  opacity: 0;
+  transition:
+    translate var(--duration-slow) var(--ease-out-field),
+    width var(--duration-slow) var(--ease-out-field),
+    opacity var(--duration-fast) var(--ease-out-field);
+}
+
+@utility work-tab {
+  position: relative;
+  z-index: 1;
+  padding: 0.5rem 1.125rem;
+  border-radius: 999px;
+  font-size: 0.875rem;
+  color: var(--color-dim);
+  cursor: pointer;
+  /* 0.35 s in the sheet this replaced; §14.4 folds it into the ramp's
+     `--duration-fast`. */
+  transition:
+    color var(--duration-fast) var(--ease-out-field),
+    scale var(--duration-fast) var(--ease-out-field);
+
+  &:hover,
+  &[aria-pressed="true"] {
+    color: var(--color-white);
+  }
+
+  /* The selected filter also has to read without colour: a 2.6:1 hue shift
+     alone is invisible to a reader who cannot separate the two. */
+  &[aria-pressed="true"] {
+    /* literal: 35 % is stronger than `--strong`, so it stays its own value. */
+    box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.35);
+  }
+
+  &:active {
+    scale: 0.94;
+  }
+
+  @variant max-wide {
+    padding: 0.5rem 0.8125rem;
+  }
+}
+
+@utility work-tab-ind {
+  position: absolute;
+  left: 0;
+  top: 0.3125rem;
+  bottom: 0.3125rem;
+  width: 0;
+  border-radius: 999px;
+  background-color: var(--soft);
+  /* literal: the indicator's top highlight is 15 %, between `--soft` and
+     `--strong` (§14.4). */
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.15);
+  transition:
+    translate var(--duration-slower) var(--ease-out-field),
+    width var(--duration-slower) var(--ease-out-field);
+}
+
+/* The row's arrow disc. Its hover belongs to the row, which is a parent state
+   with no variant — hence the nested `.work-row:hover &`. `::before` (the
+   disc that fills) stays in the components layer. */
+@utility work-go {
+  position: relative;
+  overflow: hidden;
+  width: 2.875rem;
+  height: 2.875rem;
+  border-radius: 50%;
+  border: 1px solid var(--line);
+  display: grid;
+  place-items: center;
+  color: var(--color-mut);
+  transition:
+    opacity var(--duration-slow) var(--ease-out-field),
+    color var(--duration-slow) var(--ease-out-field),
+    border-color var(--duration-slow) var(--ease-out-field);
+
+  @variant pointer-fine {
+    .work-row:hover & {
+      color: var(--color-on-solid);
+      border-color: var(--color-white);
+    }
+  }
+
+  @variant max-wide {
+    width: 2.5rem;
+    height: 2.5rem;
+  }
+
+  @variant max-xs {
+    grid-area: go;
+  }
+}
+
+@utility skip-link {
+  position: absolute;
+  left: 1rem;
+  top: -5rem;
+  z-index: 70;
+  padding: 0.65rem 1rem;
+  background-color: var(--color-white);
+  /* literal: pure black on pure white — the one high-contrast surface in the
+     page, and neither end is a palette entry. */
+  color: #000;
+  font-size: 0.875rem;
+  font-weight: 700;
+  border-radius: 0.375rem;
+
+  &:focus {
+    top: 1rem;
+  }
+}
+
+/* --- shared layout recipes ----------------------------------------------- */
+/* Eleven call sites, one declaration of the shell. Inlined it would repeat
+   `min(80rem, 100% - clamp(2.75rem, 6vw, 8rem))` in eleven class lists, which
+   is bytes in the HTML and a value nobody can read. */
+@utility site-shell {
+  width: min(var(--shell), 100% - clamp(2.75rem, 6vw, 8rem));
+  margin-inline: auto;
+}
+
+@utility section-y {
+  padding-top: clamp(5.5rem, 11vw, 10.5rem);
+}
+
+@utility eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 0.875rem;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--color-sky);
+
+  &::after {
+    content: "";
+    height: 1px;
+    width: 3.5rem;
+    background: linear-gradient(90deg, var(--color-sky), transparent);
+    opacity: 0.6;
+  }
+}
+
+@utility lead {
+  color: var(--color-mut);
+  font-size: clamp(1.0625rem, 1.5vw, 1.25rem);
+  line-height: 1.7;
+  max-width: 46ch;
+}
+
+/* Inline flow, not flex: the separator has to be able to wrap with the item it
+   belongs to, otherwise a narrow viewport opens the line with "·". The space
+   inside the separator is what buys the line-break opportunity: it sits after
+   the dot, so a wrapped line can never open with "·". */
+@utility stackline {
+  margin-top: 2.875rem;
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  line-height: 1.6;
+  letter-spacing: 0.04em;
+  color: var(--color-mut);
+  text-wrap: pretty;
+
+  & span + span::before {
+    content: "· ";
+    margin: 0 0.3125rem 0 0.625rem;
+  }
+}
+
+/* Skill chips are the stack's vocabulary, in two sections and on a project
+   page: a named recipe with one chip inside it. */
+@utility skill-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.625rem;
+  margin: 1.875rem 0;
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--color-paper);
+
+  & span {
+    padding: 0.3125rem 0.75rem;
+    border-radius: 999px;
+    background-color: var(--glass);
+    border: 1px solid var(--line);
+    transition:
+      background-color var(--duration-base) var(--ease-out-field),
+      border-color var(--duration-base) var(--ease-out-field);
+  }
+}
+
+/* The demo disclaimer: one quiet line above the list, in the same muted tone
+   the meta rows use, so it reads as a footnote to the section instead of a
+   warning banner. Shared by the work list and every project page. */
+@utility work-note {  max-width: 46ch;
+  margin-top: 0.5rem;
+  font-size: 0.8125rem;
+  line-height: 1.6;
+  color: var(--color-mut);
+}
+
+@utility work-list {
+  list-style: none;
+  padding: 0;
+  margin: 0.5rem 0 0;
+  border-top: 1px solid var(--line);
+}
+
+/* The filter row on the narrowest phones cannot shrink to the shell: let it
+   scroll instead of losing the last filter behind the section's clip. */
+@utility work-tabs {
+  position: relative;
+  display: flex;
+  width: fit-content;
+  max-width: 100%;
+  gap: 0.125rem;
+  padding: 0.3125rem;
+  margin: 2.75rem 0 0.375rem;
+  border-radius: 999px;
+  background-color: var(--glass);
+  border: 1px solid var(--line);
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* The small mono label above a block of copy, on the about section and twice
+   on every project page. */
+@utility about-h3 {
+  margin-bottom: 1.625rem;
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--color-sky);
+}
+
+@utility about-copy {
+  & p {
+    color: var(--color-mut);
+    font-size: 1.0625rem;
+    max-width: 46ch;
+  }
+
+  & p + p {
+    margin-top: 1.125rem;
+  }
+
+  & strong {
+    color: var(--color-paper);
+    font-weight: 600;
+  }
+}
+
+@utility footer-row {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  gap: 1.5rem;
+  align-items: start;
+  padding-top: 1.75rem;
+  border-top: 1px solid var(--line);
+
+  @variant max-wide {
+    grid-template-columns: 1fr;
+  }
+}
+
+@utility footer-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.75rem;
+  font-size: 0.875rem;
+  color: var(--color-mut);
+
+  /* 22px tall as plain inline text, under the 24px AA target minimum; the
+     underline stays on the text baseline and the box only gets taller. */
+  & a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 1.5rem;
+    padding-bottom: 3px;
+    background-image: linear-gradient(currentColor, currentColor);
+    background-position: 0 100%;
+    background-repeat: no-repeat;
+    background-size: 0 1px;
+    transition:
+      color var(--duration-fast) var(--ease-out-field),
+      background-size var(--duration-slower) var(--ease-out-field);
+  }
+
+  & a:hover,
+  & a:focus-visible {
+    color: var(--color-white);
+    background-size: 100% 1px;
+  }
+}
+
+/* The drawer toggle. 160 ms in the sheet this replaced; §14.4 folds it into
+   `--duration-ui-fast`. */
+/* The footer's one line of copy: a name kept because the e2e suite and the
+   Bebop trigger both find the tagline by it (§10 P1-7). */
+@utility tagline {
+  margin-top: 0.625rem;
+  font-size: 0.9375rem;
+  letter-spacing: 0.01em;
+  color: var(--color-dim);
+}
+
+@utility btn-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  /* literal: the idle icon is 70 % white — a surface tone the ladder does not
+     carry (§14.4). */
+  color: rgb(255 255 255 / 0.7);
+  border: 0;
+  border-radius: 9999px;
+  background-color: transparent;
+  transition:
+    background-color var(--duration-ui-fast) var(--ease-snap),
+    color var(--duration-ui-fast) var(--ease-snap),
+    transform var(--duration-ui-fast) var(--ease-snap);
+
+  &:active {
+    transform: scale(0.97);
+  }
+
+  @variant pointer-fine {
+    &:hover {
+      background-color: var(--hover);
+      color: var(--color-white);
+    }
   }
 }
 
@@ -290,7 +911,8 @@
     translate: calc(var(--px) * 24px) calc(var(--p) * -70vh);
   }
 
-  /* Cursor light. Coarse pointers get nothing to chase. */
+  /* Cursor light. Coarse pointers get nothing to chase — no hover device has
+     nothing to point with, so the light is not mounted visibly there. */
   .field-glow {
     position: absolute;
     left: 0;
@@ -304,6 +926,10 @@
       transparent 62%
     );
     translate: calc(var(--mx) * 1px - 20rem) calc(var(--my) * 1px - 20rem);
+
+    @variant no-hover {
+      display: none;
+    }
   }
 
   .field-grain {
@@ -397,29 +1023,6 @@
 
   /* Bright for the last 8 % of the cycle — ≈ 0.6 s at 7–11 s — then gone. The
      rest state is the dot underneath, which is the point: the field is calm. */
-  @keyframes flare {
-    0%,
-    90%,
-    100% {
-      opacity: 0;
-      transform: scale(0.6);
-    }
-
-    93% {
-      opacity: 1;
-      transform: scale(1);
-    }
-
-    96% {
-      opacity: 0.6;
-      transform: scale(1.25);
-    }
-
-    98% {
-      opacity: 0;
-      transform: scale(0.9);
-    }
-  }
 
   /* Density by viewport: 6 / 12 / 22 / 36 visible, counted by computed `display`
      and driven by no script. Three cumulative `max-width` steps in this order
@@ -443,76 +1046,12 @@
     }
   }
 
-  /* --- layout ------------------------------------------------------------- */
-  .site-shell {
-    width: min(var(--shell), 100% - clamp(2.75rem, 6vw, 8rem));
-    margin-inline: auto;
-  }
-
-  .section-y {
-    padding-top: clamp(5.5rem, 11vw, 10.5rem);
-  }
-
-  .eyebrow {
-    display: flex;
-    align-items: center;
-    gap: 0.875rem;
-    font-family: var(--font-mono);
-    font-size: 0.75rem;
-    font-weight: 500;
-    letter-spacing: 0.16em;
-    text-transform: uppercase;
-    color: var(--color-sky);
-  }
-
-  .eyebrow::after {
-    content: "";
-    height: 1px;
-    width: 3.5rem;
-    background: linear-gradient(90deg, var(--color-sky), transparent);
-    opacity: 0.6;
-  }
-
-  /* One accent, and it is colour: the emphasised word of a heading carries the
-     field's own light. The emphasis survives the split because the colour sits
-     on the word box, not on the word. Coral stays in the lattice — as type it
-     competes with the 48px dots for the same hue. */
-  .accent {
-    font-style: normal;
-    font-weight: 600;
-    letter-spacing: inherit;
-    color: var(--color-sky);
-  }
-
-  /* A `\n` in the copy is a line the designer asked for: the words around it
-     render in their own block line, so the break holds at every viewport instead
-     of moving as the heading grows. Single-line headings get no wrapper class,
-     so their natural wrapping is untouched. */
-  .hl {
-    display: block;
-  }
-
-  .lead {
-    color: var(--color-mut);
-    font-size: clamp(1.0625rem, 1.5vw, 1.25rem);
-    line-height: 1.7;
-    max-width: 46ch;
-  }
-
-  /* A lead that follows a section heading needs its own air. In the work header
-     the lead is a flex item pinned to the end, so a top margin stays inert. */
-  .section-y h2 + .lead {
-    margin-top: 1.5rem;
-  }
-
-  .status {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.625rem;
-    font-size: 0.8125rem;
-    color: var(--color-mut);
-  }
-
+  /* --- layout -------------------------------------------------------------
+     What is left of it: the pulse's geometry (a pseudo-element, so it cannot be
+     a utility) and the dot it belongs to. `.site-shell`, `.section-y`,
+     `.eyebrow`, `.lead`, `.stackline`, `.glass`, `.btn` and `.btn-solid` are
+     `@utility` recipes above; the inline utilities each node needs live in its
+     JSX. */
   .status i {
     position: relative;
     width: 7px;
@@ -536,63 +1075,13 @@
     border-radius: 50%;
     background: var(--color-live);
     opacity: 0;
-    animation: ping 2.4s infinite;
+    animation: ping var(--duration-ping) infinite;
   }
 
-  /* Inline flow, not flex: the separator has to be able to wrap with the item
-     it belongs to, otherwise a narrow viewport opens the line with "·". */
-  .stackline {
-    margin-top: 2.875rem;
-    font-family: var(--font-mono);
-    font-size: 0.8125rem;
-    font-weight: 500;
-    line-height: 1.6;
-    letter-spacing: 0.04em;
-    color: var(--color-mut);
-    text-wrap: pretty;
-  }
-
-  /* The space inside the separator is what buys the line-break opportunity:
-     it sits after the dot, so a wrapped line can never open with "·". */
-  .stackline span + span::before {
-    content: "· ";
-    margin: 0 0.3125rem 0 0.625rem;
-  }
-
-  /* --- glass: one recipe, used only where it does a job ------------------- */
-  .glass {
-    background-color: var(--glass);
-    border: 1px solid var(--line);
-    backdrop-filter: blur(26px) saturate(150%);
-    /* literal: the depth shadows are black; the ladder is the white scale
-       (§14.4). `--shadow-*` tokens land with the depth scale. */
-    box-shadow:
-      0 24px 60px -24px rgb(0 0 0 / 0.6),
-      inset 0 1px 0 var(--hover);
-  }
-
-  /* --- buttons ------------------------------------------------------------ */
-  .btn {
-    position: relative;
-    isolation: isolate;
-    display: inline-flex;
-    align-items: center;
-    gap: 0.625rem;
-    padding: 0.875rem 1.625rem;
-    border-radius: 999px;
-    border: 1px solid var(--line);
-    background-color: transparent;
-    font-family: inherit;
-    font-size: 0.9375rem;
-    font-weight: 500;
-    cursor: pointer;
-    transition:
-      background-color 0.5s var(--ease),
-      border-color 0.5s var(--ease),
-      box-shadow 0.5s var(--ease),
-      scale 0.3s var(--ease);
-  }
-
+  /* --- buttons ------------------------------------------------------------
+     The box is `@utility btn`; what stays here is the light: `::before` follows
+     the pointer through `--bx`/`--by` (instance data), `::after` is a 1px ring
+     masked out of a radial gradient with `mask-composite` (§13.4 — bucket C). */
   /* Light that follows the pointer inside the button. */
   .btn::before {
     content: "";
@@ -602,7 +1091,7 @@
     z-index: -1;
     pointer-events: none;
     opacity: 0;
-    transition: opacity 0.5s var(--ease);
+    transition: opacity var(--duration-slow) var(--ease-out-field);
     /* literal: the pointer light is 16 %, a step the ladder does not carry
        (§14.4) and one that is only ever on screen under a fine pointer. */
     background: radial-gradient(
@@ -621,7 +1110,7 @@
     padding: 1px;
     pointer-events: none;
     opacity: 0;
-    transition: opacity 0.5s var(--ease);
+    transition: opacity var(--duration-slow) var(--ease-out-field);
     background: radial-gradient(
       110px circle at var(--bx, 50%) var(--by, 50%),
       var(--color-sky),
@@ -632,13 +1121,6 @@
       linear-gradient(#000 0 0) content-box,
       linear-gradient(#000 0 0);
     mask-composite: exclude;
-  }
-
-  .btn-solid {
-    background-color: var(--color-white);
-    color: var(--color-on-solid);
-    border-color: transparent;
-    font-weight: 600;
   }
 
   .btn-solid::before {
@@ -653,32 +1135,10 @@
     display: none;
   }
 
-  .btn:active {
-    scale: 0.965;
-  }
-
-  .btn-ok {
-    border-color: color-mix(in srgb, var(--color-live) 55%, transparent);
-    background-color: color-mix(in srgb, var(--color-live) 10%, transparent);
-  }
-
-  @media (hover: hover) and (pointer: fine) {
+  @variant pointer-fine {
     .btn:hover::before,
     .btn:hover::after {
       opacity: 1;
-    }
-
-    .btn:hover {
-      /* literal: a hover fill just under `--glass` and a border under
-         `--strong` — both deliberately off the ladder (§14.4). */
-      background-color: rgb(255 255 255 / 0.04);
-      border-color: rgb(255 255 255 / 0.2);
-    }
-
-    .btn-solid:hover {
-      background-color: var(--color-white);
-      border-color: transparent;
-      box-shadow: 0 16px 44px -14px color-mix(in srgb, var(--color-sky) 80%, transparent);
     }
   }
 
@@ -687,6 +1147,11 @@
     opacity: 1;
   }
 
+  /* The rolling label and the swapping arrow: both are two stacked copies
+     inside a clipping box, and the copy the reader sees is painted by CSS
+     `content: attr(data-t)` and moved by a `translate` fanned out through
+     `--dx`/`--dy`. Build the same thing out of utilities and the two copies
+     stop being one string in the DOM. */
   /* The label rolls: the text leaves upward and its copy enters. */
   .lb {
     display: inline-block;
@@ -700,7 +1165,7 @@
   .lb > span {
     display: block;
     position: relative;
-    transition: transform 0.6s var(--ease);
+    transition: transform var(--duration-slower) var(--ease-out-field);
   }
 
   .lb > span::after {
@@ -730,7 +1195,7 @@
     grid-area: 1 / 1;
     width: 100%;
     height: 100%;
-    transition: transform 0.6s var(--ease);
+    transition: transform var(--duration-slower) var(--ease-out-field);
   }
 
   .ar > svg + svg {
@@ -753,7 +1218,7 @@
     transform: none;
   }
 
-  @media (hover: hover) and (pointer: fine) {
+  @variant pointer-fine {
     .btn:hover .lb > span,
     .bigmail:hover .lb > span,
     .work-row:hover .lb > span {
@@ -791,9 +1256,9 @@
   /* From here down the hidden states exist only in a scripted document. */
   html.js [data-r]:not([data-r="paint"]) {
     transition:
-      opacity 1.1s var(--ease),
-      transform 1.1s var(--ease),
-      filter 1.1s var(--ease);
+      opacity var(--duration-reveal) var(--ease-out-field),
+      transform var(--duration-reveal) var(--ease-out-field),
+      filter var(--duration-reveal) var(--ease-out-field);
     transition-delay: var(--d, 0ms);
   }
 
@@ -812,11 +1277,11 @@
      entrance smeared for seconds, which reads as "the reveal is broken" (a Moto
      G82 recording showed exactly that). The travel and the fade carry the beat
      on their own; the blur stays where there is headroom, on a wide pointer. */
-  @media (max-width: 64rem), (pointer: coarse) {
+  @variant narrow-or-touch {
     html.js [data-r]:not([data-r="paint"]) {
       transition:
-        opacity 1.1s var(--ease),
-        transform 1.1s var(--ease);
+        opacity var(--duration-reveal) var(--ease-out-field),
+        transform var(--duration-reveal) var(--ease-out-field);
     }
 
     html.js [data-r]:not(.is-in):not([data-r="paint"]) {
@@ -825,16 +1290,6 @@
 
     html.js [data-r="paint"] {
       animation-name: r-paint-plain;
-    }
-  }
-
-  @keyframes r-paint-plain {
-    from {
-      translate: 0 28px;
-    }
-
-    to {
-      translate: 0 0;
     }
   }
 
@@ -859,30 +1314,8 @@
     transform: none;
     filter: none;
     translate: none;
-    animation: r-paint 1.1s var(--ease) backwards;
+    animation: r-paint var(--duration-reveal) var(--ease-out-field) backwards;
     animation-delay: var(--d, 0ms);
-  }
-
-  @keyframes r-paint {
-    from {
-      translate: 0 28px;
-      filter: blur(6px);
-    }
-
-    to {
-      translate: 0 0;
-      filter: none;
-    }
-  }
-
-  @keyframes r-word {
-    from {
-      transform: translateY(112%);
-    }
-
-    to {
-      transform: none;
-    }
   }
 
   .w {
@@ -903,8 +1336,8 @@
 
   html.js .w > span {
     transform: translateY(112%);
-    transition: transform 1.1s var(--ease);
-    transition-delay: calc(var(--d, 0ms) + var(--i) * 70ms);
+    transition: transform var(--duration-reveal) var(--ease-out-field);
+    transition-delay: calc(var(--d, 0ms) + var(--i) * var(--stagger-word));
   }
 
   html.js .is-in .w > span {
@@ -913,11 +1346,15 @@
 
   html.js [data-r="paint"] .w > span {
     transform: none;
-    animation: r-word 1.1s var(--ease) backwards;
-    animation-delay: calc(var(--d, 0ms) + var(--i) * 70ms);
+    animation: r-word var(--duration-reveal) var(--ease-out-field) backwards;
+    animation-delay: calc(var(--d, 0ms) + var(--i) * var(--stagger-word));
   }
 
-  /* --- nav ---------------------------------------------------------------- */
+  /* --- nav ----------------------------------------------------------------
+     The pill, the links, the CTA, the indicator and the language hit areas are
+     `@utility` recipes above (bucket B). What stays is the logo's stroke draw —
+     an SVG dash animation with `pathLength`, which is composition, not a box —
+     and `.site-header`, which is the state the scrolled pill hangs off. */
   .site-header {
     position: fixed;
     inset-inline: 0;
@@ -927,110 +1364,12 @@
     pointer-events: none;
   }
 
-  .nav-pill {
-    width: min(calc(var(--shell) + 1rem), 100% - 1.5rem);
-    margin-inline: auto;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0.5rem 0.5rem 0.5rem 1.25rem;
-    border-radius: 999px;
-    border: 1px solid transparent;
-    pointer-events: auto;
-    transition:
-      background-color 0.5s var(--ease),
-      border-color 0.5s var(--ease),
-      box-shadow 0.5s var(--ease);
-  }
-
-  .site-header.is-scrolled .nav-pill {
-    background-color: var(--glass);
-    border-color: var(--line);
-    backdrop-filter: blur(26px) saturate(150%);
-    /* literal: depth shadow in black; the ladder is the white scale (§14.4). */
-    box-shadow: 0 18px 44px -20px rgb(0 0 0 / 0.6);
-  }
-
-  .nav-links {
-    position: relative;
-    display: flex;
-    align-items: center;
-    gap: 0.125rem;
-  }
-
-  .nav-link {
-    position: relative;
-    z-index: 1;
-    padding: 0.5625rem 1rem;
-    border-radius: 999px;
-    color: var(--color-mut);
-    font-size: 0.875rem;
-    transition: color 0.3s var(--ease);
-  }
-
-  .nav-link:hover,
-  .nav-link.is-nav-active {
-    color: var(--color-white);
-  }
-
-  /* WCAG 2.5.8 (AA) asks for 24×24 hit areas. The codes are 10px type, so the
-     links measured 27×21: the visible pill stays small, the target grows inside
-     it, and on a coarse pointer (the drawer) it reaches 44px for a thumb. */
-  .lang-link {
-    display: grid;
-    place-items: center;
-    min-width: 1.5rem;
-    min-height: 1.5rem;
-  }
-
-  @media (pointer: coarse) {
-    .lang-link {
-      min-width: 2.75rem;
-      min-height: 2.75rem;
-    }
-  }
-
-  .nav-ind {
-    position: absolute;
-    left: 0;
-    top: 0;
-    bottom: 0;
-    width: 0;
-    border-radius: 999px;
-    background-color: var(--hover);
-    opacity: 0;
-    z-index: 0;
-    transition:
-      translate 0.5s var(--ease),
-      width 0.5s var(--ease),
-      opacity 0.3s var(--ease);
-  }
-
-  .nav-cta {
-    display: inline-flex;
-    align-items: center;
-    margin-left: 0.5rem;
-    padding: 0.6875rem 1rem;
-    border-radius: 999px;
-    background-color: var(--color-white);
-    color: var(--color-on-solid);
-    font-size: 0.875rem;
-    font-weight: 600;
-    transition: box-shadow 0.4s var(--ease);
-  }
-
-  @media (hover: hover) and (pointer: fine) {
-    .nav-cta:hover {
-      box-shadow: 0 10px 30px -10px color-mix(in srgb, var(--color-sky) 70%, transparent);
-    }
-  }
-
   /* Logo: the mark takes an ice glow and the dash underneath answers hover and
      keyboard focus exactly like the footer's social links — drawn left to right
      in white over 0.6s on the shared easing curve. `pathLength="1"` normalises
      the curve, so the reveal needs no measured length. */
   .site-logo-mark {
-    transition: filter 0.6s var(--ease);
+    transition: filter var(--duration-slower) var(--ease-out-field);
   }
 
   .site-logo-dash {
@@ -1040,7 +1379,7 @@
   .site-logo-dash path {
     stroke-dasharray: 1;
     stroke-dashoffset: 1;
-    transition: stroke-dashoffset 0.6s var(--ease);
+    transition: stroke-dashoffset var(--duration-slower) var(--ease-out-field);
   }
 
   .logo-link:hover .site-logo-mark,
@@ -1055,18 +1394,20 @@
     stroke-dashoffset: 0;
   }
 
-  /* --- hero --------------------------------------------------------------- */
-  .hero {
-    position: relative;
-    min-height: 100svh;
-    display: flex;
-    align-items: center;
-    padding: 8.125rem 0 4.375rem;
-  }
-
+  /* --- hero ---------------------------------------------------------------
+     `.hero`, `.hero-actions`, `.hero-foot` and `.hero-ornament` are inline
+     utilities in `HeroSection`, `HeroActions`, `ProjectPage` and the 404. What
+     stays: the copy that answers the motion channel, the headline's measured
+     width, and the ornament's gradients — geometry and composition. */
   .hero-copy {
+    /* §14.6: the formulas of the movement are not tokens. The wrapper reads
+       the channel (`--scy`, `--hf`) written by `useFieldMotion`. */
     translate: 0 calc(var(--scy) * 0.1px);
     opacity: var(--hf);
+
+    @variant max-wide {
+      translate: none;
+    }
   }
 
   .hero-title {
@@ -1087,32 +1428,11 @@
        196px past the viewport once the capped shell sat centred on a 1920px
        screen. */
     width: min(30ch, calc(100% + (100vw - 100%) / 2 - 0.75rem));
-    max-width: none;
-  }
-
-  .hero-actions {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.75rem;
-    margin-top: 2.375rem;
-  }
-
-  .hero-foot {
-    position: relative;
-    margin-top: 2.5rem;
   }
 
   /* Depth cluster: three floating layers instead of a card. They answer the
-     pointer and the scroll at their own speed (`--d`). */
-  .hero-ornament {
-    position: absolute;
-    right: 0;
-    bottom: 0;
-    width: min(32%, 24rem);
-    height: 18rem;
-    pointer-events: none;
-  }
-
+     pointer and the scroll at their own speed (`--od`), which is instance data
+     and a composition of blur + gradients, so it stays here. */
   .orn {
     position: absolute;
     border-radius: 50%;
@@ -1122,7 +1442,7 @@
        leaves the animation stack. `both` kept three hero nodes in the effect
        stack for the life of the page — the same trap this file already
        documents for `[data-r="paint"]`. */
-    animation: orn-in 1.15s var(--ease) backwards;
+    animation: orn-in var(--duration-orn) var(--ease-out-field) backwards;
   }
 
   .orn-orb {
@@ -1152,7 +1472,7 @@
       color-mix(in srgb, var(--color-sky) 16%, transparent),
       transparent 65%
     );
-    animation-delay: 0.12s;
+    animation-delay: calc(var(--duration-orn) * 0.1);
   }
 
   .orn-spark {
@@ -1167,10 +1487,13 @@
       color-mix(in srgb, var(--color-sky) 20%, transparent)
     );
     box-shadow: 0 0 30px 6px color-mix(in srgb, var(--color-sky) 45%, transparent);
-    animation-delay: 0.24s;
+    animation-delay: calc(var(--duration-orn) * 0.2);
   }
 
-  /* --- marquee ------------------------------------------------------------ */
+  /* --- marquee ------------------------------------------------------------
+     The mask stencil on the band, the `-webkit-text-stroke` of the outline row
+     and the two tracks `MarqueeMotion` translates by name: composition and a
+     script contract, so it stays. */
   .marquee {
     width: 100%;
     margin-top: clamp(4.375rem, 10vw, 8.75rem);
@@ -1233,103 +1556,13 @@
     opacity: 0.55;
   }
 
-  /* --- work --------------------------------------------------------------- */
-  .section-head {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-end;
-    gap: 1.5rem;
-    flex-wrap: wrap;
-  }
-
-  .work-tabs {
-    position: relative;
-    display: flex;
-    width: fit-content;
-    max-width: 100%;
-    gap: 0.125rem;
-    padding: 0.3125rem;
-    margin: 2.75rem 0 0.375rem;
-    border-radius: 999px;
-    background-color: var(--glass);
-    border: 1px solid var(--line);
-    /* On the narrowest phones the row cannot shrink to the shell: let it scroll
-       instead of losing the last filter behind the section's clip. */
-    overflow-x: auto;
-    overscroll-behavior-x: contain;
-    scrollbar-width: none;
-  }
-
-  .work-tabs::-webkit-scrollbar {
-    display: none;
-  }
-
-  /* The demo disclaimer: one quiet line above the list, in the same muted tone
-     the meta rows use, so it reads as a footnote to the section instead of a
-     warning banner. The halo comes from the shared `.section-y .site-shell`
-     rule below. */
-  .work-note {
-    max-width: 46ch;
-    margin-top: 0.5rem;
-    font-size: 0.8125rem;
-    line-height: 1.6;
-    color: var(--color-mut);
-  }
-
-  .work-tab {
-    position: relative;
-    z-index: 1;
-    background: none;
-    border: 0;
-    padding: 0.5rem 1.125rem;
-    border-radius: 999px;
-    font-size: 0.875rem;
-    color: var(--color-dim);
-    cursor: pointer;
-    transition:
-      color 0.35s var(--ease),
-      scale 0.3s var(--ease);
-  }
-
-  .work-tab:hover,
-  .work-tab[aria-pressed="true"] {
-    color: var(--color-white);
-  }
-
-  /* The selected filter also has to read without colour: a 2.6:1 hue shift
-     alone is invisible to a reader who cannot separate the two. */
-  .work-tab[aria-pressed="true"] {
-    /* literal: 35 % is stronger than `--strong`, so it stays its own value. */
-    box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.35);
-  }
-
-  .work-tab:active {
-    scale: 0.94;
-  }
-
-  .work-tab-ind {
-    position: absolute;
-    left: 0;
-    top: 0.3125rem;
-    bottom: 0.3125rem;
-    width: 0;
-    border-radius: 999px;
-    background-color: var(--soft);
-    /* literal: the indicator's top highlight is 15 %, between `--soft` and
-       `--strong` (§14.4). */
-    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.15);
-    transition:
-      translate 0.6s var(--ease),
-      width 0.6s var(--ease);
-  }
-
-  .work-list {
-    list-style: none;
-    padding: 0;
-    margin: 0.5rem 0 0;
-    border-top: 1px solid var(--line);
-  }
-
+  /* --- work ---------------------------------------------------------------
+     The filter row, its tabs and indicator, the list, the arrow disc and the
+     note are `@utility` recipes above; `.section-head`, `.work-hit`, `.work-body`
+     and `.work-num` are inline utilities in the JSX. What stays: the row (a
+     three-state responsive grid with named areas, a `:has()` sibling dim and a
+     pointer spotlight) and the project preview (fixed, positioned by GSAP, with
+     an `.is-on` state). */
   .work-row {
     display: grid;
     grid-template-columns: 3.5rem minmax(0, 1fr) auto;
@@ -1339,6 +1572,29 @@
     border-bottom: 1px solid var(--line);
     position: relative;
     will-change: opacity, transform;
+
+    /* Under 56.25rem (the `wide` breakpoint, S9) the row keeps three columns
+       but narrows them: the number and the disc shrink and the copy takes the
+       space. */
+    @variant max-wide {
+      grid-template-columns: 2.25rem minmax(0, 1fr) 2.5rem;
+      gap: 0.875rem;
+      padding: 1.75rem 0;
+    }
+
+    /* Below 35rem the row kept three columns, so the copy column measured
+       ~160px (25ch) on a 320px screen and every project read as a stack of
+       two-word lines. The number steps above the title and the body spans the
+       full row; the thumb stays on top. */
+    @variant max-xs {
+      grid-template-columns: minmax(0, 1fr) 2.5rem;
+      grid-template-areas:
+        "thumb thumb"
+        "num go"
+        "body body";
+      row-gap: 0.625rem;
+      column-gap: 0.75rem;
+    }
   }
 
   /* Spotlight carried by the pointer. */
@@ -1349,7 +1605,7 @@
     border-radius: 1.125rem;
     pointer-events: none;
     opacity: 0;
-    transition: opacity 0.5s var(--ease);
+    transition: opacity var(--duration-slow) var(--ease-out-field);
     /* literal: the row spotlight is 7.5 %, under `--glass`, so it stays its own
        value (§14.4). */
     background: radial-gradient(
@@ -1365,33 +1621,47 @@
     opacity: var(--o, 1);
   }
 
-  .work-body {
-    min-width: 0;
-  }
-
+  /* The number and the body are two nodes of the row's grid: their areas are
+     assigned at 35rem, next to the template that names them, and their type is
+     an inline utility in `WorkList`. */
   .work-num {
     font-family: var(--font-mono);
     font-size: 0.8125rem;
     font-weight: 500;
     color: var(--color-dim);
     transition:
-      opacity 0.5s var(--ease),
-      color 0.5s var(--ease);
+      opacity var(--duration-slow) var(--ease-out-field),
+      color var(--duration-slow) var(--ease-out-field);
+
+    @variant max-xs {
+      grid-area: num;
+    }
+  }
+
+  .work-body {
+    min-width: 0;
+
+    @variant max-xs {
+      grid-area: body;
+    }
   }
 
   .work-row h3 {
     font-size: clamp(1.625rem, 3.4vw, 2.5rem);
     line-height: 1.1;
     letter-spacing: -0.03em;
-    transition: translate 0.7s var(--ease);
+    transition: translate var(--duration-drift) var(--ease-out-field);
   }
 
+  /* The two lines under the title travel with the row: `.work-row:hover
+     .work-body > *` is the rule that moves them, so their transition belongs
+     next to it instead of in the JSX. */
   .work-problem {
     margin-top: 0.5rem;
     max-width: 50ch;
     font-size: 0.9375rem;
     color: var(--color-mut);
-    transition: translate 0.7s var(--ease);
+    transition: translate var(--duration-drift) var(--ease-out-field);
   }
 
   .work-tags {
@@ -1400,23 +1670,7 @@
     font-size: 0.8125rem;
     letter-spacing: 0.03em;
     color: var(--color-dim);
-    transition: translate 0.7s var(--ease);
-  }
-
-  .work-go {
-    position: relative;
-    overflow: hidden;
-    width: 2.875rem;
-    height: 2.875rem;
-    border-radius: 50%;
-    border: 1px solid var(--line);
-    display: grid;
-    place-items: center;
-    color: var(--color-mut);
-    transition:
-      opacity 0.5s var(--ease),
-      color 0.5s var(--ease),
-      border-color 0.5s var(--ease);
+    transition: translate var(--duration-drift) var(--ease-out-field);
   }
 
   .work-go::before {
@@ -1426,7 +1680,7 @@
     border-radius: 50%;
     background-color: var(--color-white);
     transform: scale(0);
-    transition: transform 0.6s var(--ease);
+    transition: transform var(--duration-slower) var(--ease-out-field);
   }
 
   .work-go .ar {
@@ -1434,14 +1688,27 @@
     z-index: 1;
   }
 
+  /* Hidden until the touch layout gives it a row of its own. */
   .work-thumb {
     display: none;
-  }
 
-  .work-hit {
-    position: absolute;
-    inset: 0;
-    z-index: 2;
+    /* On a touch-sized viewport the cover rides inline above the row instead of
+       in the floating preview. */
+    @variant max-wide {
+      display: block;
+      grid-column: 1 / -1;
+      order: -1;
+      aspect-ratio: 16 / 9;
+      border-radius: 1rem;
+      overflow: hidden;
+      position: relative;
+      background-color: var(--color-deep);
+    }
+
+    @variant max-xs {
+      grid-area: thumb;
+      order: 0;
+    }
   }
 
   /* Preview that follows the pointer over the list. */
@@ -1456,11 +1723,12 @@
     z-index: 40;
     pointer-events: none;
     opacity: 0;
-    transition: opacity 0.4s var(--ease);
-    /* literal: preview shadow in black plus a 14 % border — one is depth, the
-       other sits between `--soft` and `--strong` (§14.4). */
-    box-shadow: 0 30px 70px -20px rgb(0 0 0 / 0.7);
-    border: 1px solid rgb(255 255 255 / 0.14);
+    transition: opacity var(--duration-base) var(--ease-out-field);
+    /* Its hairline and its depth are deeper than the rest of the system, so it
+       hands the glass recipe the two values through the hooks the recipe reads
+       instead of declaring a second surface (§13.2: one definition). */
+    --glass-line: rgb(255 255 255 / 0.14);
+    --glass-shadow: 0 30px 70px -20px rgb(0 0 0 / 0.7);
     will-change: transform;
   }
 
@@ -1472,7 +1740,7 @@
     position: absolute;
     inset: 0;
     opacity: 0;
-    transition: opacity 0.5s var(--ease);
+    transition: opacity var(--duration-slow) var(--ease-out-field);
   }
 
   .work-preview-layer.is-on {
@@ -1480,8 +1748,7 @@
   }
 
   .work-preview-tag {
-    position: absolute;
-    left: 0.75rem;
+    position: absolute;    left: 0.75rem;
     bottom: 0.75rem;
     z-index: 2;
     display: flex;
@@ -1512,7 +1779,10 @@
       #0a1128;
   }
 
-  @media (hover: hover) and (pointer: fine) {
+  /* The pointer choreography of the list: dim the siblings, light the row under
+     the cursor, slide its copy and fill its arrow. `:has()` on the list is why
+     this is a block and not utilities (bucket C). */
+  @variant pointer-fine {
     .work-list:has(.work-row:hover) .work-row:not(:hover) {
       --o: 0.6;
     }
@@ -1529,60 +1799,36 @@
       color: var(--color-sky);
     }
 
-    .work-row:hover .work-go {
-      color: var(--color-on-solid);
-      border-color: var(--color-white);
-    }
-
     .work-row:hover .work-go::before {
       transform: scale(1);
     }
   }
 
-  @media (hover: none), (max-width: 900px) {
-    .work-preview {
-      display: none;
-    }
-  }
-
   /* --- about -------------------------------------------------------------- */
-  .about-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: clamp(2.5rem, 8vw, 6.875rem);
-    margin-top: 3.5rem;
-  }
-
-  .about-h3 {
-    margin-bottom: 1.625rem;
-    font-family: var(--font-mono);
-    font-size: 0.8125rem;
-    font-weight: 500;
-    letter-spacing: 0.16em;
-    text-transform: uppercase;
-    color: var(--color-sky);
-  }
-
-  .about-copy p {
-    color: var(--color-mut);
-    font-size: 1.0625rem;
-    max-width: 46ch;
-  }
-
-  .about-copy p + p {
-    margin-top: 1.125rem;
-  }
-
-  .about-copy strong {
-    color: var(--color-paper);
-    font-weight: 600;
-  }
-
+  /* `.about-grid`, `.about-h3`, `.about-copy` and `.skill-chips` are recipes
+     above or inline utilities in `About`/`ProjectPage`. What stays: the
+     portrait row (nested element selectors and a reflow at 35rem), the
+     statement + its `.sw` state lit by the scroll trigger, and the timeline —
+     two stacked rails with `scaleY(var(--tlp))`, a dot per item and an `.is-on`
+     class, i.e. the three-state machine this file keeps (§13.4). */
   .about-portrait {
     display: flex;
     align-items: center;
     gap: 0.875rem;
     margin-bottom: 1.875rem;
+
+    /* The identity row cannot hold avatar, name and three socials on one line
+       below 35rem without breaking the role into a three-line column. Socials
+       drop to their own line, aligned under the name. */
+    @variant max-xs {
+      flex-wrap: wrap;
+      row-gap: 1rem;
+
+      & > div:first-of-type {
+        flex: 1 1 8rem;
+        min-width: 0;
+      }
+    }
   }
 
   .about-portrait img {
@@ -1609,6 +1855,16 @@
     display: flex;
     gap: 0.5rem;
     margin-left: 0.75rem;
+
+    @variant max-wide {
+      margin-left: 0;
+    }
+
+    @variant max-xs {
+      flex-basis: 100%;
+      width: auto;
+      margin-left: 4.375rem;
+    }
   }
 
   .about-socials a {
@@ -1620,8 +1876,8 @@
     border: 1px solid var(--line);
     color: var(--color-mut);
     transition:
-      color 0.3s var(--ease),
-      border-color 0.3s var(--ease);
+      color var(--duration-fast) var(--ease-out-field),
+      border-color var(--duration-fast) var(--ease-out-field);
   }
 
   .statement {
@@ -1666,27 +1922,6 @@
       animation: none;
       transition: none;
     }
-  }
-
-  .skill-chips {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.625rem;
-    margin: 1.875rem 0;
-    font-family: var(--font-mono);
-    font-size: 0.8125rem;
-    font-weight: 500;
-    color: var(--color-paper);
-  }
-
-  .skill-chips span {
-    padding: 0.3125rem 0.75rem;
-    border-radius: 999px;
-    background-color: var(--glass);
-    border: 1px solid var(--line);
-    transition:
-      background-color 0.4s var(--ease),
-      border-color 0.4s var(--ease);
   }
 
   .timeline {
@@ -1737,7 +1972,7 @@
     border-radius: 50%;
     background-color: var(--field-ink);
     border: 1px solid var(--color-dim);
-    transition: 0.6s var(--ease);
+    transition: var(--duration-slower) var(--ease-out-field);
   }
 
   .timeline-item.is-on::before {
@@ -1776,7 +2011,10 @@
     max-width: 46ch;
   }
 
-  /* --- contact ------------------------------------------------------------ */
+  /* --- contact ------------------------------------------------------------
+     `.contact-actions` is an inline utility in `CopyButton`. What stays: the
+     giant mail, because the underline it grows is a `::after` with a gradient
+     and a `scaleX` origin (`background-clip`/pseudo = bucket C). */
   .bigmail {
     position: relative;
     display: inline-flex;
@@ -1790,6 +2028,15 @@
     line-height: 1.1;
     letter-spacing: -0.04em;
     word-break: break-word;
+
+    /* The arrow has nowhere to sit once the address fills the line. (The block
+       also declared this same font-size at 56.25rem; it was a no-op and is
+       gone.) */
+    @variant max-wide {
+      & > .ar {
+        display: none;
+      }
+    }
   }
 
   .bigmail::after {
@@ -1802,7 +2049,7 @@
     background: linear-gradient(90deg, var(--color-sky), var(--color-paper));
     transform-origin: left;
     transform: scaleX(0.18);
-    transition: transform 0.9s var(--ease);
+    transition: transform var(--duration-draw) var(--ease-out-field);
   }
 
   .bigmail:hover::after,
@@ -1817,63 +2064,16 @@
     flex-wrap: wrap;
   }
 
-  /* --- footer ------------------------------------------------------------- */
+  /* --- footer -------------------------------------------------------------
+     `.footer-row`, `.footer-links` and `.btn-icon` are `@utility` recipes; the
+     copy column and the tagline are inline utilities in `Footer`. What stays:
+     the frame that clips the wordmark, and the wordmark itself —
+     `background-clip: text` over a per-letter `calc()` driven by each glyph's
+     own pointer spring (§13.4, §14.6). */
   .site-footer {
     position: relative;
     overflow: hidden;
     padding-top: clamp(4rem, 12vw, 9.375rem);
-  }
-
-  .footer-row {
-    display: grid;
-    grid-template-columns: 1fr auto 1fr;
-    gap: 1.5rem;
-    align-items: start;
-    padding-top: 1.75rem;
-    border-top: 1px solid var(--line);
-  }
-
-  .footer-links {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 1.75rem;
-    font-size: 0.875rem;
-    color: var(--color-mut);
-  }
-
-  .footer-links a {
-    /* 22px tall as plain inline text, under the 24px AA target minimum; the
-       underline stays on the text baseline and the box only gets taller. */
-    display: inline-flex;
-    align-items: center;
-    min-height: 1.5rem;
-    padding-bottom: 3px;
-    background-image: linear-gradient(currentColor, currentColor);
-    background-position: 0 100%;
-    background-repeat: no-repeat;
-    background-size: 0 1px;
-    transition:
-      color 0.3s var(--ease),
-      background-size 0.6s var(--ease);
-  }
-
-  .footer-links a:hover,
-  .footer-links a:focus-visible {
-    color: var(--color-white);
-    background-size: 100% 1px;
-  }
-
-  .footer-copy {
-    text-align: right;
-    font-size: 0.875rem;
-    color: var(--color-dim);
-  }
-
-  .tagline {
-    margin-top: 0.625rem;
-    font-size: 0.9375rem;
-    letter-spacing: 0.01em;
-    color: var(--color-dim);
   }
 
   .footer-mark {
@@ -1895,6 +2095,10 @@
     pointer-events: none;
     opacity: var(--fp);
     translate: 0 calc((1 - var(--fp)) * 70px);
+
+    @variant max-wide {
+      font-size: clamp(3.75rem, 20vw, 20.5rem);
+    }
   }
 
   .footer-mark.is-serif {
@@ -1918,7 +2122,11 @@
     color: transparent;
   }
 
-  /* --- chrome ------------------------------------------------------------- */
+  /* --- chrome -------------------------------------------------------------
+     `.btn-icon` and `.skip-link` are `@utility` recipes above. What stays: the
+     drawer's two bars and its `[open]` state machine, the panel (an ink mix with
+     a blur, plus the `html.js` gate), the section flash keyframe and the halo
+     the copy carries over the field. */
   .menu-toggle {
     position: relative;
     display: block;
@@ -1933,8 +2141,8 @@
     height: 1px;
     background-color: currentColor;
     transition:
-      transform 0.36s cubic-bezier(0.32, 0.72, 0, 1),
-      opacity 0.22s cubic-bezier(0.32, 0.72, 0, 1);
+      transform var(--duration-fast) var(--ease-drawer),
+      opacity var(--duration-ui) var(--ease-drawer);
   }
 
   .menu-toggle-bar-top {
@@ -1991,54 +2199,10 @@
     visibility: hidden;
   }
 
-  .btn-icon {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 2.75rem;
-    height: 2.75rem;
-    /* literal: the idle icon is 70 % white — a surface tone the ladder does
-       not carry (§14.4). */
-    color: rgb(255 255 255 / 0.7);
-    border: 0;
-    border-radius: 9999px;
-    background-color: transparent;
-    transition:
-      background-color 160ms cubic-bezier(0.23, 1, 0.32, 1),
-      color 160ms cubic-bezier(0.23, 1, 0.32, 1),
-      transform 160ms cubic-bezier(0.23, 1, 0.32, 1);
-  }
-
-  .btn-icon:active {
-    transform: scale(0.97);
-  }
-
-  @media (hover: hover) and (pointer: fine) {
-    .btn-icon:hover {
-      background-color: var(--hover);
-      color: var(--color-white);
-    }
-  }
-
-  .skip-link {
-    position: absolute;
-    left: 1rem;
-    top: -5rem;
-    z-index: 70;
-    padding: 0.65rem 1rem;
-    background-color: var(--color-white);
-    /* literal: pure black on pure white — the one high-contrast surface in the
-       page, and neither end is a palette entry. */
-    color: #000;
-    font-size: 0.875rem;
-    font-weight: 700;
-    border-radius: 0.375rem;
-  }
-
   /* Nav CTA and hero CTAs land on a section: the heading answers with one
      short colour flash so the reader sees where they arrived. */
   .section-flash {
-    animation: section-flash 0.9s ease-out;
+    animation: section-flash var(--duration-draw) ease-out;
   }
   /* Copy that stands directly on the animated field carries a dark halo: the
      plume can bloom white behind a line of text, and the halo is what keeps
@@ -2068,22 +2232,84 @@
     text-shadow: none;
   }
 
-  .skip-link:focus {
-    top: 1rem;
-  }
-
   /* `.sr-only` is Tailwind's own utility — the hand-written copy here was a
      second definition of it (and a second place to forget the `clip-path`
      update). */
+
+}
+
+/* --- keyframes -----------------------------------------------------------
+   All seven in one place: a keyframe is a global name, so living next to the
+   rule that plays it only hides the list. Each one is named by the
+   `animation` that asks for it, and each is a keyframe for one of the four
+   reasons this layer keeps: the flare's cycle, the two reveal entries (with
+   and without the blur), the word split, the arrival flash, the status pulse
+   and the ornament's entrance. */
+@keyframes flare {
+  0%,
+  90%,
+  100% {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+
+  93% {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  96% {
+    opacity: 0.6;
+    transform: scale(1.25);
+  }
+
+  98% {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+}
+
+@keyframes r-paint-plain {
+  from {
+    translate: 0 28px;
+  }
+
+  to {
+    translate: 0 0;
+  }
+}
+
+@keyframes r-paint {
+  from {
+    translate: 0 28px;
+    filter: blur(6px);
+  }
+
+  to {
+    translate: 0 0;
+    filter: none;
+  }
+}
+
+@keyframes r-word {
+  from {
+    transform: translateY(112%);
+  }
+
+  to {
+    transform: none;
+  }
 }
 
 @keyframes section-flash {
   0% {
     color: var(--color-paper);
   }
+
   40% {
     color: var(--color-sky);
   }
+
   100% {
     color: var(--color-paper);
   }
@@ -2094,6 +2320,7 @@
     opacity: 0.4;
     scale: 1;
   }
+
   70%,
   100% {
     opacity: 0;
@@ -2106,6 +2333,7 @@
     opacity: 0;
     transform: scale(0.5);
   }
+
   to {
     opacity: 1;
     transform: scale(1);
@@ -2134,125 +2362,14 @@
   }
 }
 
-@media (max-width: 900px) {
-  .hero-foot,
-  .about-grid {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .about-socials {
-    margin-left: 0;
-  }
-
-  .bigmail {
-    font-size: clamp(1.75rem, 6.2vw, 4.75rem);
-  }
-
-  .bigmail > .ar {
-    display: none;
-  }
-
-  .footer-mark {
-    font-size: clamp(3.75rem, 20vw, 20.5rem);
-  }
-
-  .hero-ornament {
-    display: none;
-  }
-
-  .hero-copy {
-    translate: none;
-  }
-
-  .work-row {
-    grid-template-columns: 2.25rem minmax(0, 1fr) 2.5rem;
-    gap: 0.875rem;
-    padding: 1.75rem 0;
-  }
-
-  .work-thumb {
-    display: block;
-    grid-column: 1 / -1;
-    order: -1;
-    aspect-ratio: 16 / 9;
-    border-radius: 1rem;
-    overflow: hidden;
-    position: relative;
-    background-color: var(--color-deep);
-  }
-
-  .work-go {
-    width: 2.5rem;
-    height: 2.5rem;
-  }
-
-  .footer-row {
-    grid-template-columns: 1fr;
-  }
-
-  .footer-copy {
-    text-align: left;
-  }
-
-  .work-tab {
-    padding: 0.5rem 0.8125rem;
-  }
-}
-
-/* Narrow phones: the identity row cannot hold avatar, name and three socials on
-   one line without breaking the role into a three-line column. Socials drop to
-   their own line, aligned under the name. */
-@media (max-width: 560px) {
-  /* Below 560px the row kept three columns, so the copy column measured ~160px
-     (25ch) on a 320px screen and every project read as a stack of two-word
-     lines. The number steps above the title and the body spans the full row;
-     the thumb stays on top. */
-  .work-row {
-    grid-template-columns: minmax(0, 1fr) 2.5rem;
-    grid-template-areas:
-      "thumb thumb"
-      "num go"
-      "body body";
-    row-gap: 0.625rem;
-    column-gap: 0.75rem;
-    align-items: center;
-  }
-
-  .work-thumb {
-    grid-area: thumb;
-    order: 0;
-  }
-
-  .work-num {
-    grid-area: num;
-  }
-
-  .work-go {
-    grid-area: go;
-  }
-
-  .work-body {
-    grid-area: body;
-  }
-
-  .about-portrait {
-    flex-wrap: wrap;
-    row-gap: 1rem;
-  }
-
-  .about-portrait > div:first-of-type {
-    flex: 1 1 8rem;
-    min-width: 0;
-  }
-
-  .about-socials {
-    flex-basis: 100%;
-    width: auto;
-    margin-left: 4.375rem;
-  }
-}
-
+/* Width and pointer conditions live in the rules they modify: every one of
+   them is a `@variant` inside its own block (`max-wide`, `max-xs`,
+   `pointer-fine`, `pointer-coarse`, `no-hover`), derived from
+   `--breakpoint-wide` / `--breakpoint-xs` above. What is left at the top level
+   is the four conditions Tailwind has no variant for. */
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  /* The glass recipe and the two surfaces that repeat it, on an engine that
+     cannot blur: they fall back to a near-opaque ink. */
   .glass,
   .site-header.is-scrolled .nav-pill,
   .mobile-menu-panel,
@@ -2273,12 +2390,6 @@
 
   .orn-orb {
     backdrop-filter: none;
-  }
-}
-
-@media (hover: none) {
-  .field-glow {
-    display: none;
   }
 }
 

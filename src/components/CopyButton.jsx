@@ -103,7 +103,7 @@ const CopyButton = () => {
 
   return (
     <>
-      <div className="contact-actions js-only">
+      <div className="js-only mt-[2.375rem] flex flex-wrap gap-3">
         <button
           id="copy-address"
           type="button"

@@ -142,10 +142,12 @@ visitor does not choose: `middleware.js` reads `Accept-Language`, and `/` answer
 matching prerendered page — `/es` or `/pt` — through an internal rewrite, so the URL bar
 keeps `/` and the language never becomes part of the public address.
 
-"Translated in advance" is literal: those pages are built by `next build` (ISR, one hour),
+"Translated in advance" is literal: those pages are built by `next build` (ISR, six hours),
 so the bytes that arrive already carry the translated copy, `<title>`, description and
 social tags. There is no dictionary swap after hydration and therefore no flash of
-English.
+English. The six hours are the snapshot's own cadence: the pages re-render from
+`src/data/pinned-projects.json` when the cron endpoint refreshes it, not on a timer of
+their own.
 
 Resolution order is `?lang=` → cookie → `Accept-Language` → English. The middleware stores
 the detected tag (one year, `SameSite=Lax`), sets `Vary: Accept-Language, Cookie` and sends
@@ -239,21 +241,29 @@ pnpm build:nvme
 
 Prefer **pnpm** (`packageManager`); `npm run …` works but locks/CI use pnpm.
 
-**Not the main bottleneck:** GitHub pin scrape in `getStaticProps` (~hundreds of ms). See [#20](https://github.com/YukaC/PortfolioReact/issues/20).
+**Not the main bottleneck:** the project list is read from the versioned snapshot
+(`src/data/pinned-projects.json`) — a build makes no request to GitHub at all. The one network
+call lives in the scheduled refresh (`src/app/api/sync-projects/route.js`), which validates
+before it writes. See [#20](https://github.com/YukaC/PortfolioReact/issues/20).
 
 ## Visual system
 
 Bocanada is the north star, retoned for a navy field: the smoke, the coral
 lattice and its spring flares are the only things allowed to move on their own.
-Shared layout is `.site-shell` (max 80rem, 44–128px inset) and `.section-y`
-(top padding only — sections breathe through space, not borders).
+The shared frame is the `site-shell` utility (max 80rem, 44–128px inset) and
+`section-y` (top padding only — sections breathe through space, not borders);
+both are `@utility` recipes in `src/styles/globals.css`, and everything a node
+can express with Tailwind is a utility in its JSX (see `AGENTS.md`, "Where CSS
+goes").
 
 One motion channel feeds every layer: `useFieldMotion` writes `--scy`, `--p`,
 `--hf`, `--px/--py` and `--mx/--my` on `:root` from a single rAF loop with
 inertia; About and Footer own `--tlp` and `--fp` through ScrollTrigger scrubs.
 Text stands directly on the field and carries a dark halo; glass (`.glass`) is
 used only where a surface has a job — the scrolled nav pill, the work preview
-and its tag. Motion presets live in `src/motion/config.js`. Task notes:
+and its tag. One ramp feeds both motion layers: `src/motion/config.js` keeps the
+GSAP springs and reads every duration, stagger and curve from the
+`--duration-*` / `--stagger-*` / `--ease-*` tokens in `globals.css`. Task notes:
 `odd/tasks/glass-motion-rebrand.md`.
 
 ### Field quality on a phone

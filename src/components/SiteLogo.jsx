@@ -13,7 +13,7 @@ const SiteLogo = ({
   priority = false,
   showStroke = false,
 }) => (
-  <span className="site-logo relative inline-flex items-end">
+  <span className="relative inline-flex items-end">
     <Image
       src="/logo-white.webp"
       alt="Agustín Ciucani"

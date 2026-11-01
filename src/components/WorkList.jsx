@@ -113,7 +113,7 @@ const WorkRow = ({ project, index, labels, href }) => {
             target="_blank"
             rel="noopener noreferrer"
             aria-label={labels.repoAria}
-            className="work-repo focus-ring relative z-[3] mt-3 inline-flex items-center gap-1.5 rounded-full border border-white/15 px-2.5 py-1 font-mono text-[0.6875rem] uppercase tracking-[0.14em] text-white/55 transition-colors hover:border-white/40 hover:text-white/90"
+            className="focus-ring relative z-[3] mt-3 inline-flex items-center gap-1.5 rounded-full border border-white/15 px-2.5 py-1 font-mono text-[0.6875rem] uppercase tracking-[0.14em] text-white/55 transition-colors hover:border-white/40 hover:text-white/90"
           >
             {labels.github}
             <SwapArrow direction="d" size={11} />
@@ -126,7 +126,7 @@ const WorkRow = ({ project, index, labels, href }) => {
       </span>
 
       <a
-        className="work-hit focus-ring"
+        className="absolute inset-0 z-[2] focus-ring"
         href={siteUrl}
         target="_blank"
         rel="noopener noreferrer"
@@ -190,7 +190,7 @@ const WorkList = ({ projects = PINNED_FALLBACK, locale = "en" }) => {
       aria-labelledby="work-heading"
     >
       <div className="site-shell">
-        <div className="section-head">
+        <div className="flex flex-wrap items-end justify-between gap-6">
           <div>
             <Reveal className="eyebrow">{t("work.eyebrow")}</Reveal>
             <SplitHeading

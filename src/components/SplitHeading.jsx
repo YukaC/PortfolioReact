@@ -75,7 +75,7 @@ const SplitHeading = ({
       {lines.map((words, lineIndex) => (
         <span
           key={`line-${lineIndex}`}
-          className={lines.length > 1 ? "hl" : undefined}
+          className={lines.length > 1 ? "block" : undefined}
           aria-hidden="true"
         >
           {words.map(({ word, index, last }) => {
@@ -95,7 +95,9 @@ const SplitHeading = ({
             return (
               <span key={`${word}-${index}`}>
                 {isAccentWord(word, accentWords) ? (
-                  <em className="accent">{box}</em>
+                  <em className="not-italic font-semibold tracking-[inherit] text-sky">
+                    {box}
+                  </em>
                 ) : (
                   box
                 )}

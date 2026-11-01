@@ -98,7 +98,7 @@ const ProjectPage = ({ project, projects = [], locale = "en", generatedAt = null
             </section>
           </div>
 
-          <div className="hero-actions">
+          <div className="mt-[2.375rem] flex flex-wrap gap-3">
             <a
               href={siteUrl}
               target="_blank"

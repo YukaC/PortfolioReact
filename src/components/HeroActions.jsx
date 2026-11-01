@@ -23,7 +23,11 @@ const HeroActions = () => {
   };
 
   return (
-    <div className="hero-actions" data-r="paint" style={{ "--d": "640ms" }}>
+    <div
+      className="mt-[2.375rem] flex flex-wrap gap-3"
+      data-r="paint"
+      style={{ "--d": "640ms" }}
+    >
       <Magnetic>
         <a
           href="#portfolio"

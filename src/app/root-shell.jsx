@@ -111,7 +111,7 @@ export default function RootShell({ lang = DEFAULT_LOCALE, children }) {
   const htmlLang = normalizeLocale(lang)?.locale ?? DEFAULT_LOCALE;
 
   return (
-    <html lang={htmlLang} dir="ltr" className="dark">
+    <html lang={htmlLang} dir="ltr">
       <body>
         <script dangerouslySetInnerHTML={{ __html: MARK_JS }} />
         <div

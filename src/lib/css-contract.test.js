@@ -238,3 +238,185 @@ test("reduced motion resets the same states the scripted reveal hides", () => {
   assert.match(block, /\.w > span/, "reduced motion leaves the word split displaced");
   assert.match(block, /animation:\s*none/, "reduced motion leaves animations running");
 });
+
+/* ===========================================================================
+   §13.3 S3–S7 (spec S14) — the invariants the Tailwind migration created.
+   Text-only like the rest of the suite: no build, no browser, so a regression
+   fails here before it fails in `pnpm check:css` or in a screenshot.
+   ======================================================================== */
+
+/** Every JSX file, as { file, text }, so a token can be traced to its author. */
+const jsxSources = (() => {
+  const found = [];
+  const walk = (dir) => {
+    readdirSync(dir).forEach((entry) => {
+      const full = path.join(dir, entry);
+      if (statSync(full).isDirectory()) return walk(full);
+      if (!/\.jsx$/.test(full)) return;
+      found.push({ file: path.relative(ROOT, full), text: readFileSync(full, "utf8") });
+    });
+  };
+  walk(path.join(ROOT, "src"));
+  return found;
+})();
+
+/** The index of the brace that closes the one opened at `open`, or -1. */
+const matchBrace = (text, open) => {
+  let depth = 0;
+  for (let i = open; i < text.length; i += 1) {
+    if (text[i] === "{") depth += 1;
+    else if (text[i] === "}") {
+      depth -= 1;
+      if (depth === 0) return i;
+    }
+  }
+  return -1;
+};
+
+/** Class-ish tokens written in a `className` expression, `${…}` dropped. */
+const tokensIn = (expression) => {
+  let flat = "";
+  for (let i = 0; i < expression.length; i += 1) {
+    if (expression[i] === "$" && expression[i + 1] === "{") {
+      const close = matchBrace(expression, i + 1);
+      if (close === -1) break;
+      i = close;
+      continue;
+    }
+    flat += expression[i];
+  }
+  return flat
+    .split(/[\s"'`+]+/)
+    .map((token) => token.trim())
+    .filter((token) => /^[A-Za-z][A-Za-z0-9_:[\]./%#(),=>~!*-]*$/.test(token));
+};
+
+/** Every class token written in the JSX, with the file that writes it. */
+const jsxClasses = (() => {
+  const tokens = new Map();
+  const collect = (expression, file) => {
+    tokensIn(expression).forEach((token) => {
+      if (!tokens.has(token)) tokens.set(token, file);
+    });
+  };
+  for (const source of jsxSources) {
+    for (const match of source.text.matchAll(/className\s*=\s*"([^"]*)"/g)) {
+      collect(match[1], source.file);
+    }
+    for (const match of source.text.matchAll(/className\s*=\s*\{(?!=)/g)) {
+      const open = match.index + match[0].length - 1;
+      const close = matchBrace(source.text, open);
+      if (close !== -1) collect(source.text.slice(open + 1, close), source.file);
+    }
+  }
+  return tokens;
+})();
+
+test("no hand-written pointer or width media query: those are variants", () => {
+  // §13.3 S5 / S14: `pointer-fine:`, `pointer-coarse:`, `max-xs`, `max-wide`,
+  // and `no-hover` are declared once as variants and used from the rules and the
+  // JSX. A raw query for one of them would be a second vocabulary of states.
+  const offenders = cssLines
+    .map((line, i) => ({ line: line.trim(), number: i + 1 }))
+    .filter(({ line }) => /^@media\b/.test(line))
+    .filter(({ line }) => /pointer|hover|max-width:\s*(35rem|560px|56\.25rem|900px)/.test(line));
+  assert.deepEqual(
+    offenders.map(({ number, line }) => `${number}: ${line}`),
+    [],
+    "a pointer or 560/900px condition is written as a media query instead of a variant",
+  );
+});
+
+test("every @utility has exactly one definition", () => {
+  // §13.2 bucket B: a recipe is one definition, so the JSX cannot end up with
+  // two surfaces that drift apart.
+  const definitions = [...css.matchAll(/^@utility\s+([a-z0-9-]+)\s*\{/gm)].map(
+    (match) => match[1],
+  );
+  assert.ok(definitions.length > 0, "no @utility definitions found");
+  const counted = definitions.reduce((counts, name) => {
+    counts[name] = (counts[name] ?? 0) + 1;
+    return counts;
+  }, {});
+  const duplicated = Object.entries(counted)
+    .filter(([, count]) => count > 1)
+    .map(([name]) => name);
+  assert.deepEqual(duplicated, [], `recipes defined more than once: ${duplicated.join(", ")}`);
+});
+
+test("every recipe and every house class in the JSX has a rule", () => {
+  // The dead-class class of bug (§10 P2-19): `className="work-repo"` and
+  // `className="site-logo"` shipped for months with nothing behind them. A class
+  // this project names is owned by this stylesheet — Tailwind's own utilities
+  // never start with one of these prefixes — so a house-prefixed token with no
+  // rule is dead, whether it is in `@layer components` or in `@utility`.
+  const HOUSE = /^(bocanada|field|site|nav|hero|orn|mq|marquee|work|about|timeline|skill|statement|bigmail|contact|footer|tagline|menu|mobile-menu|btn|glass|eyebrow|lead|stackline|status|section|skip|lang|is-|w$|lb$|ar$|hl$)/;
+  // `focus-ring` is the one documented hook: the ring lives on the global
+  // `:focus-visible` rule and the class only records the intent of a call site.
+  const HOOKS = new Set(["focus-ring"]);
+  const declarations = new Set([
+    ...cssLines
+      .map((line) => /^\s*@utility\s+([a-z0-9-]+)/.exec(line)?.[1])
+      .filter(Boolean),
+  ]);
+  const missing = [...jsxClasses]
+    .filter(([token]) => !HOOKS.has(token))
+    .filter(([token]) => HOUSE.test(token))
+    .filter(([token]) => {
+      const name = token.split(":").pop();
+      return !css.includes(`.${name}`) && !declarations.has(name);
+    })
+    .map(([token, file]) => `${file}: "${token}"`);
+  assert.deepEqual(missing, [], `class tokens with no rule:\n${missing.join("\n")}`);
+});
+
+test("the focus ring has one path and .sr-only is Tailwind's", () => {
+  // §10 P2-18 / §13.3 S4: `.focus-ring` used to re-declare the ring (3px against
+  // the global 4px), and `.sr-only` was a hand-written copy of a built-in.
+  const ringRules = cssLines.filter((line) => /^:focus-visible\s*\{/.test(line.trim()));
+  assert.equal(
+    ringRules.length,
+    1,
+    `expected exactly one :focus-visible ring, found ${ringRules.length}`,
+  );
+  assert.equal(
+    /^\s*\.sr-only\s*\{/m.test(css),
+    false,
+    ".sr-only is Tailwind's utility; do not define it by hand",
+  );
+  assert.equal(
+    /\.focus-ring\s*\{/.test(css),
+    false,
+    ".focus-ring must not draw a second ring",
+  );
+});
+
+test("no duration literal survives outside the ramp (S8)", () => {
+  // §14.7 S2c: CSS and `src/motion/config.js` read the same `--duration-*`
+  // tokens, so a stray `0.4s` is either a token that was forgotten or a new
+  // beat nobody declared.
+  const rampLines = new Set();
+  cssLines.forEach((line, i) => {
+    if (/^\s*--(duration|stagger)-[a-z-]+\s*:/.test(line)) rampLines.add(i + 1);
+  });
+  const offenders = bareLines
+    .map((line, i) => ({ line, number: i + 1 }))
+    .filter(({ number }) => !rampLines.has(number))
+    .filter(({ line }) => /\b0?\.\d+s\b/.test(line));
+  assert.deepEqual(
+    offenders.map(({ number, line }) => `${number}: ${line.trim()}`),
+    [],
+    "a time literal outside the ramp",
+  );
+
+  const config = readFileSync(path.join(ROOT, "src/motion/config.js"), "utf8");
+  const configLiterals = config
+    .split("\n")
+    .filter((line) => !/^\s*(\/\*|\*|\/\/)/.test(line))
+    .filter((line) => /\b0?\.\d+s\b/.test(line));
+  assert.deepEqual(
+    configLiterals,
+    [],
+    "a time literal in motion/config.js: durations come from the tokens",
+  );
+});

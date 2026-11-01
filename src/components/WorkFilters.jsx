@@ -185,7 +185,11 @@ const WorkFilters = ({ rows, previewLayers = [] }) => {
         </ul>
       </div>
 
-      <div className="work-preview glass" ref={previewRef} aria-hidden="true">
+      <div
+        className="work-preview glass max-wide:hidden no-hover:hidden"
+        ref={previewRef}
+        aria-hidden="true"
+      >
         {previewLayers}
         <span className="work-preview-tag">
           {t("work.viewDemo")}

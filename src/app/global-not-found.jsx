@@ -49,7 +49,7 @@ export const metadata = {
  */
 export default function GlobalNotFound() {
   return (
-    <html lang="en" dir="ltr" className="dark">
+    <html lang="en" dir="ltr">
       <body>
         <div
           className={`${manrope.variable} ${spaceGrotesk.variable} ${fraunces.variable} root-layout`}
@@ -58,7 +58,7 @@ export default function GlobalNotFound() {
             id="main-content"
             className="flex min-h-[100dvh] w-full flex-col items-center justify-center"
           >
-            <section className="hero">
+            <section className="relative flex min-h-svh items-center pt-[8.125rem] pb-[4.375rem]">
               <div className="site-shell">
                 <span className="eyebrow">404</span>
                 <h1 className="hero-title">Page not found</h1>
@@ -67,9 +67,9 @@ export default function GlobalNotFound() {
                   work, the about section and the contact address are all one
                   page away.
                 </p>
-                <div className="hero-foot">
+                <div className="relative mt-10">
                   <div>
-                    <div className="hero-actions">
+                    <div className="mt-[2.375rem] flex flex-wrap gap-3">
                       {/* A plain anchor, not `next/link`: this document is
                           rendered *outside* the app tree (`global-not-found`
                           bypasses the root layouts), so there is no router

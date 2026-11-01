@@ -449,7 +449,7 @@ const Navbar = () => {
           >
             <nav
               ref={linksRef}
-              className="nav-links"
+              className="relative flex items-center gap-0.5"
               aria-label={t("nav.main")}
               onPointerLeave={() => {
                 isHoveringRef.current = false;
