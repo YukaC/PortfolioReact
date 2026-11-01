@@ -5,6 +5,7 @@ import SwapArrow from "@/components/SwapArrow";
 import { WORK_FILTERS } from "@/data/projects";
 import { useT } from "@/i18n/LocaleProvider";
 import { prefersReducedMotion, hasFinePointer } from "@/motion/prefersReducedMotion";
+import { BREAKPOINT, isAtMost } from "@/lib/breakpoints";
 import { gsap, registerMotion } from "@/motion/register";
 
 const PREVIEW_WIDTH = 320;
@@ -67,7 +68,7 @@ const WorkFilters = ({ rows, previewLayers = [] }) => {
     const list = listRef.current;
     const preview = previewRef.current;
     if (!list || !preview) return undefined;
-    if (window.innerWidth <= 900 || !hasFinePointer() || prefersReducedMotion()) {
+    if (isAtMost(BREAKPOINT.wide) || !hasFinePointer() || prefersReducedMotion()) {
       return undefined;
     }
 

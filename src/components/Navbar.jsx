@@ -437,11 +437,11 @@ const Navbar = () => {
             onClick={(e) => scrollToSection(e, "#home")}
             aria-label={t("nav.home")}
           >
-            <SiteLogo priority showStroke className="h-8 w-auto md:h-9" />
+            <SiteLogo priority showStroke className="h-8 w-auto nav:h-9" />
           </a>
 
           <div
-            className="hidden items-center md:flex"
+            className="hidden items-center nav:flex"
             onPointerLeave={() => {
               isHoveringRef.current = false;
               placeOnActive();
@@ -489,7 +489,7 @@ const Navbar = () => {
               accessible name is never stale. */}
           <details
             ref={detailsRef}
-            className="menu-disclosure md:hidden"
+            className="menu-disclosure nav:hidden"
             onToggle={(event) => setIsMenuOpen(event.currentTarget.open)}
           >
             <summary
@@ -510,7 +510,7 @@ const Navbar = () => {
       <div
         ref={panelRef}
         id={menuId}
-        className="mobile-menu-panel fixed inset-0 z-40 md:hidden"
+        className="mobile-menu-panel fixed inset-0 z-drawer nav:hidden"
       >
         <div className="site-shell flex h-full flex-col justify-center pt-24">
           <NavLinks scrollToSection={scrollToSection} isMobile />

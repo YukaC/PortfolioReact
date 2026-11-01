@@ -15,7 +15,11 @@ import { fileURLToPath } from "node:url";
  *   4. the no-script default is a page that reads: `[data-r]` is never hidden
  *      by the base stylesheet, `.w > span` keeps its box, and the
  *      `(scripting: none)` reset covers the word split (P0-1: 0 displaced
- *      words without JS).
+ *      words without JS);
+ *   5. the token scales of §14.7 S2b/S2d: one font stack, every `font-size`,
+ *      `border-radius`, `filter: blur()` and `z-index` in the sheet reads a
+ *      token (or says in the rule why it does not), and every width a script
+ *      asks about exists as a CSS breakpoint.
  *
  * The suite reads the stylesheet as text on purpose: P0-1 was a two-character
  * bug in a declaration, and it has to fail here before it fails in a browser.
@@ -359,14 +363,14 @@ test("every recipe and every house class in the JSX has a rule", () => {
       .map((line) => /^\s*@utility\s+([a-z0-9-]+)/.exec(line)?.[1])
       .filter(Boolean),
   ]);
+  // The base name, not the variant prefix: `nav:hidden` asks for `hidden`, and
+  // a variant (`hover:`, `max-wide:`, `pointer-coarse:`) is never a house class.
   const missing = [...jsxClasses]
-    .filter(([token]) => !HOOKS.has(token))
-    .filter(([token]) => HOUSE.test(token))
-    .filter(([token]) => {
-      const name = token.split(":").pop();
-      return !css.includes(`.${name}`) && !declarations.has(name);
-    })
-    .map(([token, file]) => `${file}: "${token}"`);
+    .map(([token, file]) => ({ token, file, name: token.split(":").pop() }))
+    .filter(({ name }) => !HOOKS.has(name))
+    .filter(({ name }) => HOUSE.test(name))
+    .filter(({ name }) => !css.includes(`.${name}`) && !declarations.has(name))
+    .map(({ token, file }) => `${file}: "${token}"`);
   assert.deepEqual(missing, [], `class tokens with no rule:\n${missing.join("\n")}`);
 });
 
@@ -419,4 +423,249 @@ test("no duration literal survives outside the ramp (S8)", () => {
     [],
     "a time literal in motion/config.js: durations come from the tokens",
   );
+});
+
+/* ===========================================================================
+   §14.7 S2b / S2d (specs S7 typography-half and S9) — one scale, one stack, one
+   breakpoint vocabulary. Text-only, like the rest of the suite.
+   ======================================================================== */
+
+/** Every `@theme` declaration, name → value, `--text-display--line-height` included. */
+const themeDeclarations = new Map();
+cssLines.slice(themeLines.start - 1, themeLines.end).forEach((line) => {
+  const declaration = /^\s*(--[a-z0-9-]+)\s*:\s*([^;]+);/.exec(line);
+  if (declaration) themeDeclarations.set(declaration[1], declaration[2].trim());
+});
+
+/** True when a 1-based line number lives inside the `@theme` block. */
+const inTheme = (lineNumber) =>
+  lineNumber >= themeLines.start && lineNumber <= themeLines.end;
+
+test("every font-size reads the type scale (S2b)", () => {
+  // §14.4/§14.7 S2b: 47 raw `font-size` declarations become the named steps of
+  // `@theme`. A new size is a token, or it is the one documented exception in a
+  // rule that says why (§14.5 forbids rounding a clamp to fit the grid).
+  const offenders = [];
+  bareLines.forEach((line, i) => {
+    const lineNumber = i + 1;
+    if (inTheme(lineNumber)) return;
+    const declaration = /font-size:\s*([^;]+)/.exec(line);
+    if (!declaration) return;
+    if (/^var\(--text-[a-z0-9-]+\)$/.test(declaration[1].trim())) return;
+    if (/^\s*--[a-z0-9-]+\s*:/.test(cssLines[i])) return;
+    if (enclosingRule(i).includes("/* literal:")) return;
+    offenders.push(`${lineNumber}: ${line.trim()}`);
+  });
+  assert.deepEqual(offenders, [], `font-size literals outside the scale:\n${offenders.join("\n")}`);
+
+  // The steps §14.4 names, with the off-grid ones kept off-grid: 13/15/17px are
+  // named, never snapped to 12/14/16.
+  const expected = {
+    "--text-display": "clamp(2.6rem, 7.6vw, 7rem)",
+    "--text-h2": "clamp(2.125rem, 4.6vw, 3.75rem)",
+    "--text-h3": "clamp(1.25rem, 2vw, 1.6rem)",
+    "--text-lead": "clamp(1.0625rem, 1.5vw, 1.25rem)",
+    "--text-statement": "clamp(1.625rem, 3.9vw, 3rem)",
+    "--text-work-title": "clamp(1.625rem, 3.4vw, 2.5rem)",
+    "--text-marquee": "clamp(3.375rem, 9.5vw, 8.5rem)",
+    "--text-bigmail": "clamp(1.75rem, 6.2vw, 4.75rem)",
+    "--text-wordmark": "clamp(5.5rem, 23vw, 20.5rem)",
+    "--text-ui": "0.9375rem",
+    "--text-ui-sm": "0.875rem",
+    "--text-meta": "0.8125rem",
+    "--text-micro": "0.75rem",
+    "--text-body": "1rem",
+    "--text-copy": "1.0625rem",
+  };
+  Object.entries(expected).forEach(([token, value]) => {
+    assert.equal(themeDeclarations.get(token), value, `${token} is not the §14.4 value`);
+  });
+});
+
+test("radius and blur literals live in the token block (S2b)", () => {
+  const radiusOffenders = [];
+  const blurOffenders = [];
+  bareLines.forEach((line, i) => {
+    const lineNumber = i + 1;
+    if (inTheme(lineNumber)) return;
+    const justified =
+      /^\s*--[a-z0-9-]+\s*:/.test(cssLines[i]) || enclosingRule(i).includes("/* literal:");
+
+    const radius = /border-radius:\s*([^;]+)/.exec(line);
+    if (radius && !justified) {
+      const value = radius[1].trim();
+      // `50%` is a circle and `0`/`inherit` are geometry, not steps of a scale.
+      const allowed = /^var\(--radius-[a-z0-9-]+\)$/.test(value) || ["50%", "0", "inherit"].includes(value);
+      if (!allowed) radiusOffenders.push(`${lineNumber}: ${line.trim()}`);
+    }
+
+    // `blur(1px)` inside an `@supports` feature test is the question, not a value.
+    if (/^@supports/.test(line)) return;
+    const blur = /blur\(\s*[\d.]/.exec(line);
+    if (blur && !justified) blurOffenders.push(`${lineNumber}: ${line.trim()}`);
+  });
+  assert.deepEqual(
+    radiusOffenders,
+    [],
+    `border-radius literals outside the scale:\n${radiusOffenders.join("\n")}`,
+  );
+  assert.deepEqual(blurOffenders, [], `blur literals outside the scale:\n${blurOffenders.join("\n")}`);
+
+  ["--radius-pill", "--radius-card", "--radius-spot", "--radius-thumb", "--radius-sm"].forEach(
+    (token) => assert.ok(themeDeclarations.has(token), `${token} is not declared`),
+  );
+  ["--blur-field", "--blur-glass", "--blur-panel", "--blur-soft", "--blur-reveal"].forEach(
+    (token) => assert.ok(themeDeclarations.has(token), `${token} is not declared`),
+  );
+});
+
+test("z-index literals are page layers or documented local stacks (S9)", () => {
+  const offenders = [];
+  bareLines.forEach((line, i) => {
+    const lineNumber = i + 1;
+    if (inTheme(lineNumber)) return;
+    const declaration = /z-index:\s*(-?\d+)/.exec(line);
+    if (!declaration) return;
+    if (/^\s*--[a-z0-9-]+\s*:/.test(cssLines[i])) return;
+    if (enclosingRule(i).includes("/* literal:")) return;
+    offenders.push(`${lineNumber}: ${line.trim()}`);
+  });
+  assert.deepEqual(offenders, [], `z-index literals outside the ladder:\n${offenders.join("\n")}`);
+
+  ["--z-field", "--z-main", "--z-preview", "--z-nav", "--z-progress", "--z-skip"].forEach(
+    (token) => assert.ok(themeDeclarations.has(token), `${token} is not declared`),
+  );
+
+  // S9 named `z-[3]` as the arbitrary value to delete; no JSX may reintroduce one.
+  const arbitrary = [...jsxClasses.keys()].filter((token) => /(?:^|:)z-\[\s*-?\d/.test(token));
+  assert.deepEqual(arbitrary, [], `arbitrary z values in the JSX: ${arbitrary.join(", ")}`);
+});
+
+test("one font stack, and the body is not a second declaration of it (P2-23)", () => {
+  // §14.3-2: three declarations of the same stack, one of them reaching past the
+  // next/font variables. The stack lives in `@theme`; `.root-layout` re-declares
+  // the composite tokens on the element that carries `--font-manrope` (the only
+  // place they resolve), and `body` takes no family at all.
+  const bodyRule = rulesFor("body").find((rule) => /font-family/.test(rule.body));
+  assert.equal(bodyRule, undefined, "body declares a font-family: it cannot see the next/font vars");
+
+  const families = [];
+  bareLines.forEach((line, i) => {
+    const lineNumber = i + 1;
+    if (inTheme(lineNumber)) return;
+    const declaration = /font-family:\s*([^;]+)/.exec(line);
+    if (declaration) families.push({ lineNumber, value: declaration[1].trim() });
+  });
+  const outsideStack = families.filter(({ lineNumber, value }) => {
+    if (/^var\(--font-[a-z-]+\)$/.test(value)) return false;
+    if (["inherit", "initial"].includes(value)) return false;
+    return !enclosingRule(lineNumber - 1).includes("/* literal:");
+  });
+  assert.deepEqual(
+    outsideStack.map(({ lineNumber, value }) => `${lineNumber}: ${value}`),
+    [],
+    "a font-family outside the token stack",
+  );
+  assert.equal(
+    /var\(--font-manrope\)/.test(css.replace(/^\s*--font-[a-z-]+:.*$/gm, "")),
+    false,
+    "a rule resolves --font-manrope instead of --font-display",
+  );
+});
+
+/* -------------------------------------------------- breakpoint parity (S9) */
+
+/** `56.25rem` → 900, `900px` → 900; `rem` is 16px inside a media query. */
+const toPixels = (value, unit) => Number.parseFloat(value) * (unit === "rem" ? 16 : 1);
+
+/** Every width the stylesheet switches at, from tokens, queries and variants. */
+const cssWidths = (() => {
+  const widths = new Set();
+  themeDeclarations.forEach((value, token) => {
+    if (!token.startsWith("--breakpoint-")) return;
+    const match = /^([\d.]+)(rem|px)$/.exec(value);
+    if (match) widths.add(toPixels(match[1], match[2]));
+  });
+  bareLines.forEach((line) => {
+    for (const query of line.matchAll(/(?:max|min)-width:\s*([\d.]+)(rem|px)/g)) {
+      widths.add(toPixels(query[1], query[2]));
+    }
+    for (const query of line.matchAll(/width\s*[<>]=?\s*([\d.]+)(rem|px)/g)) {
+      widths.add(toPixels(query[1], query[2]));
+    }
+  });
+  return widths;
+})();
+
+/** Every width a script asks about, with the file that asks. */
+const jsWidths = (() => {
+  const widths = new Map();
+  const add = (width, file) => {
+    if (!widths.has(width)) widths.set(width, file);
+  };
+  const walk = (dir) => {
+    readdirSync(dir).forEach((entry) => {
+      const full = path.join(dir, entry);
+      if (statSync(full).isDirectory()) return walk(full);
+      if (!/\.(js|jsx)$/.test(full) || /\.test\.js$/.test(full)) return;
+      const file = path.relative(ROOT, full);
+      const text = readFileSync(full, "utf8");
+      for (const match of text.matchAll(/pixels\("--breakpoint-[a-z]+",\s*([\d.]+)\)/g)) {
+        add(Number(match[1]), file);
+      }
+      for (const match of text.matchAll(/\((?:max|min)-width:\s*([\d.]+)px\)/g)) {
+        add(Number(match[1]), file);
+      }
+      for (const match of text.matchAll(/innerWidth\s*[<>]=?\s*([\d.]+)/g)) {
+        add(Number(match[1]), file);
+      }
+    });
+  };
+  walk(path.join(ROOT, "src"));
+  return widths;
+})();
+
+test("every width a script asks about is a CSS breakpoint (S9)", () => {
+  assert.ok(cssWidths.size > 0, "no width found in the stylesheet");
+  const orphans = [...jsWidths]
+    .filter(([width]) => !cssWidths.has(width))
+    .map(([width, file]) => `${width}px (${file})`);
+  assert.deepEqual(
+    orphans,
+    [],
+    `JS widths with no CSS breakpoint:\n${orphans.join("\n")}`,
+  );
+});
+
+test("the breakpoints are the module's, and the module is their only reader (S9)", () => {
+  const moduleFile = "src/lib/breakpoints.js";
+  assert.equal(themeDeclarations.get("--breakpoint-nav"), "48rem");
+  assert.equal(themeDeclarations.get("--breakpoint-wide"), "56.25rem");
+
+  const readers = [];
+  const walk = (dir) => {
+    readdirSync(dir).forEach((entry) => {
+      const full = path.join(dir, entry);
+      if (statSync(full).isDirectory()) return walk(full);
+      if (!/\.(js|jsx)$/.test(full)) return;
+      const file = path.relative(ROOT, full);
+      if (file === moduleFile || /\.test\.js$/.test(file)) return;
+      if (/--breakpoint-/.test(readFileSync(full, "utf8"))) readers.push(file);
+    });
+  };
+  walk(path.join(ROOT, "src"));
+  assert.deepEqual(readers, [], "only src/lib/breakpoints.js may read a --breakpoint-* token");
+
+  // The module's fallbacks (what the server renders) are the tokens' values.
+  const source = readFileSync(path.join(ROOT, moduleFile), "utf8");
+  const declared = [...source.matchAll(/pixels\("(--breakpoint-[a-z]+)",\s*([\d.]+)\)/g)].map(
+    ([, token, fallback]) => ({ token, fallback: Number(fallback) }),
+  );
+  assert.ok(declared.length > 0, "the module reads no breakpoint token");
+  declared.forEach(({ token, fallback }) => {
+    const value = themeDeclarations.get(token);
+    assert.ok(value, `${token} is not declared in @theme`);
+    const match = /^([\d.]+)(rem|px)$/.exec(value);
+    assert.equal(toPixels(match[1], match[2]), fallback, `${token} and its fallback disagree`);
+  });
 });
