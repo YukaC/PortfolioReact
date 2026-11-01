@@ -126,7 +126,10 @@ const Contact = () => {
             <SwapArrow direction="d" size={28} />
           </a>
 
-          <div className="contact-actions">
+          {/* Copying needs a script. The giant `mailto:` above already offers
+              the address, so this button is hidden rather than lying to a
+              scriptless visitor (audit.md §10 P1-7). */}
+          <div className="contact-actions js-only">
             <button
               id="copy-address"
               type="button"

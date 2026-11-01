@@ -122,12 +122,13 @@ const ContactButton = ({ scrollToSection, isMobile = false }) => {
   );
 };
 
-const MenuToggleIcon = ({ isOpen }) => (
-  <span
-    className="menu-toggle"
-    aria-hidden="true"
-    data-open={isOpen ? "true" : "false"}
-  >
+/**
+ * Two bars that cross into an X. The open state is CSS's: the rules read
+ * `[open]` from the `<details>` the summary belongs to, so the icon is honest
+ * with and without a script (no state to hydrate).
+ */
+const MenuToggleIcon = () => (
+  <span className="menu-toggle" aria-hidden="true">
     <span className="menu-toggle-bar menu-toggle-bar-top" />
     <span className="menu-toggle-bar menu-toggle-bar-bot" />
   </span>
@@ -144,6 +145,7 @@ const Navbar = () => {
   const { t } = useT();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuId = useId();
+  const detailsRef = useRef(null);
   const panelRef = useRef(null);
   const toggleRef = useRef(null);
   const hasOpenedRef = useRef(false);
@@ -339,6 +341,17 @@ const Navbar = () => {
     const items = panel.querySelectorAll("[data-menu-item]");
     const isReduced = prefersReducedMotion();
 
+    // The panel is a sibling of the `<details>`, not a child: the pill turns
+    // glass on scroll and `backdrop-filter` makes an ancestor the containing
+    // block of a `fixed` descendant, which would shrink the drawer to the pill.
+    // So the disclosure's own state is closed by hand once the exit has played.
+    // A scriptless visitor never gets here — the browser toggles `open` and CSS
+    // reveals the panel (see `.mobile-menu-panel` in globals.css).
+    const closeDisclosure = () => {
+      const details = detailsRef.current;
+      if (details?.open) details.open = false;
+    };
+
     if (isReduced) {
       gsap.set(panel, {
         autoAlpha: isMenuOpen ? 1 : 0,
@@ -346,6 +359,7 @@ const Navbar = () => {
         pointerEvents: isMenuOpen ? "auto" : "none",
       });
       gsap.set(items, { autoAlpha: 1, y: 0 });
+      if (!isMenuOpen) closeDisclosure();
       return undefined;
     }
 
@@ -398,6 +412,7 @@ const Navbar = () => {
         overwrite: "auto",
         onComplete() {
           gsap.set(panel, { pointerEvents: "none" });
+          closeDisclosure();
         },
       }),
     );
@@ -462,17 +477,31 @@ const Navbar = () => {
             <LanguageSwitcher className="ml-2" />
           </div>
 
-          <button
-            ref={toggleRef}
-            type="button"
-            className="btn-icon focus-ring md:hidden"
-            onClick={() => setIsMenuOpen((open) => !open)}
-            aria-expanded={isMenuOpen}
-            aria-controls={menuId}
-            aria-label={isMenuOpen ? t("nav.closeMenu") : t("nav.openMenu")}
+          {/* A native disclosure, not a React-only drawer: with no script the
+              browser opens and closes it by itself, so the hamburger is a real
+              control at 390 px instead of a visible button that does nothing
+              (audit.md §10 P0-4). With a script the `toggle` event mirrors the
+              browser's state into React, which owns the entrance, the exit,
+              the scroll lock and the focus hand-off. The two labels live in the
+              markup and CSS shows the one that matches `[open]`, so the
+              accessible name is never stale. */}
+          <details
+            ref={detailsRef}
+            className="menu-disclosure md:hidden"
+            onToggle={(event) => setIsMenuOpen(event.currentTarget.open)}
           >
-            <MenuToggleIcon isOpen={isMenuOpen} />
-          </button>
+            <summary
+              ref={toggleRef}
+              className="menu-summary btn-icon focus-ring"
+              aria-controls={menuId}
+            >
+              <span className="sr-only menu-label-open">{t("nav.openMenu")}</span>
+              <span className="sr-only menu-label-close">
+                {t("nav.closeMenu")}
+              </span>
+              <MenuToggleIcon />
+            </summary>
+          </details>
         </div>
       </header>
 
@@ -480,7 +509,6 @@ const Navbar = () => {
         ref={panelRef}
         id={menuId}
         className="mobile-menu-panel fixed inset-0 z-40 md:hidden"
-        aria-hidden={!isMenuOpen}
       >
         <div className="site-shell flex h-full flex-col justify-center pt-24">
           <NavLinks scrollToSection={scrollToSection} isMobile />

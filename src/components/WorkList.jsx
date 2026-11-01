@@ -287,8 +287,11 @@ const WorkList = ({ projects = PINNED_FALLBACK }) => {
           {t("work.demoNotice")}
         </Reveal>
 
+        {/* The filters are a script's: without one the list already shows every
+            project, so the row of buttons is hidden instead of sitting there
+            focusable and inert (audit.md §10 P1-7). */}
         <div
-          className="work-tabs"
+          className="work-tabs js-only"
           ref={tabsRef}
           data-r=""
           role="group"
