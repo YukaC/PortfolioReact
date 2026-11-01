@@ -8,12 +8,15 @@
  *                 property definition or lives in a rule carrying
  *                 `/* literal: … *\/`. The grammar is the one
  *                 `src/lib/css-contract.test.js` already enforces, so the two
- *                 gates cannot disagree about what a literal is;
+ *                 gates cannot disagree about what a literal is; the same rule
+ *                 applies to `z-index`, whose ladder is semantic since S9;
  *   2. dead class a class written in `src/**\/*.jsx` with no rule anywhere in the
  *                 compiled stylesheet — the class of bug that leaves
  *                 `className="work-repo"` in the markup and nothing on screen;
  *   3. orphan     a `@theme` token with no consumer (`var(--token)` or the
- *                 utility it names) in `src/`;
+ *                 utility it names) in `src/`. A `--breakpoint-*` is consumed
+ *                 from a media query, where `var()` cannot go, so for that
+ *                 namespace the consumer is the generated query itself;
  *   4. growth     the compiled stylesheet more than 5 % over the recorded
  *                 baseline in `scripts/css-budget.json`.
  *
@@ -189,6 +192,23 @@ bareLines.forEach((line, i) => {
   add("literal", `${path.relative(ROOT, CSS_FILE)}:${lineNumber} ${line.trim()}`);
 });
 
+/*
+ * The z ladder (§14.4, S9): `--z-field/main/drawer/preview/nav/progress/skip`
+ * are the layers of the page, so a raw number on `z-index` is a literal in the
+ * same sense a hex colour is — either the rule is a layer and belongs in the
+ * token block, or it is a local stack inside an element that already isolates
+ * its own painting and says so with `/* literal: … *\/`.
+ */
+const Z_LITERAL = /z-index:\s*(-?\d+)/;
+
+bareLines.forEach((line, i) => {
+  const lineNumber = i + 1;
+  if (lineNumber >= themeLines.start && lineNumber <= themeLines.end) return;
+  if (!Z_LITERAL.test(line)) return;
+  if (enclosingRule(i).includes("/* literal:")) return;
+  add("z-literal", `${path.relative(ROOT, CSS_FILE)}:${lineNumber} ${line.trim()}`);
+});
+
 /* ------------------------------------------------------------------ 2. dead classes */
 
 /** The index of the brace that closes the block opened at `open`, or -1. */
@@ -341,6 +361,12 @@ const hasRule = (token) => {
 
 for (const [token, file] of classTokens) {
   if (HOOK_CLASSES.has(token)) continue;
+  // An arbitrary z value is the same literal as a hex colour in a class: the
+  // ladder is `z-<name>` from `--z-*`, and `z-[3]` is a number nobody can find.
+  if (/(?:^|:)z-\[\s*-?\d/.test(token)) {
+    add("z-literal", `${file}: "${token}" — use a --z-* token instead of an arbitrary value`);
+    continue;
+  }
   if (hasRule(token)) continue;
   add("dead-class", `${file}: "${token}" has no rule in the compiled stylesheet`);
 }
@@ -348,9 +374,12 @@ for (const [token, file] of classTokens) {
 /* ----------------------------------------------------------------- 3. orphan tokens */
 
 const themeTokens = [];
+const themeValues = new Map();
 for (let i = themeLines.start; i < themeLines.end - 1; i += 1) {
-  const name = /^\s*(--[a-z0-9-]+)\s*:/.exec(cssLines[i]);
-  if (name) themeTokens.push(name[1]);
+  const declaration = /^\s*(--[a-z0-9-]+)\s*:\s*([^;]+);/.exec(cssLines[i]);
+  if (!declaration) continue;
+  themeTokens.push(declaration[1]);
+  themeValues.set(declaration[1], declaration[2]);
 }
 
 /** The sheet without its `@theme` block: a token does not consume itself. */
@@ -366,7 +395,15 @@ for (const token of themeTokens) {
   const usedAsUtility = [...classTokens.keys()].some(
     (name) => name === `${namespace}-${suffix}` || name.endsWith(`-${suffix}`),
   );
-  if (!readByVar && !usedAsUtility) {
+  // A breakpoint is consumed from a media query, where `var()` cannot go: the
+  // consumer is the query Tailwind generates from the token, so the check reads
+  // the compiled sheet and looks for the token's own value inside an `@media`.
+  // A breakpoint no variant and no script asks for is still an orphan.
+  const declaredValue = themeValues.get(token);
+  const usedAsBreakpoint =
+    namespace === "breakpoint" &&
+    Boolean(declaredValue && new RegExp(`@media[^{]*\\b${declaredValue.trim()}\\b`).test(compiled));
+  if (!readByVar && !usedAsUtility && !usedAsBreakpoint) {
     add("orphan-token", `${token} (${namespace}) has no consumer in src/`);
   }
 }
@@ -423,7 +460,7 @@ if (args.json) {
   );
 
   if (violations.length === 0) {
-    console.log("OK — no literal colour, no dead class, no orphan token, no size drift");
+    console.log("OK — no literal colour, no z literal, no dead class, no orphan token, no size drift");
   } else {
     for (const violation of violations) {
       console.log(`FAIL ${violation.check} — ${violation.message}`);

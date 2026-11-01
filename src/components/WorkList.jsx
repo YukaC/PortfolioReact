@@ -12,8 +12,18 @@ import {
   projectMonogram,
 } from "@/data/projects";
 import { translator } from "@/i18n/index.js";
+import { BREAKPOINT, mediaQuery } from "@/lib/breakpoints";
 import { resolveProjectLinks } from "@/lib/project-links";
 import { projectPath } from "@/lib/project-slugs";
+
+/**
+ * `sizes` for the inline cover: the thumb only exists below the `wide`
+ * breakpoint, so the descriptor is the breakpoint's own query instead of a
+ * second copy of `900` in a string (S9). It is read from the same module the
+ * islands use, which falls back to the shipped number on the server where
+ * there is no `document`.
+ */
+const THUMB_SIZES = `${mediaQuery.max(BREAKPOINT.wide)} 100vw, 1px`;
 
 const COVER_BLUR =
   "data:image/svg+xml;charset=utf-8," +
@@ -86,7 +96,7 @@ const WorkRow = ({ project, index, labels, href }) => {
         <ProjectCover
           project={project}
           index={index}
-          sizes="(max-width: 900px) 100vw, 1px"
+          sizes={THUMB_SIZES}
         />
       </div>
 
@@ -95,10 +105,11 @@ const WorkRow = ({ project, index, labels, href }) => {
       <div className="work-body">
         <h3>
           {/* Above the row's overlay (`z-index: 2`), like the repo action, so
-              the two links are both reachable and neither steals the other. */}
+              the two links are both reachable and neither steals the other.
+              `z-main` is the semantic layer from §14.4, not a literal. */}
           <Link
             href={href}
-            className="focus-ring relative z-[3] transition-colors hover:text-sky"
+            className="focus-ring relative z-main transition-colors hover:text-sky"
           >
             {project.title}
           </Link>
@@ -113,7 +124,7 @@ const WorkRow = ({ project, index, labels, href }) => {
             target="_blank"
             rel="noopener noreferrer"
             aria-label={labels.repoAria}
-            className="focus-ring relative z-[3] mt-3 inline-flex items-center gap-1.5 rounded-full border border-white/15 px-2.5 py-1 font-mono text-[0.6875rem] uppercase tracking-[0.14em] text-white/55 transition-colors hover:border-white/40 hover:text-white/90"
+            className="focus-ring relative z-main mt-3 inline-flex items-center gap-1.5 rounded-full border border-white/15 px-2.5 py-1 font-mono text-[0.6875rem] uppercase tracking-[0.14em] text-white/55 transition-colors hover:border-white/40 hover:text-white/90"
           >
             {labels.github}
             <SwapArrow direction="d" size={11} />
@@ -126,7 +137,7 @@ const WorkRow = ({ project, index, labels, href }) => {
       </span>
 
       <a
-        className="absolute inset-0 z-[2] focus-ring"
+        className="absolute inset-0 focus-ring"
         href={siteUrl}
         target="_blank"
         rel="noopener noreferrer"

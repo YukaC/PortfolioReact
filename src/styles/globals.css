@@ -72,20 +72,116 @@
   --font-heading: var(--font-space-grotesk), ui-sans-serif, system-ui, sans-serif;
   --font-serif: var(--font-fraunces), Georgia, "Times New Roman", serif;
   --font-mono: ui-monospace, "Cascadia Mono", "Segoe UI Mono", monospace;
+
+  /* --- type scale, layer 1 (§14.4, §14.7 S2b) ----------------------------
+     Every `font-size` in this sheet reads one of these, so the type scale is
+     one decision instead of forty-seven. The values are copied from the
+     declarations they replace with their `clamp()` literals unrounded (§14.5):
+     the 13/15/17px steps are off the framework's grid on purpose and are named
+     here rather than snapped to 12/14/16.
+
+     The `--text-*--line-height` / `--text-*--letter-spacing` pairs are v4's own
+     companion syntax: `text-h2` carries its leading and tracking, and the rules
+     below read the same two variables, so a heading cannot end up with the size
+     of one step and the tracking of another. */
+  --text-display: clamp(2.6rem, 7.6vw, 7rem);
+  --text-display--line-height: 1.02;
+  --text-display--letter-spacing: -0.04em;
+  --text-h2: clamp(2.125rem, 4.6vw, 3.75rem);
+  --text-h2--line-height: 1.06;
+  --text-h2--letter-spacing: -0.035em;
+  --text-h3: clamp(1.25rem, 2vw, 1.6rem);
+  --text-h3--line-height: 1.3;
+  --text-h3--letter-spacing: -0.025em;
+  --text-lead: clamp(1.0625rem, 1.5vw, 1.25rem);
+  --text-lead--line-height: 1.7;
+  --text-statement: clamp(1.625rem, 3.9vw, 3rem);
+  --text-statement--line-height: 1.16;
+  --text-statement--letter-spacing: -0.03em;
+  --text-work-title: clamp(1.625rem, 3.4vw, 2.5rem);
+  --text-work-title--line-height: 1.1;
+  --text-work-title--letter-spacing: -0.03em;
+  --text-marquee: clamp(3.375rem, 9.5vw, 8.5rem);
+  --text-marquee--line-height: 1.12;
+  --text-marquee--letter-spacing: -0.04em;
+  --text-bigmail: clamp(1.75rem, 6.2vw, 4.75rem);
+  --text-bigmail--line-height: 1.1;
+  --text-bigmail--letter-spacing: -0.04em;
+  --text-wordmark: clamp(5.5rem, 23vw, 20.5rem);
+  --text-wordmark--line-height: 0.78;
+  --text-wordmark--letter-spacing: -0.06em;
+  --text-ui: 0.9375rem; /* 15px, off the framework's grid on purpose */
+  --text-ui-sm: 0.875rem; /* 14px */
+  --text-meta: 0.8125rem; /* 13px, off the framework's grid on purpose */
+  --text-micro: 0.75rem; /* 12px */
+  --text-body: 1rem;
+  --text-copy: 1.0625rem; /* 17px, off the framework's grid on purpose */
+
+  /* --- form and depth, layer 1 (§14.4) ----------------------------------
+     Five radii, five blurs and four shadows: the values the sheet actually
+     used. `999px` and `9999px` collapse into `--radius-pill` — both exceed
+     half the element's height, so they render as the same pill (§14.4).
+
+     `--shadow-inset` reads `--hover` instead of repeating its alpha: the ladder
+     (S2a) is the single source of every white step, and `inset 0 1px 0
+     rgb(255 255 255 / 0.1)` *is* that step. */
+  --radius-pill: 999px;
+  --radius-card: 1.25rem;
+  --radius-spot: 1.125rem;
+  --radius-thumb: 1rem;
+  --radius-sm: 0.375rem;
+  --blur-field: 110px;
+  --blur-glass: 26px;
+  --blur-panel: 20px;
+  --blur-soft: 14px;
+  --blur-reveal: 6px;
+  --shadow-nav: 0 18px 44px -20px rgb(0 0 0 / 0.6);
+  --shadow-float: 0 24px 60px -24px rgb(0 0 0 / 0.6);
+  --shadow-preview: 0 30px 70px -20px rgb(0 0 0 / 0.7);
+  --shadow-inset: inset 0 1px 0 var(--hover);
+
+  /* --- layer depth (§14.4, §14.7 S2d) -----------------------------------
+     One z vocabulary, named by job. The literals that stay are the ones that
+     are not a page layer but a local stack inside an element that already
+     isolates its own painting (`-1` for the button's pointer light, `1` for a
+     link inside its relative parent, `2` for the preview's tag over its own
+     cover) and each says so where it is written. */
+  --z-field: 0;
+  --z-main: 10;
+  /* The drawer shares the preview's slot — it has to paint above the page and
+     under the nav pill that closes it — but it names its own job instead of
+     borrowing `--z-preview` (§14.4's six names plus the one surface the sheet
+     opens that the list did not cover). */
+  --z-drawer: 40;
+  --z-preview: 40;
+  --z-nav: 50;
+  --z-progress: 60;
+  --z-skip: 70;
+
+  /* --- breakpoints, layer 1 (§14.4, §14.7 S2d) ---------------------------
+     The two widths a script also asks about, so the JS set cannot drift from
+     the CSS set: `src/lib/breakpoints.js` reads these two tokens and nothing
+     else, and the parity is asserted in `src/lib/css-contract.test.js`. */
+  --breakpoint-nav: 48rem; /* 768px, where the pill becomes the desktop nav */
+  --breakpoint-wide: 56.25rem; /* 900px, the line every touch layout uses */
 }
 
-/* Conditions and widths the framework does not ship, declared once.
+/* Conditions the framework does not ship, declared once.
 
-   The design's two widths are 560 px (`xs`) and 900 px (`wide`, the width every
-   touch layout switches at). They are custom variants rather than
-   `--breakpoint-*` tokens for one concrete reason: `scripts/check-css.mjs`
-   accepts a `@theme` token only when some `var(--token)` or a class of the same
-   name consumes it, and a breakpoint is consumed from a media query, where
-   `var()` cannot go — the token would be reported as an orphan and the gate
-   would fail on the rule that is supposed to enforce it. Moving them to
-   `--breakpoint-*` belongs to S9/T2, together with the single JS module that
-   derives the widths for `matchMedia`, and needs that check to grow a
-   breakpoint case first.
+   The design's widths are tokens now (`--breakpoint-nav`, `--breakpoint-wide`,
+   §14.4): `wide:` and the `nav:`/`wide:` utilities Tailwind generates come from
+   them, and `src/lib/breakpoints.js` reads the same two declarations for the
+   script. Three variants stay hand-written, each for a reason the token layer
+   cannot express:
+
+     • `max-wide` — Tailwind's derived `max-*` is exclusive (`width <
+       56.25rem`) while this sheet has always switched at `max-width:
+       56.25rem`, inclusive. At exactly 900px the two disagree, and §14.5 does
+       not let this migration move a breakpoint, so the inclusive query stays.
+     • `max-xs` — the 560px line has no `--breakpoint-*` token because nothing
+       min-width-560 exists to consume one (§14.1: a token enters with its
+       consumer), and a media query cannot read `var()` anyway.
+     • `narrow-or-touch` — an OR of a width and a pointer query.
 
    `pointer-fine`, `pointer-coarse`, `motion-reduce` and the other pointer
    conditions are the framework's own variants, so a hover that must not fire on
@@ -93,8 +189,7 @@
    blocks this sheet keeps. */
 @custom-variant no-hover (@media (hover: none));
 @custom-variant max-xs (@media (max-width: 35rem)); /* 560px, narrow phones */
-@custom-variant wide (@media (min-width: 56.25rem)); /* 900px, the touch line */
-@custom-variant max-wide (@media (max-width: 56.25rem));
+@custom-variant max-wide (@media (max-width: 56.25rem)); /* inclusive, see above */
 /* The reveal drops its blur on anything that is either narrow or touched
    (`max-width: 64rem` OR `pointer: coarse`). One custom variant, because an
    OR between a breakpoint and a pointer query has no built-in spelling. */
@@ -111,7 +206,7 @@
   --font-display: var(--font-manrope), ui-sans-serif, system-ui, sans-serif;
   --font-heading: var(--font-space-grotesk), ui-sans-serif, system-ui, sans-serif;
   --font-serif: var(--font-fraunces), Georgia, "Times New Roman", serif;
-  font-family: var(--font-display), ui-sans-serif, system-ui, sans-serif;
+  font-family: var(--font-display);
 }
 
 :root {
@@ -196,9 +291,16 @@
 
   body {
     background-color: transparent;
-    font-family: var(--font-manrope), ui-sans-serif, system-ui, sans-serif;
+    /* One font stack (P2-23). The composite `--font-*` tokens resolve only on
+       the element that carries the next/font variables — `.root-layout`, which
+       is a *descendant* of `body`. A `font-family` declared here therefore
+       cannot read `--font-display` (it is invalid at computed-value time above
+       the wrapper) and has to hard-code a face, which is the third declaration
+       that made "change the body font" change nothing below the wrapper. Every
+       node of the page is inside `.root-layout`, so that is where the family is
+       set and this rule keeps only the size and the leading. */
     color: var(--color-paper);
-    font-size: 1rem;
+    font-size: var(--text-body);
     line-height: 1.7;
     -webkit-font-smoothing: antialiased;
     /* `clip`, not `hidden`: `hidden` turns `body` into a scroll container,
@@ -213,34 +315,37 @@
     overflow-x: clip;
   }
 
+  /* The heading default is the h2 pair: each level that differs overrides it
+     with its own `--text-*` companion, so `h4` (which has no step of its own)
+     still lands on a declared size-and-tracking pair. */
   h1,
   h2,
   h3,
   h4 {
-    font-family: var(--font-heading), ui-sans-serif, system-ui, sans-serif;
+    font-family: var(--font-heading);
     font-weight: 500;
-    letter-spacing: -0.035em;
+    letter-spacing: var(--text-h2--letter-spacing);
     color: var(--color-paper);
-    line-height: 1.06;
+    line-height: var(--text-h2--line-height);
   }
 
   h1 {
-    font-size: clamp(2.6rem, 7.6vw, 7rem);
-    line-height: 1.02;
-    letter-spacing: -0.04em;
+    font-size: var(--text-display);
+    line-height: var(--text-display--line-height);
+    letter-spacing: var(--text-display--letter-spacing);
     text-wrap: balance;
   }
 
   h2 {
-    font-size: clamp(2.125rem, 4.6vw, 3.75rem);
+    font-size: var(--text-h2);
     margin-top: 1.125rem;
     max-width: 18ch;
   }
 
   h3 {
-    font-size: clamp(1.25rem, 2vw, 1.6rem);
-    line-height: 1.3;
-    letter-spacing: -0.025em;
+    font-size: var(--text-h3);
+    line-height: var(--text-h3--line-height);
+    letter-spacing: var(--text-h3--letter-spacing);
   }
 
   a {
@@ -261,7 +366,7 @@
   :focus-visible {
     outline: 2px solid var(--color-sky);
     outline-offset: 4px;
-    border-radius: 6px;
+    border-radius: var(--radius-sm);
   }
 
   /* Preflight already zeroes margin and padding on every element, so this wins
@@ -297,14 +402,11 @@
 @utility glass {
   background-color: var(--glass);
   border: 1px solid var(--glass-line, var(--line));
-  backdrop-filter: blur(26px) saturate(150%);
-  /* literal: the depth shadows are black; the ladder is the white scale
-     (§14.4). */
-  box-shadow: var(
-    --glass-shadow,
-    0 24px 60px -24px rgb(0 0 0 / 0.6),
-    inset 0 1px 0 var(--hover)
-  );
+  backdrop-filter: blur(var(--blur-glass)) saturate(150%);
+  /* The recipe's depth is `--shadow-float` plus the ladder's inset line; a
+     surface that needs more (the work preview) hands its own value through
+     `--glass-shadow` instead of declaring a second surface (§13.2). */
+  box-shadow: var(--glass-shadow, var(--shadow-float), var(--shadow-inset));
 }
 
 /* The buttons. `::before`/`::after` (the pointer light and the masked edge)
@@ -319,10 +421,10 @@
   align-items: center;
   gap: 0.625rem;
   padding: 0.875rem 1.625rem;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   border: 1px solid var(--line);
   background-color: transparent;
-  font-size: 0.9375rem;
+  font-size: var(--text-ui);
   font-weight: 500;
   cursor: pointer;
   transition:
@@ -376,7 +478,7 @@
   align-items: center;
   justify-content: space-between;
   padding: 0.5rem 0.5rem 0.5rem 1.25rem;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   border: 1px solid transparent;
   pointer-events: auto;
   transition:
@@ -387,19 +489,20 @@
   .site-header.is-scrolled & {
     background-color: var(--glass);
     border-color: var(--line);
-    backdrop-filter: blur(26px) saturate(150%);
-    /* literal: depth shadow in black; the ladder is the white scale (§14.4). */
-    box-shadow: 0 18px 44px -20px rgb(0 0 0 / 0.6);
+    backdrop-filter: blur(var(--blur-glass)) saturate(150%);
+    box-shadow: var(--shadow-nav);
   }
 }
 
 @utility nav-link {
   position: relative;
+  /* literal: a local stack — the link paints over the sliding indicator inside
+     this pill; it is not a page layer (§14.4). */
   z-index: 1;
   padding: 0.5625rem 1rem;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   color: var(--color-mut);
-  font-size: 0.875rem;
+  font-size: var(--text-ui-sm);
   transition: color var(--duration-fast) var(--ease-out-field);
 
   /* The scroll spy writes `aria-current` on the link it resolves, so the
@@ -432,10 +535,10 @@
   align-items: center;
   margin-left: 0.5rem;
   padding: 0.6875rem 1rem;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background-color: var(--color-white);
   color: var(--color-on-solid);
-  font-size: 0.875rem;
+  font-size: var(--text-ui-sm);
   font-weight: 600;
   transition: box-shadow var(--duration-base) var(--ease-out-field);
 
@@ -455,7 +558,7 @@
   top: 0;
   bottom: 0;
   width: 0;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background-color: var(--hover);
   opacity: 0;
   transition:
@@ -466,10 +569,11 @@
 
 @utility work-tab {
   position: relative;
+  /* literal: a local stack inside the filter row (§14.4). */
   z-index: 1;
   padding: 0.5rem 1.125rem;
-  border-radius: 999px;
-  font-size: 0.875rem;
+  border-radius: var(--radius-pill);
+  font-size: var(--text-ui-sm);
   color: var(--color-dim);
   cursor: pointer;
   /* 0.35 s in the sheet this replaced; §14.4 folds it into the ramp's
@@ -505,7 +609,7 @@
   top: 0.3125rem;
   bottom: 0.3125rem;
   width: 0;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background-color: var(--soft);
   /* literal: the indicator's top highlight is 15 %, between `--soft` and
      `--strong` (§14.4). */
@@ -520,6 +624,10 @@
    disc that fills) stays in the components layer. */
 @utility work-go {
   position: relative;
+  /* The arrow's own `z-index` is a local stack: `isolate` scopes it to the disc,
+     so the row's overlay link — which covers the whole row — keeps painting
+     above the disc without a z value of its own (§14.4). */
+  isolation: isolate;
   overflow: hidden;
   width: 2.875rem;
   height: 2.875rem;
@@ -550,19 +658,32 @@
   }
 }
 
+/* The two layers a node asks for by name instead of by number (§14.4, S9).
+   Tailwind's own `z-*` namespace is `--z-index-*`, and these tokens are
+   `--z-*` on purpose — the ladder is one vocabulary and a `--z-index-` copy of
+   it would be a second. So the two classes the JSX writes are recipes that read
+   the token, which is also what keeps `z-[3]` out of the markup. */
+@utility z-main {
+  z-index: var(--z-main);
+}
+
+@utility z-drawer {
+  z-index: var(--z-drawer);
+}
+
 @utility skip-link {
   position: absolute;
   left: 1rem;
   top: -5rem;
-  z-index: 70;
+  z-index: var(--z-skip);
   padding: 0.65rem 1rem;
   background-color: var(--color-white);
   /* literal: pure black on pure white — the one high-contrast surface in the
      page, and neither end is a palette entry. */
   color: #000;
-  font-size: 0.875rem;
+  font-size: var(--text-ui-sm);
   font-weight: 700;
-  border-radius: 0.375rem;
+  border-radius: var(--radius-sm);
 
   &:focus {
     top: 1rem;
@@ -587,7 +708,7 @@
   align-items: center;
   gap: 0.875rem;
   font-family: var(--font-mono);
-  font-size: 0.75rem;
+  font-size: var(--text-micro);
   font-weight: 500;
   letter-spacing: 0.16em;
   text-transform: uppercase;
@@ -604,8 +725,8 @@
 
 @utility lead {
   color: var(--color-mut);
-  font-size: clamp(1.0625rem, 1.5vw, 1.25rem);
-  line-height: 1.7;
+  font-size: var(--text-lead);
+  line-height: var(--text-lead--line-height);
   max-width: 46ch;
 }
 
@@ -616,7 +737,7 @@
 @utility stackline {
   margin-top: 2.875rem;
   font-family: var(--font-mono);
-  font-size: 0.8125rem;
+  font-size: var(--text-meta);
   font-weight: 500;
   line-height: 1.6;
   letter-spacing: 0.04em;
@@ -637,13 +758,13 @@
   gap: 0.625rem;
   margin: 1.875rem 0;
   font-family: var(--font-mono);
-  font-size: 0.8125rem;
+  font-size: var(--text-meta);
   font-weight: 500;
   color: var(--color-paper);
 
   & span {
     padding: 0.3125rem 0.75rem;
-    border-radius: 999px;
+    border-radius: var(--radius-pill);
     background-color: var(--glass);
     border: 1px solid var(--line);
     transition:
@@ -657,7 +778,7 @@
    warning banner. Shared by the work list and every project page. */
 @utility work-note {  max-width: 46ch;
   margin-top: 0.5rem;
-  font-size: 0.8125rem;
+  font-size: var(--text-meta);
   line-height: 1.6;
   color: var(--color-mut);
 }
@@ -679,7 +800,7 @@
   gap: 0.125rem;
   padding: 0.3125rem;
   margin: 2.75rem 0 0.375rem;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background-color: var(--glass);
   border: 1px solid var(--line);
   overflow-x: auto;
@@ -696,7 +817,7 @@
 @utility about-h3 {
   margin-bottom: 1.625rem;
   font-family: var(--font-mono);
-  font-size: 0.8125rem;
+  font-size: var(--text-meta);
   font-weight: 500;
   letter-spacing: 0.16em;
   text-transform: uppercase;
@@ -706,7 +827,7 @@
 @utility about-copy {
   & p {
     color: var(--color-mut);
-    font-size: 1.0625rem;
+    font-size: var(--text-copy);
     max-width: 46ch;
   }
 
@@ -737,7 +858,7 @@
   display: flex;
   flex-wrap: wrap;
   gap: 1.75rem;
-  font-size: 0.875rem;
+  font-size: var(--text-ui-sm);
   color: var(--color-mut);
 
   /* 22px tall as plain inline text, under the 24px AA target minimum; the
@@ -769,7 +890,7 @@
    Bebop trigger both find the tagline by it (§10 P1-7). */
 @utility tagline {
   margin-top: 0.625rem;
-  font-size: 0.9375rem;
+  font-size: var(--text-ui);
   letter-spacing: 0.01em;
   color: var(--color-dim);
 }
@@ -784,7 +905,7 @@
      carry (§14.4). */
   color: rgb(255 255 255 / 0.7);
   border: 0;
-  border-radius: 9999px;
+  border-radius: var(--radius-pill);
   background-color: transparent;
   transition:
     background-color var(--duration-ui-fast) var(--ease-snap),
@@ -807,6 +928,10 @@
   /* --- field -------------------------------------------------------------- */
   .bocanada-field {
     background-color: var(--field-ink);
+    /* The page's bottom layer (§14.4): the field is what every other surface is
+       drawn on, and naming it is what stops a later block from inventing a
+       number between it and the nav. */
+    z-index: var(--z-field);
     /* literal: the field's stops are the design itself, not a palette — §14.6
        keeps this composition out of the token layer so a later redesign cannot
        re-theme it from the token block by accident. */
@@ -841,7 +966,7 @@
     position: absolute;
     inset: 0;
     border-radius: inherit;
-    filter: blur(110px);
+    filter: blur(var(--blur-field));
     mix-blend-mode: plus-lighter;
     will-change: opacity;
   }
@@ -991,7 +1116,7 @@
     inset-inline: 0;
     top: 0;
     height: 2px;
-    z-index: 60;
+    z-index: var(--z-progress);
     pointer-events: none;
   }
 
@@ -1134,6 +1259,8 @@
     position: absolute;
     inset: 0;
     border-radius: inherit;
+    /* literal: the light sits behind the label inside the button's own isolated
+       stack (§14.4). */
     z-index: -1;
     pointer-events: none;
     opacity: 0;
@@ -1315,7 +1442,7 @@
   html.js [data-r]:not(.is-in):not([data-r="paint"]) {
     opacity: 0;
     transform: translateY(28px);
-    filter: blur(6px);
+    filter: blur(var(--blur-reveal));
   }
 
   /* Animating `filter: blur()` is the single most expensive thing this page asks
@@ -1405,7 +1532,7 @@
     position: fixed;
     inset-inline: 0;
     top: 0;
-    z-index: 50;
+    z-index: var(--z-nav);
     padding: 1rem 0;
     pointer-events: none;
   }
@@ -1501,7 +1628,7 @@
        depth shadow is black. */
     background: linear-gradient(135deg, rgb(255 255 255 / 0.17), rgb(255 255 255 / 0.03));
     border: 1px solid rgb(255 255 255 / 0.2);
-    backdrop-filter: blur(14px);
+    backdrop-filter: blur(var(--blur-soft));
     box-shadow:
       inset 0 1px 0 rgb(255 255 255 / 0.25),
       0 20px 40px -18px rgb(0 0 0 / 0.5);
@@ -1569,9 +1696,9 @@
     position: relative;
     font-family: var(--font-heading);
     font-weight: 500;
-    font-size: clamp(3.375rem, 9.5vw, 8.5rem);
-    line-height: 1.12;
-    letter-spacing: -0.04em;
+    font-size: var(--text-marquee);
+    line-height: var(--text-marquee--line-height);
+    letter-spacing: var(--text-marquee--letter-spacing);
     white-space: nowrap;
     padding-right: 0.5em;
   }
@@ -1648,7 +1775,7 @@
     content: "";
     position: absolute;
     inset: 0 -1.125rem;
-    border-radius: 1.125rem;
+    border-radius: var(--radius-spot);
     pointer-events: none;
     opacity: 0;
     transition: opacity var(--duration-slow) var(--ease-out-field);
@@ -1672,7 +1799,7 @@
      an inline utility in `WorkList`. */
   .work-num {
     font-family: var(--font-mono);
-    font-size: 0.8125rem;
+    font-size: var(--text-meta);
     font-weight: 500;
     color: var(--color-dim);
     transition:
@@ -1693,9 +1820,9 @@
   }
 
   .work-row h3 {
-    font-size: clamp(1.625rem, 3.4vw, 2.5rem);
-    line-height: 1.1;
-    letter-spacing: -0.03em;
+    font-size: var(--text-work-title);
+    line-height: var(--text-work-title--line-height);
+    letter-spacing: var(--text-work-title--letter-spacing);
     transition: translate var(--duration-drift) var(--ease-out-field);
   }
 
@@ -1705,7 +1832,7 @@
   .work-problem {
     margin-top: 0.5rem;
     max-width: 50ch;
-    font-size: 0.9375rem;
+    font-size: var(--text-ui);
     color: var(--color-mut);
     transition: translate var(--duration-drift) var(--ease-out-field);
   }
@@ -1713,7 +1840,7 @@
   .work-tags {
     margin-top: 0.75rem;
     font-family: var(--font-mono);
-    font-size: 0.8125rem;
+    font-size: var(--text-meta);
     letter-spacing: 0.03em;
     color: var(--color-dim);
     transition: translate var(--duration-drift) var(--ease-out-field);
@@ -1731,6 +1858,8 @@
 
   .work-go .ar {
     position: relative;
+    /* literal: the arrow paints over the disc its own `::before` fills; a local
+       stack, not a page layer (§14.4). */
     z-index: 1;
   }
 
@@ -1745,7 +1874,7 @@
       grid-column: 1 / -1;
       order: -1;
       aspect-ratio: 16 / 9;
-      border-radius: 1rem;
+      border-radius: var(--radius-thumb);
       overflow: hidden;
       position: relative;
       background-color: var(--color-deep);
@@ -1764,9 +1893,9 @@
     top: 0;
     width: 20rem;
     aspect-ratio: 4 / 3;
-    border-radius: 1.25rem;
+    border-radius: var(--radius-card);
     overflow: hidden;
-    z-index: 40;
+    z-index: var(--z-preview);
     pointer-events: none;
     opacity: 0;
     transition: opacity var(--duration-base) var(--ease-out-field);
@@ -1774,7 +1903,7 @@
        hands the glass recipe the two values through the hooks the recipe reads
        instead of declaring a second surface (§13.2: one definition). */
     --glass-line: rgb(255 255 255 / 0.14);
-    --glass-shadow: 0 30px 70px -20px rgb(0 0 0 / 0.7);
+    --glass-shadow: var(--shadow-preview);
     will-change: transform;
   }
 
@@ -1796,16 +1925,18 @@
   .work-preview-tag {
     position: absolute;    left: 0.75rem;
     bottom: 0.75rem;
-    z-index: 2;
     display: flex;
     align-items: center;
     gap: 0.5rem;
     padding: 0.4375rem 0.75rem 0.4375rem 0.875rem;
-    border-radius: 999px;
-    font-size: 0.8125rem;
+    border-radius: var(--radius-pill);
+    /* literal: the tag stacks over the cover inside the preview; a local stack
+       within the glass surface (§14.4). */
+    z-index: 2;
+    font-size: var(--text-meta);
     font-weight: 500;
     background-color: color-mix(in srgb, var(--color-ink) 55%, transparent);
-    backdrop-filter: blur(14px);
+    backdrop-filter: blur(var(--blur-soft));
     /* literal: the tag's border is 16 %, off the ladder (§14.4). */
     border: 1px solid rgb(255 255 255 / 0.16);
   }
@@ -1887,13 +2018,13 @@
 
   .about-portrait-name {
     font-family: var(--font-heading);
-    font-size: 1.0625rem;
+    font-size: var(--text-copy);
     line-height: 1.3;
     color: var(--color-paper);
   }
 
   .about-portrait-role {
-    font-size: 0.8125rem;
+    font-size: var(--text-meta);
     color: var(--color-mut);
   }
 
@@ -1931,9 +2062,9 @@
     max-width: 30ch;
     font-family: var(--font-heading);
     font-weight: 500;
-    font-size: clamp(1.625rem, 3.9vw, 3rem);
-    line-height: 1.16;
-    letter-spacing: -0.03em;
+    font-size: var(--text-statement);
+    line-height: var(--text-statement--line-height);
+    letter-spacing: var(--text-statement--letter-spacing);
     color: var(--color-paper);
   }
 
@@ -2029,7 +2160,7 @@
 
   .timeline-period {
     font-family: var(--font-mono);
-    font-size: 0.8125rem;
+    font-size: var(--text-meta);
     font-weight: 500;
     color: var(--color-sky);
   }
@@ -2037,6 +2168,9 @@
   .timeline-title {
     margin: 0.5rem 0 0.25rem;
     font-family: var(--font-heading);
+    /* literal: 22px is the one step the scale does not carry — §14.4 names
+       12/13/14/15/16/17 and the display steps, and rounding this one to a
+       neighbour is exactly what §14.5 forbids. */
     font-size: 1.375rem;
     font-weight: 500;
     line-height: 1.25;
@@ -2046,13 +2180,13 @@
 
   .timeline-org {
     display: block;
-    font-size: 0.875rem;
+    font-size: var(--text-ui-sm);
     color: var(--color-dim);
   }
 
   .timeline-desc {
     margin-top: 0.625rem;
-    font-size: 0.9375rem;
+    font-size: var(--text-ui);
     color: var(--color-mut);
     max-width: 46ch;
   }
@@ -2070,9 +2204,9 @@
     padding-bottom: 0.5rem;
     font-family: var(--font-heading);
     font-weight: 500;
-    font-size: clamp(1.75rem, 6.2vw, 4.75rem);
-    line-height: 1.1;
-    letter-spacing: -0.04em;
+    font-size: var(--text-bigmail);
+    line-height: var(--text-bigmail--line-height);
+    letter-spacing: var(--text-bigmail--letter-spacing);
     word-break: break-word;
 
     /* The arrow has nowhere to sit once the address fills the line. (The block
@@ -2125,16 +2259,17 @@
   .footer-mark {
     margin-top: 3.125rem;
     padding-bottom: 0.06em;
-    /* The serif is a 45 KB italic that only this wordmark uses, so the mark
-       starts on the system serif and picks Fraunces up once the footer is
-       close (`is-serif`, set from the Footer's observer). Nothing above the
-       fold reads this family, so the browser never fetches it during load. */
+  /* literal: the serif is a 45 KB italic that only this wordmark uses, so the
+     mark starts on the system serif — a stack of its own, not one of the four
+     `--font-*` tokens — and picks Fraunces up once the footer is close
+     (`is-serif`, set from the Footer's observer). Nothing above the fold reads
+     this family, so the browser never fetches it during load. */
     font-family: Georgia, "Times New Roman", serif;
     font-style: italic;
     font-weight: 400;
-    font-size: clamp(5.5rem, 23vw, 20.5rem);
-    line-height: 0.78;
-    letter-spacing: -0.06em;
+    font-size: var(--text-wordmark);
+    line-height: var(--text-wordmark--line-height);
+    letter-spacing: var(--text-wordmark--letter-spacing);
     text-align: center;
     white-space: nowrap;
     user-select: none;
@@ -2143,6 +2278,9 @@
     translate: 0 calc((1 - var(--fp)) * 70px);
 
     @variant max-wide {
+      /* literal: the narrow wordmark is a second clamp for the same mark, not a
+         step of the scale — it hands the same 20.5rem cap to a 20vw ramp
+         (§14.5 keeps both literals). */
       font-size: clamp(3.75rem, 20vw, 20.5rem);
     }
   }
@@ -2234,7 +2372,7 @@
   .mobile-menu-panel {
     border-radius: 0;
     background-color: color-mix(in srgb, var(--color-ink) 97%, transparent);
-    backdrop-filter: blur(20px);
+    backdrop-filter: blur(var(--blur-panel));
   }
 
   /* With a script the entrance and the exit are GSAP's, so the panel waits for
@@ -2328,7 +2466,7 @@
 @keyframes r-paint {
   from {
     translate: 0 28px;
-    filter: blur(6px);
+    filter: blur(var(--blur-reveal));
   }
 
   to {
@@ -2410,9 +2548,9 @@
 
 /* Width and pointer conditions live in the rules they modify: every one of
    them is a `@variant` inside its own block (`max-wide`, `max-xs`,
-   `pointer-fine`, `pointer-coarse`, `no-hover`), derived from
-   `--breakpoint-wide` / `--breakpoint-xs` above. What is left at the top level
-   is the four conditions Tailwind has no variant for. */
+   `pointer-fine`, `pointer-coarse`, `no-hover`), and the two widths a script
+   also asks about are the `--breakpoint-*` tokens above (S2d). What is left at
+   the top level is the four conditions Tailwind has no variant for. */
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
   /* The glass recipe and the two surfaces that repeat it, on an engine that
      cannot blur: they fall back to a near-opaque ink. */
