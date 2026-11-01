@@ -35,7 +35,11 @@
     "setup:ssd": "node scripts/setup-ssd-cache.mjs",
     "setup:ssd:store": "node scripts/setup-ssd-cache.mjs --store",
     "dev:nvme": "node scripts/run-nvme.mjs dev",
-    "build:nvme": "node scripts/run-nvme.mjs build"
+    "build:nvme": "node scripts/run-nvme.mjs build",
+    "perf": "bash scripts/perf-suite.sh",
+    "perf:quick": "bash scripts/perf-suite.sh --quick",
+    "perf:stress": "bash scripts/perf-suite.sh --stress",
+    "perf:ablate": "bash scripts/perf-suite.sh --ablate"
   },
   "dependencies": {
     "@react-three/drei": "^10.7.7",
