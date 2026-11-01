@@ -23,7 +23,17 @@
  *   pnpm measure:idle                        # reuse :4173, else start the build
  *   pnpm measure:idle --url http://…:3000    # a server already running
  *   pnpm measure:idle --window 15000         # longer window (ms)
+ *   pnpm measure:idle --swiftshader          # the potato, for contrast
+ *   pnpm measure:idle --headed               # watch it, GPU included
  *   pnpm measure:idle --out idle.json        # artefact for CI
+ *
+ * **Renderer.** Chromium without flags reports SwiftShader even on this GPU host,
+ * and in `static` — the tier a software renderer resolves to — no canvas is
+ * mounted at all. A "0 draws" read over a page that has no canvas is a vacuous
+ * pass, which is what this script used to produce. So the launch comes from
+ * `visual-baseline.mjs` (hardware by default, `--swiftshader` to opt out), the
+ * renderer string is printed, and the canvas must exist before the window
+ * starts: without it `idle/canvas` fails and the draws claim is not made.
  *
  * Exit codes: 0 all budgets met · 1 a budget was missed · 2 bad usage · 3 no server.
  */
@@ -33,7 +43,7 @@ import net from "node:net";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { chromium } from "playwright";
+import { isSoftwareRenderer, launchChromium, rendererOf } from "./visual-baseline.mjs";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const DEFAULT_PORT = 4173;
@@ -43,6 +53,9 @@ const VIEWPORT = { width: 1440, height: 900 };
 /** §21.3: 10 s of repose, `RecalcStyleCount ≤ 1.5/frame`, `TaskDuration ≤ 100 ms`. */
 const BUDGET = {
   windowMs: Number(process.env.IDLE_WINDOW_MS ?? 10_000),
+  /* How long the canvas is allowed to take to appear: the 181 KB of `three`
+     download and `requestIdleCallback` both have to land first. */
+  canvasMs: 25_000,
   recalcPerFrame: Number(process.env.IDLE_RECALC_PER_FRAME ?? 1.5),
   taskMs: Number(process.env.IDLE_TASK_MS ?? 100),
   draws: 0,
@@ -60,15 +73,19 @@ const fail = (code, message) => {
 };
 
 const parseArgs = (argv) => {
-  const args = { url: "", port: DEFAULT_PORT, windowMs: BUDGET.windowMs, out: "" };
+  const args = { url: "", port: DEFAULT_PORT, windowMs: BUDGET.windowMs, out: "", software: false, headed: false };
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
     if (arg === "--url") args.url = argv[(i += 1)] ?? "";
     else if (arg === "--port") args.port = Number(argv[(i += 1)] ?? DEFAULT_PORT);
     else if (arg === "--window") args.windowMs = Number(argv[(i += 1)] ?? BUDGET.windowMs);
     else if (arg === "--out") args.out = argv[(i += 1)] ?? "";
+    else if (arg === "--swiftshader" || arg === "--software-gl") args.software = true;
+    else if (arg === "--headed") args.headed = true;
     else if (arg === "--help" || arg === "-h") {
-      console.log("uso: measure:idle [--url <url>] [--port <n>] [--window <ms>] [--out <file>]");
+      console.log(
+        "uso: measure:idle [--url <url>] [--port <n>] [--window <ms>] [--out <file>] [--swiftshader] [--headed]",
+      );
       process.exit(0);
     } else if (arg.startsWith("-")) fail(2, `unknown argument: ${arg}`);
   }
@@ -174,10 +191,15 @@ const READ_FLARES = () => {
   return {
     visible: visible.length,
     opacities: visible.map((element) => Number(getComputedStyle(element).opacity)),
+    /* The identity ships four keyframes — `flare`, `flare-22`, `flare-12`,
+       `flare-6` — one per density band (§18.4). Matching only the base name
+       would count zero on every viewport wide enough to switch band. */
     running: document
       .getAnimations()
-      .filter((animation) => animation.animationName === "flare" && animation.playState === "running")
-      .length,
+      .filter(
+        (animation) =>
+          /^flare/.test(animation.animationName ?? "") && animation.playState === "running",
+      ).length,
   };
 };
 
@@ -211,23 +233,48 @@ async function waitForFreeze(page, timeoutMs = 25_000) {
 async function main() {
   const args = parseArgs(process.argv.slice(2));
   const server = await ensureServer(args);
-  const browser = await chromium.launch({ headless: true });
-  const report = { viewport: VIEWPORT, windowMs: args.windowMs, budget: BUDGET, server: server.url };
+  const browser = await launchChromium({ software: args.software, headed: args.headed });
+  const report = {
+    viewport: VIEWPORT,
+    windowMs: args.windowMs,
+    budget: BUDGET,
+    server: server.url,
+    renderer: "",
+  };
 
   try {
-    const context = await browser.newContext({ viewport: VIEWPORT });
+    const context = await browser.newContext({ viewport: VIEWPORT, deviceScaleFactor: 1 });
     const page = await context.newPage();
     page.on("pageerror", (error) => console.log(`  [pageerror] ${String(error).slice(0, 200)}`));
     await page.addInitScript(INSTRUMENT);
+    report.renderer = await rendererOf(page);
+    console.log(`[measure:idle] renderer: ${report.renderer}`);
+    if (isSoftwareRenderer(report.renderer)) {
+      console.log(
+        "[measure:idle] software renderer: the field resolves to `static` and mounts no canvas — use the default launch for the hardware claim",
+      );
+    }
     await page.goto(server.url, { waitUntil: "load", timeout: 60_000 });
-    await page.waitForFunction(
-      () => document.querySelectorAll("canvas").length > 0 || performance.now() > 6000,
-      null,
-      { timeout: 20_000 },
-    ).catch(() => {});
+
+    /* The canvas is a decision of the tier, and it arrives after `three` is
+       downloaded. Waiting for it explicitly is what makes "0 draws" a statement
+       about the field instead of about an empty page. */
+    await page
+      .waitForFunction(() => document.querySelectorAll("canvas").length > 0, null, {
+        timeout: BUDGET.canvasMs,
+      })
+      .catch(() => {});
 
     const canvasCount = await page.locator("canvas").count();
     console.log(`\nrepose · ${VIEWPORT.width}x${VIEWPORT.height} · ${args.windowMs} ms · canvas=${canvasCount}`);
+
+    record(
+      "idle/canvas",
+      canvasCount > 0,
+      canvasCount > 0
+        ? `${canvasCount} canvas mounted (renderer ${report.renderer})`
+        : `no canvas mounted in ${BUDGET.canvasMs} ms — "0 draws" would be vacuous`,
+    );
 
     const freeze = await waitForFreeze(page);
     report.canvas = canvasCount;
@@ -289,10 +336,12 @@ async function main() {
 
     record(
       "idle/draws",
-      draws === BUDGET.draws,
-      draws === 0
-        ? `0 draws in ${args.windowMs} ms${freeze.frozen ? "" : " (the smoke never reported a stable frame)"}`
-        : `${draws} draw call(s) after the freeze — the loop is not parked`,
+      draws === BUDGET.draws && canvasCount > 0,
+      canvasCount === 0
+        ? "no canvas in the page — the 0-draw budget was not exercised"
+        : draws === 0
+          ? `0 draws in ${args.windowMs} ms${freeze.frozen ? "" : " (the smoke never reported a stable frame)"}`
+          : `${draws} draw call(s) after the freeze — the loop is not parked`,
     );
 
     record(
