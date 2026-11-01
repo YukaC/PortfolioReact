@@ -146,9 +146,9 @@ async function fetchPinnedItems(token) {
 }
 
 /**
- * Fetch, map, validate, write. Shared by the CLI below and by
- * `src/pages/api/sync-projects.js`, so the endpoint and the cron job cannot
- * drift apart.
+ * Fetch, map, validate, write. Shared by the CLI below and by the cron Route
+ * Handler (`src/app/api/sync-projects/route.js`), so the endpoint and the
+ * scheduled job cannot drift apart.
  *
  * @param {{ token?: string, file?: string, log?: (line: string) => void }} [options]
  * @returns {Promise<{ ok: true, sha256: string, items: number, generatedAt: string }

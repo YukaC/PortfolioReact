@@ -282,7 +282,7 @@ const Footer = () => {
             </ul>
           </nav>
 
-          <p className="footer-copy">
+          <p className="text-right text-sm text-dim max-wide:text-left">
             {t("footer.copyright", { year: currentYear })}
           </p>
         </div>

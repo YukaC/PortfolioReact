@@ -67,7 +67,7 @@ const About = ({ locale = "en" }) => {
           ))}
         </p>
 
-        <div className="about-grid">
+        <div className="mt-14 grid grid-cols-1 gap-[clamp(2.5rem,8vw,6.875rem)] wide:grid-cols-2">
           <Reveal>
             <div className="about-portrait">
               <Image

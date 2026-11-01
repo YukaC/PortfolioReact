@@ -9,11 +9,12 @@
  * background**. `resolveTier` is the pure decision, `watchdogTier` is the only
  * thing allowed to change it afterwards, and it can only change it downwards.
  *
- * In this run the tiers do not gate the canvas by device. Removing the canvas
- * before the coral lattice with cell-aligned flares lives in CSS loses the
- * visual identity (audit.md §19.3, commit `8164756` was reverted for exactly
- * that); the device gate belongs to task T6. So `static` means "cheapest canvas",
- * not "no canvas".
+ * In this run the tiers do not gate the canvas except at the last step: the
+ * device gate (`static`) is safe **now** because the coral lattice with
+ * cell-aligned flares lives in CSS (audit.md §18.2, §19.3 — the earlier attempt
+ * at exactly this was reverted in `8164756` for losing the identity), so
+ * `static` mounts no canvas at all: AppBackground drops the `three` chunk and
+ * the CSS lattice stays, which is the whole field a phone needs.
  */
 
 /** Cheapest last: the order is the downgrade path, not a preference. */

@@ -21,10 +21,16 @@ const HeroSection = ({ locale = "en" }) => {
   const { t } = translator(locale);
 
   return (
-    <section id="home" className="hero">
+    <section
+      id="home"
+      className="relative flex min-h-svh items-center pt-[8.125rem] pb-[4.375rem]"
+    >
       <div className="site-shell">
         <div className="hero-copy">
-          <span className="status" data-r="paint">
+          <span
+            className="inline-flex items-center gap-2.5 text-[0.8125rem] text-mut"
+            data-r="paint"
+          >
             <i aria-hidden="true" />
             {t("hero.status")}
           </span>
@@ -43,18 +49,25 @@ const HeroSection = ({ locale = "en" }) => {
             {t("hero.lead")}
           </p>
 
-          <div className="hero-foot">
+          <div className="relative mt-10">
             <div>
               <HeroActions />
 
-              <p className="stackline" data-r="paint" style={{ "--d": "760ms" }}>
+              <p
+                className="stackline"
+                data-r="paint"
+                style={{ "--d": "760ms" }}
+              >
                 {STACK.map((item) => (
                   <span key={item}>{item}</span>
                 ))}
               </p>
             </div>
 
-            <div className="hero-ornament" aria-hidden="true">
+            <div
+              className="absolute right-0 bottom-0 h-72 w-[min(32%,24rem)] pointer-events-none max-wide:hidden"
+              aria-hidden="true"
+            >
               <i className="orn orn-orb" style={{ "--od": "1.6" }} />
               <i className="orn orn-ring" style={{ "--od": "-0.9" }} />
               <i className="orn orn-spark" style={{ "--od": "2.6" }} />
