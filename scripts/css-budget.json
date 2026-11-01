@@ -1,0 +1,33 @@
+{
+  "note": "Baseline of the compiled stylesheet for `pnpm check:css`. The number is measured from the source, not from a build: src/styles/globals.css compiled in-process with @tailwindcss/postcss (the plugin the app itself uses), so any machine and any CI job gets the same byte count. The guard fails when the compiled sheet grows more than `growthAllowance` over `compiledBytes` (audit.md §13.3 S7 / §21.3). Raising the baseline is a decision that belongs in the same commit as the CSS that makes it grow, with the reason in the feature doc.",
+  "compiledBytes": 69224,
+  "componentsBytes": 36640,
+  "growthAllowance": 0.05,
+  "history": [
+    {
+      "stage": "pre-program",
+      "bytes": 65896,
+      "source": "odd/tasks/audit-program.md L3 (T1 entry)"
+    },
+    {
+      "stage": "T1 — S1 + S7 (tokens, one colour grammar)",
+      "bytes": 68917,
+      "deltaPct": 4.58,
+      "source": "odd/tasks/audit-program.md L3; ~3 kB are the @supports pairs Lightning CSS emits for each color-mix()",
+      "inherited": "+4.9 % over the pre-program size as quoted in the T8 brief; the recorded figure is +4.58 %"
+    },
+    {
+      "stage": "T6 — S5 (CSS lattice replaces the shader's grid)",
+      "bytes": 70020,
+      "deltaPct": 1.6,
+      "source": "measured: sum of .next/static/chunks/*.css in the production build that contains T6 (commit bfcfb5d)",
+      "inherited": "+1.75 % over the post-T1 size as quoted in the T8 brief; the measured figure is +1.6 %"
+    },
+    {
+      "stage": "T8 — baseline recorded (this file)",
+      "bytes": 69224,
+      "deltaPct": -1.14,
+      "source": "in-process compile of the current source, which is a different pipeline from `next build` (Lightning CSS), hence the lower absolute number than the 70020 B build artefact"
+    }
+  ]
+}
