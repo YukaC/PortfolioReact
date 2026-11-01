@@ -1,3 +1,5 @@
+"use client";
+
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import Magnetic from "@/components/Magnetic";

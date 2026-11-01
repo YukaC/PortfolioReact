@@ -1,4 +1,3 @@
-import { useMemo } from "react";
 import { accentWordSet, isAccentWord } from "@/lib/heading-accent";
 
 /**
@@ -19,7 +18,32 @@ import { accentWordSet, isAccentWord } from "@/lib/heading-accent";
  * own block line, so the break holds at every viewport instead of moving as the
  * heading grows a line. The stagger index keeps counting across the break, so
  * the second line continues the first instead of restarting.
+ *
+ * No hooks: the split is arithmetic on a string, and this is a Server Component
+ * now (audit.md §16.2), so the em-dash-free memo it used to carry would only be a
+ * hook a server render cannot call.
  */
+const splitLines = (text) => {
+  const lines = text
+    .split("\n")
+    .map((line) => line.split(/\s+/).filter(Boolean))
+    .filter((words) => words.length > 0);
+  const counts = lines.map((words) => words.length);
+
+  return lines.map((words, lineIndex) => {
+    // Words before this line, so the stagger keeps counting across the break.
+    const offset = counts
+      .slice(0, lineIndex)
+      .reduce((total, count) => total + count, 0);
+
+    return words.map((word, column) => ({
+      word,
+      index: offset + column,
+      last: column === words.length - 1,
+    }));
+  });
+};
+
 const SplitHeading = ({
   as: Tag = "h2",
   text,
@@ -30,37 +54,15 @@ const SplitHeading = ({
   reveal = "",
   ...rest
 }) => {
-  // Each line carries its words with a stagger index that keeps counting across
-  // the break, so the second line continues the first instead of restarting.
-  const lines = useMemo(() => {
-    const split = text
-      .split("\n")
-      .map((line) => line.split(/\s+/).filter(Boolean))
-      .filter((words) => words.length > 0);
-    const counts = split.map((words) => words.length);
-
-    return split.map((words, lineIndex) => {
-      // Words before this line, so the stagger keeps counting across the break
-      // without mutating anything during render.
-      const offset = counts
-        .slice(0, lineIndex)
-        .reduce((total, count) => total + count, 0);
-
-      return words.map((word, column) => ({
-        word,
-        index: offset + column,
-        last: column === words.length - 1,
-      }));
-    });
-  }, [text]);
+  const lines = splitLines(text);
 
   // The accessible name reads as one sentence: a line break is layout, not
   // punctuation, so a screen reader should not pause for it.
-  const label = useMemo(() => text.replace(/\s+/g, " ").trim(), [text]);
+  const label = text.replace(/\s+/g, " ").trim();
 
   // Punctuation is part of the sentence, not part of the word: `accent:
   // "software"` has to emphasise `software,` in the heading.
-  const accentWords = useMemo(() => accentWordSet(accent), [accent]);
+  const accentWords = accentWordSet(accent);
 
   return (
     <Tag
