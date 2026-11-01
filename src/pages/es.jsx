@@ -12,7 +12,7 @@ export async function getStaticProps() {
 
   return {
     props: { projects, locale: "es" },
-    revalidate: 3600,
+    revalidate: 21600,
   };
 }
 
