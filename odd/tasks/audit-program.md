@@ -331,3 +331,21 @@ no-js / runtime en verde; vitals LCP 204–232 ms, CLS 0, TBT 122–155 ms, JS 2
 Sigue en rojo, y se reporta: `idle/task` (decisión de producto sobre la densidad de
 destellos), p95 en SwiftShader (50 ms, rasterizador por CPU) y `@layer components`
 en 28 476 B contra el techo de 28 672 B.
+
+**L21 — el humo (pedido del dueño, verbatim: "eliminaste el humo de la version de pc?").**
+No se había borrado, pero en la práctica sí: la fase `frozen` aparcaba el campo 1,55 s
+después de la última interacción, `autoDemo` está apagado y dos capturas en reposo no
+mostraban ninguna pluma — el humo existía sólo mientras se movía el puntero o se
+scrolleaba. Se agregó una cuarta fase `ambient`, sólo para el tier `full` con puntero fino,
+ancho ≥ `wide` y sin reduced motion: un frame cada 190 ms (~5,3 fps), media cadencia del
+`breath` de 143 ms que el audit había quitado y sin `coverGrid` en el pase, con el mismo
+`AutoDriver` a 0,28 de velocidad y la tinta más diluida para que se acumule neblina y no un
+faro. Medido: 954 draw calls en 10 s en reposo (el build congelado daba 0), pluma viva en un
+recorte con el retículo oculto (30,5 % de píxeles distintos a 2 s), 0 draws en reduced motion
+y en 390 px, tab oculta lo detiene, scroll igual (p95 16,8 ms, jank 0 %). `measure:idle`
+distingue ahora las dos rutas: el presupuesto estricto de 0 draws sigue valiendo para las
+páginas que se congelan y la ruta ambiente tiene su propio gate de cadencia 4-6 fps, así que
+ninguna de las dos puede pasar por la puerta de la otra. `TaskDuration` sigue en rojo
+(319 ms): ese costo son las 22 animaciones de identidad, no el humo (sin destellos mide
+49 ms). Constantes estéticas para ajustar sin tocar el diseño: `AMBIENT_Y_MAX` (altura de la
+pluma) y `AMBIENT_DISSIPATION` (cuánto se diluye).
