@@ -87,11 +87,14 @@ const Layout = ({ children, title, description, projects = [] }) => {
           href="/apple-touch-icon.png?v=2"
         />
         <link rel="manifest" href="/site.webmanifest" />
-        <meta name="theme-color" content="#060b1a" />
+      {/* The colour is `--color-ink`; `var()` cannot resolve inside a meta
+          attribute, so the hex stays here as the one copy of it outside the
+          stylesheet. */}
+      <meta name="theme-color" content="#060b1a" />
       </Head>
       <SiteJsonLd projects={projects} locale={locale} />
 
-      <div ref={rootRef} className="relative min-h-[100dvh] bg-[#060b1a] text-white">
+      <div ref={rootRef} className="relative min-h-[100dvh] bg-ink text-white">
         <div className="field-progress" aria-hidden="true">
           <span />
         </div>
