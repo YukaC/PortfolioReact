@@ -26,8 +26,17 @@ import {
  *
  * A non-English answer is an internal rewrite to `/${locale}`: the URL bar keeps
  * `/` and the language is never part of the public address. The decision also
- * travels to the server as `x-pf-locale` / `x-pf-html-lang`, which is what
- * `_document` reads for `<html lang>`.
+ * travels to the server as `x-pf-locale` / `x-pf-html-lang`.
+ *
+ * Since the App Router migration (audit.md §16), `<html lang>` is the *route's*
+ * language and no longer a header read: the root layouts are `(en)` and
+ * `(intl)/[lang]`, so `/es` is a prerendered document that says `es` in its
+ * first byte, and `headers()` in a root layout would have turned every
+ * prerendered route into a per-request render. The two headers are still set
+ * because they describe the request the render is answering (a non-prerendered
+ * response — the API route, the 404 — has no route segment to read it from), and
+ * because dropping a public request header is a separate decision from
+ * relocating the document.
  */
 
 const COOKIE_MAX_AGE = 60 * 60 * 24 * 365; // one year
