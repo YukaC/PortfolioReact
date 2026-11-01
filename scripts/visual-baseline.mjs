@@ -155,6 +155,13 @@ const FREEZE_CSS = `
   scroll-behavior: auto !important;
 }
 html { scroll-behavior: auto !important; }
+/* The identity layer is deliberately alive, and a WebGL frame depends on when
+   it was taken: neither may reach a baseline, or the 0.1 % threshold becomes
+   noise. The lattice stays (it is the identity); the canvas and the strikes are
+   pinned to their at-rest state. */
+canvas,
+.field-glow { visibility: hidden !important; }
+.flare { opacity: 0 !important; animation: none !important; }
 `;
 
 const FREEZE_SCRIPT = `(() => {
