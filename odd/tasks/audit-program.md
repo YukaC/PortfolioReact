@@ -120,7 +120,7 @@ intactas. Cada decisión extra se reporta al cierre.
 | ID | Specs | Ruta | Commit |
 |---|---|---|---|
 | T1 | S1, S7 | worker `css-tokens` (tokens + reveal CSS + config) | `70362f1` |
-| T2 | S7b, S9 | worker `token-scale` (escala tipográfica, radios, blur, sombras, breakpoints) | pendiente |
+| T2 | S7b, S9 | worker `token-scale` (escala tipográfica, radios, blur, sombras, breakpoints) | `6216a79` |
 | T3 | S2, S3 | worker `runtime-perf` (scroll dueño único + tiers) | `5d48e78`, `fe375c0` |
 | T4 | S1 | parent (`html.js` en `_document`) + worker (observer) | `317e861`, `5d48e78` |
 | T5 | S10 | worker `data-snapshot` (validate + snapshot + cron) | `d31f21a`, `951dcd5` |
@@ -130,7 +130,7 @@ intactas. Cada decisión extra se reporta al cierre.
 | T9 | S12 | worker `app-router` (A1-A5 + split server/isla) | `14acfe1` |
 | T10 | S13 | worker `seo-geo` (S1/S2/S4/S5/S6) | `225a1c4` |
 | T11 | S14, S4, S8 | worker `tailwind-buckets` (A) + `perf-residue` (B) | `1114ecf`, `63fbfb3` |
-| T12 | S11, S15 | pendiente (gates finales + reporte) | pendiente |
+| T12 | S11, S15 | parent (gates finales + reporte) | ver §Log L16 |
 
 **Corte de slice (para el revisor):** la rama arrastra los 30 commits de
 `feat/prod-polish` porque nació de ahí; el programa nuevo son los commits
@@ -266,3 +266,16 @@ construcción más barata medida queda en 134 ms; (b) p95 de scroll en los perfi
 también en "desktop", así que el número no es una afirmación sobre GPU real; el
 perfil mobile 4× sí cumple (16,8 ms). Ambas quedan sin maquillar: no se relajó
 ningún umbral.
+
+**L15 — T2 (S7b/S9).** 55 tokens nuevos: 15 pasos de tipo con su `line-height` y
+`letter-spacing` (los `clamp()` copiados sin redondear), radios, blur, sombras y la
+escalera `--z-*` semántica; un solo `font-family` en `.root-layout` y `body` deja de
+declarar familia. Los breakpoints pasan a `--breakpoint-nav` (768) y
+`--breakpoint-wide` (900) y `src/lib/breakpoints.js` los lee en módulo, así que el
+conjunto de anchos del JS es subconjunto del CSS. `check:css` ahora también trata un
+`z-index` literal como un literal de color y no marca los tokens de breakpoint como
+huérfanos. Fidelidad: 45 selectores × 5 anchos comparados por estilo computado entre
+el build anterior y el nuevo — 15 diferencias, todas nombradas (cola genérica de la
+pila de fuentes, `z-index auto→0` en la capa del campo, `isolation` en `.work-go`,
+`rounded-sm` 4→6 px según §14.4, `9999px→999px` que clampa igual). **No hay baseline
+visual commiteado**: el pixel diff sigue siendo deuda declarada de §21.2.

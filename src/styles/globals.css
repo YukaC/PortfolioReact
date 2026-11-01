@@ -192,8 +192,19 @@
 @custom-variant max-wide (@media (max-width: 56.25rem)); /* inclusive, see above */
 /* The reveal drops its blur on anything that is either narrow or touched
    (`max-width: 64rem` OR `pointer: coarse`). One custom variant, because an
-   OR between a breakpoint and a pointer query has no built-in spelling. */
-@custom-variant narrow-or-touch (@media (max-width: 64rem), (pointer: coarse));
+   OR between a breakpoint and a pointer query has no built-in spelling. The two
+   queries are written as separate rules on purpose: a comma-separated `@media`
+   list is emitted by the dev CSS pipeline as two blocks and the second loses its
+   `@media`, which fails to parse (measured: `/` returned 500 in `next dev` while
+   the production build was fine). */
+@custom-variant narrow-or-touch {
+  @media (max-width: 64rem) {
+    @slot;
+  }
+  @media (pointer: coarse) {
+    @slot;
+  }
+}
 
 /* The composite stacks resolve their `var()` at the element that declares
    them, so they have to live on the element that carries the next/font

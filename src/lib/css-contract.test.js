@@ -320,10 +320,31 @@ test("no hand-written pointer or width media query: those are variants", () => {
   // §13.3 S5 / S14: `pointer-fine:`, `pointer-coarse:`, `max-xs`, `max-wide`,
   // and `no-hover` are declared once as variants and used from the rules and the
   // JSX. A raw query for one of them would be a second vocabulary of states.
+  // The one legal home for such a query is the `@custom-variant` definition that
+  // names it (a Tailwind variant cannot read `var()`, and an OR of a width and a
+  // pointer condition has no built-in spelling). Everything else must use the
+  // variant.
+  const variantRanges = [];
+  cssLines.forEach((line, i) => {
+    if (!/^@custom-variant\b/.test(line.trim())) return;
+    let depth = 0;
+    let end = i;
+    for (let j = i; j < cssLines.length; j += 1) {
+      depth += (cssLines[j].match(/\{/g) || []).length;
+      depth -= (cssLines[j].match(/\}/g) || []).length;
+      if (depth === 0) {
+        end = j;
+        break;
+      }
+    }
+    variantRanges.push([i, end]);
+  });
+  const insideVariant = (i) => variantRanges.some(([start, end]) => i >= start && i <= end);
   const offenders = cssLines
-    .map((line, i) => ({ line: line.trim(), number: i + 1 }))
+    .map((line, i) => ({ line: line.trim(), number: i + 1, index: i }))
     .filter(({ line }) => /^@media\b/.test(line))
-    .filter(({ line }) => /pointer|hover|max-width:\s*(35rem|560px|56\.25rem|900px)/.test(line));
+    .filter(({ line }) => /pointer|hover|max-width:\s*(35rem|560px|56\.25rem|900px)/.test(line))
+    .filter(({ index }) => !insideVariant(index));
   assert.deepEqual(
     offenders.map(({ number, line }) => `${number}: ${line}`),
     [],
