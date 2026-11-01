@@ -1,13 +1,21 @@
 # §17 — refresh the project snapshot every 6 h.
 #
 # The site serves `src/data/pinned-projects.json` and never talks to GitHub at
-# build or render time; this job is the only thing that reads the profile. It
-# calls the endpoint, which runs `validate()` over the payload before writing,
-# so a bad response keeps the previous snapshot served (fail-closed).
+# build or render time, so this job is the only thing that reads the profile.
+# It is also the only thing that *writes* the snapshot: a serverless filesystem
+# is read-only, so `/api/sync-projects` cannot do it in production (it answers
+# 501 there and names this file).
 #
-# Secrets: `CRON_SECRET` (required, also set in the hosting env) and
-# `PROJECTS_SYNC_URL` (the deployed origin + /api/sync-projects). A repository
-# variable of the same name works as a fallback — no secret is ever printed.
+# The write is a commit: `node scripts/sync-projects.mjs` validates the payload
+# first and only then replaces the file atomically, so a rejected refresh leaves
+# the previous snapshot untouched and the commit step finds nothing to push.
+# `generatedAt` therefore moves only when the data really moved, which is what
+# the sitemap `lastmod`, the JSON-LD `dateModified` and the page's "última
+# actualización" are read from.
+#
+# The token is the workflow's own `GITHUB_TOKEN`: reading the public profile's
+# pins needs a credential only for the GraphQL rate limit, and pushing the one
+# file needs `contents: write`. No repository secret is required.
 name: projects-sync
 
 on:
@@ -16,7 +24,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
   group: projects-sync
@@ -28,35 +36,38 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - name: Call the sync endpoint
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # The script imports node builtins and `src/lib` only, so there is nothing
+      # to install: the snapshot refresh cannot be broken by a dependency.
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Refresh the snapshot
         env:
-          SYNC_URL: ${{ secrets.PROJECTS_SYNC_URL || vars.PROJECTS_SYNC_URL }}
-          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: node scripts/sync-projects.mjs
+
+      - name: Commit only when the file changed
         run: |
           set -euo pipefail
 
-          if [ -z "${SYNC_URL:-}" ] || [ -z "${CRON_SECRET:-}" ]; then
-            echo "::error::PROJECTS_SYNC_URL and CRON_SECRET must be configured"
-            exit 1
+          if git diff --quiet -- src/data/pinned-projects.json; then
+            echo "snapshot unchanged — nothing to commit"
+            echo "### projects-sync" >> "$GITHUB_STEP_SUMMARY"
+            echo "- snapshot unchanged" >> "$GITHUB_STEP_SUMMARY"
+            exit 0
           fi
 
-          status=$(curl --silent --show-error --output response.json \
-            --write-out '%{http_code}' \
-            --max-time 30 --retry 2 --retry-delay 5 \
-            --request POST \
-            --header "Authorization: Bearer ${CRON_SECRET}" \
-            --header "Accept: application/json" \
-            "${SYNC_URL}")
+          sha=$(node -e 'const s=require("./src/data/pinned-projects.json"); console.log(s.generatedAt)')
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/data/pinned-projects.json
+          git commit -m "chore(projects): refresh the snapshot (generatedAt ${sha})"
+          git push
 
-          echo "HTTP ${status}"
-          cat response.json
-
-          if [ "${status}" != "200" ]; then
-            echo "::error::projects-sync failed with HTTP ${status}; the previous snapshot keeps being served"
-            exit 1
-          fi
-
-          sha=$(node -e 'const r=require("./response.json"); if(!r.sha256) process.exit(1); console.log(r.sha256)')
-          echo "snapshot sha256=${sha}"
           echo "### projects-sync" >> "$GITHUB_STEP_SUMMARY"
-          echo "- sha256: \`${sha}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- snapshot committed, generatedAt: \`${sha}\`" >> "$GITHUB_STEP_SUMMARY"

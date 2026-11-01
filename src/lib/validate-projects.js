@@ -7,9 +7,13 @@
  *
  *   1. links are `https:` only, on an allowlisted host, with no credentials and
  *      never protocol-relative — `javascript:`, `data:` and `//host/path` die
- *      here, not in the browser;
+ *      here, not in the browser; what is stored is the *parsed* URL, so a tab
+ *      or a space inside it cannot survive into the served markup;
  *   2. `name` matches `^[A-Za-z0-9._-]{1,100}$`, the description carries no
- *      markup, no control characters, collapsed whitespace and ≤ 240 chars;
+ *      markup, no control characters, collapsed whitespace and ≤ 240 chars,
+ *      and every tag is collapsed and refused if it carries a control
+ *      character or markup (a tag reaches the line-oriented `/llms.txt` and the
+ *      JSON-LD);
  *   3. at most `MAX_PINNED_PROJECTS` items, no duplicate `repoLink`;
  *   4. the write is atomic (temp file + rename) with the snapshot `sha256` in
  *      the run log — that half lives in `./projects-snapshot.js`;
@@ -31,19 +35,39 @@ export const NAME_PATTERN = /^[A-Za-z0-9._-]{1,100}$/;
 export const MAX_DESCRIPTION_LENGTH = 240;
 
 /**
+ * Longest tag. A tag is a label on a row and a `ComputerLanguage` name in the
+ * JSON-LD; anything longer is copy that belongs in the description.
+ */
+export const MAX_TAG_LENGTH = 40;
+
+/**
  * Where a snapshot may point. Anything else — including a homepage the API
  * hands back — is rejected rather than silently rendered as a card action.
  */
-const ALLOWED_HOSTS = ["github.com", "vercel.app"];
+const ALLOWED_HOSTS = ["github.com"];
 
-/** `*.github.io` (a project page) is allowed; the bare apex is not. */
-const ALLOWED_HOST_SUFFIXES = [".github.io"];
+/**
+ * The two wildcards, in the same shape: a *deployment* host (`yuka.github.io`,
+ * `portfolio-foo.vercel.app`) is a subdomain, and the bare apex is not one.
+ * `vercel.app` used to sit in the exact list above, so every real Vercel
+ * deployment was refused (`foo.vercel.app`) while the apex — which no
+ * deployment uses — was accepted; `scripts/sync-projects.mjs` then dropped the
+ * demo link in silence and the card served `siteUrl: null`.
+ */
+const ALLOWED_HOST_SUFFIXES = [".github.io", ".vercel.app"];
 
-/** C0 controls and DEL. Tabs/newlines are whitespace and collapse first. */
+/**
+ * C0 controls and DEL. In a description they are whitespace and collapse first;
+ * in a tag they are refused *before* collapsing, so a newline cannot become the
+ * separator of a forged line in `/llms.txt`.
+ */
 const CONTROL_CHARACTER = /[\u0000-\u001f\u007f]/;
 
 /** Cheap markup test: a tag needs a `<` and a closing `>`. React escapes the rest. */
 const HTML_TAG = /<[^>]*>/;
+
+/** Markup characters a tag may never carry, `#` excepted (`C#` is a language). */
+const MARKUP_CHARACTER = /[<>`]/;
 
 /** Local image path only — a remote `src` is an asset leak, not a screenshot. */
 const LOCAL_IMAGE = /^\/(?!\/)[\w./-]+$/;
@@ -93,8 +117,13 @@ function fail(errors, { index = null, field = "snapshot", code, message }) {
 }
 
 /**
- * Check one URL against rule 1 and return its trimmed form.
+ * Check one URL against rule 1 and return its canonical form.
  * `required` distinguishes `repoLink` (mandatory) from `siteUrl` (optional).
+ *
+ * The stored value is `parsed.href`, not the trimmed input: the WHATWG parser is
+ * what validated the URL, so it is also what gets written. `"…/Port\tfolio"`
+ * trims to itself (the tab is interior) but parses to `"…/Portfolio"`, and the
+ * raw string used to be the one that reached the card and the JSON-LD.
  */
 function checkUrl(value, { index, field, required, errors }) {
   if (value === null || value === undefined || value === "") {
@@ -167,7 +196,7 @@ function checkUrl(value, { index, field, required, errors }) {
     });
   }
 
-  return raw;
+  return parsed.href;
 }
 
 /** Check one description against rule 2 and return the stored form. */
@@ -227,6 +256,83 @@ function optionalText(value) {
 }
 
 /**
+ * Check every tag against rule 2 and return the stored list.
+ *
+ * A tag is not a description: it is joined into one line of `/llms.txt` (a
+ * line-oriented file, where `"React\n\n## Fake heading"` would forge a
+ * heading) and into the JSON-LD as a `ComputerLanguage` name. So it is
+ * collapsed, deduplicated, and refused — not rewritten — when it carries a
+ * control character or markup: fail-closed means the snapshot keeps serving
+ * rather than shipping a laundered string nobody reviewed.
+ */
+function checkTags(value, { index, errors }) {
+  if (value === undefined || value === null) return [];
+
+  if (!Array.isArray(value)) {
+    fail(errors, {
+      index,
+      field: "tags",
+      code: "tags-invalid",
+      message: "tags must be an array of strings",
+    });
+    return [];
+  }
+
+  const tags = [];
+  value.forEach((raw) => {
+    if (typeof raw !== "string") {
+      fail(errors, {
+        index,
+        field: "tags",
+        code: "tags-invalid",
+        message: "every tag must be a string",
+      });
+      return;
+    }
+
+    // Tested before `collapse()`: collapsing turns `"React\n\n## Fake heading"`
+    // into one innocent-looking line, which is exactly the string that used to
+    // reach `/llms.txt`.
+    if (CONTROL_CHARACTER.test(raw)) {
+      fail(errors, {
+        index,
+        field: "tags",
+        code: "tag-control",
+        message: `tag must not contain control characters: ${JSON.stringify(raw)}`,
+      });
+      return;
+    }
+
+    const tag = collapse(raw);
+    if (!tag) return;
+
+    if (MARKUP_CHARACTER.test(tag)) {
+      fail(errors, {
+        index,
+        field: "tags",
+        code: "tag-markup",
+        message: `tag must not contain markup: ${tag}`,
+      });
+      return;
+    }
+
+    if ([...tag].length > MAX_TAG_LENGTH) {
+      fail(errors, {
+        index,
+        field: "tags",
+        code: "tag-too-long",
+        message: `tag is ${[...tag].length} characters, max ${MAX_TAG_LENGTH}`,
+      });
+      return;
+    }
+
+    if (!tags.includes(tag)) tags.push(tag);
+  });
+
+  return tags;
+}
+
+/**
  * The exact object shape a card consumes, built only from checked values.
  * Unknown fields are dropped so the snapshot cannot grow an unchecked surface.
  */
@@ -261,9 +367,7 @@ function canonicalItem(item, index, errors) {
     typeof item.imgSrc === "string" && LOCAL_IMAGE.test(item.imgSrc.trim())
       ? item.imgSrc.trim()
       : null;
-  const tags = Array.isArray(item.tags)
-    ? item.tags.filter((tag) => typeof tag === "string" && collapse(tag))
-    : [];
+  const tags = checkTags(item.tags, { index, errors });
 
   return {
     name,
@@ -387,8 +491,8 @@ export function formatErrors(errors) {
  */
 export const SNAPSHOT_PROVENANCE = [
   "Generated file — do not edit by hand.",
-  "Entries were seeded from PINNED_FALLBACK + PROJECT_OVERRIDES in src/data/projects.js (the cards the site served when the profile scrape failed).",
-  "scripts/sync-projects.mjs rewrites this file from the live profile every 6 h, and every network refresh must pass validate() before it can touch it.",
+  "Every entry is a pinned repository from the profile, with copy and screenshots from PROJECT_OVERRIDES in src/data/projects.js; the file was first seeded from that same set.",
+  "The projects-sync CI job runs scripts/sync-projects.mjs every 6 h, and every network refresh must pass validate() before it can touch this file.",
 ].join(" ");
 
 /** Deterministic bytes for a snapshot: fixed key order, 2-space JSON, one newline. */

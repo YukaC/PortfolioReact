@@ -20,9 +20,29 @@
  * On success the three prerendered homes are revalidated on demand
  * (`revalidatePath`, the App Router equivalent of `res.revalidate`), which is
  * what actually replaces the served HTML within the 6 h ISR window.
+ *
+ * ## Where the refresh actually happens
+ *
+ * The snapshot lives inside the bundle (`src/data/pinned-projects.json`), and a
+ * serverless filesystem is read-only: on Vercel the write throws `EROFS`, the
+ * handler answered 500, and the scheduled caller retried and failed every six
+ * hours for ever — so `generatedAt` froze and the sitemap `lastmod`, the
+ * JSON-LD `dateModified` and the page's "última actualización" all lied.
+ *
+ * The supported writer is the CI job `.github/workflows/projects-sync.yml`,
+ * which checks the repository out with `contents: write`, runs
+ * `node scripts/sync-projects.mjs` and commits the snapshot only when the file
+ * changed. This route stays as the **self-hosted** trigger — a box where the
+ * repository directory is writable — and it fails closed and honestly anywhere
+ * else: a read-only target answers 501 with the job's name in the message,
+ * instead of a 500 that looks like a bug in the sync.
  */
 import { timingSafeEqual } from "node:crypto";
+import { accessSync, constants as fsConstants } from "node:fs";
+import path from "node:path";
 import { revalidatePath } from "next/cache";
+
+import { SNAPSHOT_FILE } from "@/lib/projects-snapshot";
 
 import { syncProjects } from "../../../../scripts/sync-projects.mjs";
 
@@ -59,6 +79,33 @@ function json(body, status) {
   });
 }
 
+/**
+ * Why this deployment cannot write the snapshot, or `null` when it can.
+ *
+ * Two signals, cheapest first: the platform says so (`VERCEL`), or the
+ * directory that holds the file is not writable for this process (`EROFS` on a
+ * read-only mount, `EACCES` on a locked-down container). `accessSync` is the
+ * honest probe — it asks the same kernel permission `renameSync` will ask.
+ */
+function readOnlyTarget() {
+  if (process.env.VERCEL === "1") {
+    return "the deployment filesystem is read-only (VERCEL=1)";
+  }
+
+  try {
+    accessSync(path.dirname(SNAPSHOT_FILE), fsConstants.W_OK);
+    return null;
+  } catch (error) {
+    return `the snapshot directory is not writable (${error?.code ?? "unknown error"})`;
+  }
+}
+
+/** The message a non-writable deployment gets: what to use instead, by name. */
+const READ_ONLY_MESSAGE =
+  "this deployment cannot write src/data/pinned-projects.json. The 6 h refresh is owned by the " +
+  "projects-sync CI job (.github/workflows/projects-sync.yml), which runs `node scripts/sync-projects.mjs` " +
+  "and commits the snapshot; this route only writes on a host whose repository directory is writable.";
+
 async function handle(request) {
   const secret = process.env.CRON_SECRET;
   if (!secret) {
@@ -67,6 +114,18 @@ async function handle(request) {
 
   if (!secretsMatch(readSecret(request), secret)) {
     return json({ ok: false, error: "unauthorized" }, 401);
+  }
+
+  const readOnly = readOnlyTarget();
+  if (readOnly) {
+    return json(
+      {
+        ok: false,
+        error: "read-only-target",
+        message: `${readOnly}: ${READ_ONLY_MESSAGE}`,
+      },
+      501,
+    );
   }
 
   const result = await syncProjects({ token: process.env.GITHUB_TOKEN });

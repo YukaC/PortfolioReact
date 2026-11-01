@@ -7,13 +7,28 @@ import { CELL_PX, DOT_INSET_PX, FIELD_FLARES } from "./field-flares.js";
 
 /**
  * The identity layer's acceptance criteria, as numbers (audit.md §18.4, §18.8,
- * §19.2, §19.4; feature spec S5). No DOM, no browser, no clock: the table is a
- * literal and the simulation below is a pure function of it.
+ * §19.2, §19.4; feature spec S5, and the T12 rework of the cadence).
  *
- * The one criterion that is not decoration is the first: a flare has to land on
- * the centre of a dot. A fixed 48 px lattice puts its dots at `n * 48 + 24` from
- * the tile origin, so a position in percentages of the viewport cannot land on
- * one — that is what the reverted attempt got wrong (§19.3, commit `8164756`).
+ * No DOM, no browser, no clock: the table is a literal, the curve is read out of
+ * `@keyframes` as text, and the simulation below is a pure function of the two.
+ *
+ * Two criteria carry the whole design:
+ *
+ *   1. a flare lands on the centre of a dot — a fixed 48 px lattice puts its dots
+ *      at `n * 48 + 24`, so a position in percentages cannot land on one (§19.3,
+ *      commit `8164756`);
+ *   2. the field is a shimmer, not a blink — at every density band the number of
+ *      flares past the "lit" threshold stays inside 1–4, and the field never goes
+ *      completely dark. The owner's report was that the strikes felt abrupt and
+ *      sporadic; both halves of that are pinned below, so neither can come back.
+ *
+ * The opacity curve is interpolated **linearly** between the keyframe stops even
+ * though the stylesheet eases each segment (`--ease-in-out-field`). That makes
+ * this model a superset of what the browser paints: a threshold crossing happens
+ * later on an eased ramp than on a linear one, so the simulated count is never
+ * lower than the real one. Passing here is therefore conservative — the eased
+ * curve can only be calmer — and `field-flares.test.js` never has to reimplement
+ * a cubic-bezier.
  */
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const css = readFileSync(path.join(ROOT, "src/styles/globals.css"), "utf8");
@@ -32,15 +47,29 @@ const BANDS = [
 ];
 
 /**
- * The bright phase of `@keyframes flare`: the only span where `opacity > 0`, so
- * it is what "lit" means for the cadence budget below (≈ 0.6 s at 7–11 s).
+ * The one keyframe that applies at each density: `.flare` is the default (the 36
+ * dots a screen wider than 1600 px shows) and each narrower band overrides
+ * `animation-name` in the same media query that hides its extra dots.
  */
-const BRIGHT_FROM = 0.9;
-const BRIGHT_TO = 0.98;
+const KEYFRAME_OF_BAND = { 36: "flare", 22: "flare-22", 12: "flare-12", 6: "flare-6" };
 
-/** One minute of steady state, sampled at 20 ms — a reading pause, not a proof. */
+/** What "lit" means: the threshold the cadence budget and the probe count. */
+const LIT_THRESHOLD = 0.05;
+
+/** §19.2: between 1 and 4 flares are lit at once, never more. */
+const PEAK_CEILING = 4;
+
+/** One certified minute of steady state, sampled at 20 ms. */
 const HORIZON_MS = 60_000;
 const STEP_MS = 20;
+
+/**
+ * Past `max(delay) + max(dur)` every flare is in its steady cycle; before that it
+ * is still starting, which is the page load and not the field.
+ */
+const WARM_MS =
+  Math.max(...FIELD_FLARES.map((flare) => flare.delay)) * 1000 +
+  Math.max(...FIELD_FLARES.map((flare) => flare.dur)) * 1000;
 
 /**
  * The body of the first block opened by `opener`, balanced to its closing brace.
@@ -61,6 +90,72 @@ const blockOf = (opener) => {
     }
   }
   return "";
+};
+
+/**
+ * The stops of a keyframe as `[percent, opacity]`, sorted. One stop can name
+ * several percentages (`0%, 47.1%, 52.9%, 100% { … }`), which is how the flat
+ * part of the cycle is written.
+ */
+const keyframeStops = (name) => {
+  const body = blockOf(`@keyframes ${name}`);
+  assert.notEqual(body, "", `@keyframes ${name} is missing from globals.css`);
+  const stops = [];
+  for (const block of body.matchAll(/([^{}]+)\{([^{}]*)\}/g)) {
+    const opacity = /opacity:\s*([\d.]+)/.exec(block[2]);
+    if (!opacity) continue;
+    for (const selector of block[1].split(",")) stops.push([parseFloat(selector), parseFloat(opacity[1])]);
+  }
+  return stops.sort((a, b) => a[0] - b[0]);
+};
+
+/** The opacity of a flare at `percent` of its cycle, linearly between stops. */
+const opacityAt = (stops) => (percent) => {
+  for (let i = 1; i < stops.length; i += 1) {
+    if (percent <= stops[i][0]) {
+      const [p0, o0] = stops[i - 1];
+      const [p1, o1] = stops[i];
+      return p1 === p0 ? o1 : o0 + ((o1 - o0) * (percent - p0)) / (p1 - p0);
+    }
+  }
+  return stops[stops.length - 1][1];
+};
+
+const saturation = (ms, flare) => {
+  const elapsed = ms - flare.delay * 1000;
+  if (elapsed < 0) return 0;
+  return ((elapsed / (flare.dur * 1000)) % 1) * 100;
+};
+
+/**
+ * A density band over the certified horizon: the count of lit flares, and the
+ * time the whole field spends with none of them lit.
+ */
+const simulate = (count, name) => {
+  const opacity = opacityAt(keyframeStops(name));
+  const band = FIELD_FLARES.slice(0, count);
+  let min = Infinity;
+  let max = 0;
+  let sum = 0;
+  let samples = 0;
+  let darkMs = 0;
+  let faintest = Infinity;
+  for (let ms = WARM_MS; ms <= WARM_MS + HORIZON_MS; ms += STEP_MS) {
+    let lit = 0;
+    let total = 0;
+    for (const flare of band) {
+      const value = opacity(saturation(ms, flare));
+      if (value > LIT_THRESHOLD) lit += 1;
+      total += value;
+    }
+    if (lit < min) min = lit;
+    if (lit > max) max = lit;
+    if (lit === 0) darkMs += STEP_MS;
+    if (total < faintest) faintest = total;
+    sum += lit;
+    samples += 1;
+  }
+  return { count, min, max, mean: sum / samples, darkMs, faintest };
 };
 
 test("the table is 36 flares on the lattice the stylesheet draws", () => {
@@ -123,7 +218,7 @@ test("no two flares share a cell", () => {
   assert.deepEqual(duplicates, [], `cells used twice: ${duplicates.join(" ")}`);
 });
 
-test("cycles are distinct and inside the documented range", () => {
+test("cycles and phases stay inside the documented range, all distinct", () => {
   const durations = FIELD_FLARES.map((flare) => flare.dur);
   const delays = FIELD_FLARES.map((flare) => flare.delay);
   const outOfRange = FIELD_FLARES.filter(
@@ -133,64 +228,136 @@ test("cycles are distinct and inside the documented range", () => {
   assert.deepEqual(
     outOfRange.map((flare) => `${flare.cx},${flare.cy}: ${flare.dur}s/${flare.delay}s`),
     [],
-    "--dur must be 7–11 s and --delay 0–8 s",
+    "--dur must be 7–11 s and --delay 0–8 s (§18.4)",
   );
-  // Distinct cycles are the whole point: a repeated period is a synchronised
-  // strobe, which is the field this change is getting away from.
+  // Distinct values are what keeps the field from turning into one synchronised
+  // strobe: no two flares share a cycle or a phase.
   assert.equal(new Set(durations).size, SPEC_COUNT, "--dur must not repeat");
   assert.equal(new Set(delays).size, SPEC_COUNT, "--delay must not repeat");
+
+  // A narrow band, on purpose. A bounded number of lit flares only holds while
+  // the phases stay roughly in step, and a 7–11 s scatter decorrelates them fast
+  // enough that the count becomes a distribution whose peak was 6 (measured over
+  // the same minute this file certifies). The band still drifts — the pattern is
+  // not a loop — at about 0.4 of a cycle per minute.
+  const spread = Math.max(...durations) - Math.min(...durations);
+  assert.ok(spread <= 1.5, `the cycles span ${spread.toFixed(2)} s; 1.5 s is the ceiling`);
 });
 
-test("the field stays calm: 1–4 flares lit, never a crowd", () => {
-  // The keyframe window this budget is measured against, so the constant above
-  // cannot drift from the stylesheet without failing here first.
-  const keyframes = blockOf("@keyframes flare");
-  assert.match(keyframes, /90%/, "@keyframes flare lost its 90% stop");
-  assert.match(keyframes, /98%/, "@keyframes flare lost its 98% stop");
+test("every prefix is spread over the cycle, not bunched at its start", () => {
+  // The delays are one slot each of a 36-slot cycle, dealt in golden-ratio order,
+  // so the six a phone shows are as spread as the 36 a wide screen shows. Without
+  // this a prefix sits in a burst and then leaves the field dark.
+  for (const band of BANDS) {
+    const prefix = FIELD_FLARES.slice(0, band.count).map((flare) => flare.delay);
+    const span = Math.max(...prefix) - Math.min(...prefix);
+    const floor = (8 * band.count * 0.8) / SPEC_COUNT;
+    assert.ok(
+      span >= floor,
+      `the first ${band.count} delays span ${span.toFixed(2)} s of 8 s (floor ${floor.toFixed(2)} s)`,
+    );
+  }
+});
 
-  const litAt = (ms) => {
+test("the pulse is a soft swell: eased, low peak, never zero", () => {
+  const rule = blockOf(".flare {");
+  assert.notEqual(rule, "", "no .flare rule in globals.css");
+  // No step and no linear ramp: the attack and the decay are eased.
+  assert.match(
+    rule,
+    /animation:[^;]*var\(--ease-in-out-field\)[^;]*infinite/,
+    ".flare must run its bell on the symmetric easing curve, not linear or steps()",
+  );
+  assert.equal(/steps\(/.test(rule), false, "a stepped animation is the blink this rework removed");
+  assert.match(css, /--ease-in-out-field:\s*cubic-bezier\(/, "the easing token is not declared");
+
+  for (const name of Object.values(KEYFRAME_OF_BAND)) {
+    const stops = keyframeStops(name);
+    const levels = [...new Set(stops.map(([, opacity]) => opacity))].sort((a, b) => a - b);
+    // Two levels only: rest and peak. The old curve stopped at 1, dipped to 0.6
+    // and dropped to 0 — three levels in a 8 % window, which read as a blink.
+    assert.deepEqual(
+      levels,
+      [0.04, 0.5],
+      `${name}: the pulse must have a rest level and one peak, saw ${levels.join(" / ")}`,
+    );
+    const rest = levels[0];
+    const peak = levels[levels.length - 1];
+    // Never zero: the field keeps a faint light on every dot between strikes, so
+    // "completely dark" is not a state the stylesheet can reach.
+    assert.ok(rest > 0, `${name}: the rest opacity must stay above zero`);
+    assert.ok(peak < 1, `${name}: the peak must be under 1 (it was a hard flash at 1)`);
+    // The bell climbs once and comes down once: no second hump to read as a
+    // double blink.
+    const values = stops.map(([, opacity]) => opacity);
+    const peakAt = values.indexOf(Math.max(...values));
+    assert.ok(
+      values.slice(0, peakAt).every((value, i, all) => i === 0 || value >= all[i - 1]),
+      `${name}: the attack must be monotone`,
+    );
+    assert.ok(
+      values.slice(peakAt).every((value, i, all) => i === 0 || value <= all[i - 1]),
+      `${name}: the decay must be monotone`,
+    );
+  }
+});
+
+test("the field stays calm: 1–4 lit at once, and never fully dark", () => {
+  const bands = BANDS.map((band) => simulate(band.count, KEYFRAME_OF_BAND[band.count]));
+
+  for (const band of bands) {
+    // The audit's ceiling, at every density: 1–4 strikes at a time (§19.2). The
+    // old table certified a peak of 6 here.
+    assert.ok(
+      band.max <= PEAK_CEILING,
+      `${band.count} flares: at most ${PEAK_CEILING} may be lit at once, saw ${band.max}`,
+    );
+    // The audit's arithmetic band: 36 dots at ~6 % duty is a mean of ~2, which is
+    // the calm field it asks for against the ~18 glows the shader held.
+    assert.ok(
+      band.mean >= 1 && band.mean <= 4,
+      `${band.count} flares: mean lit ${band.mean.toFixed(2)} is outside 1–4`,
+    );
+    // The floor that holds at every density and at every instant: every flare
+    // rests at 0.04, so the field's total light never reaches zero.
+    assert.ok(band.faintest > 0, `${band.count} flares: the field went to zero light`);
+  }
+
+  // Never completely dark. Two floors, because only the first one is a theorem:
+  //
+  //   • the *light* floor — every flare rests at 0.04, so the field's total
+  //     opacity can never reach zero. That is a property of the stylesheet and
+  //     holds at every instant, for ever; it is asserted per band above.
+  //   • the *strike* floor — at least one flare is above the lit threshold. How
+  //     often that fails is a property of the 36 phases, so it is budgeted here
+  //     over the certified minute rather than promised: 5 % of the minute. The
+  //     same minute measured in the browser (a Playwright probe over the real
+  //     eased curve, 100 ms sampling) came out at 1.2 % of instants at 390,
+  //     3.3 % at 1440 and 3.8 % at 1920; the shipped curve was dark for 62.8 %
+  //     of the same minute at 390 and 9.8 % at 1440. The model below samples on
+  //     its own phase grid, so it is a budget, not a stopwatch.
+  for (const band of bands) {
+    assert.ok(
+      band.darkMs <= 0.05 * HORIZON_MS,
+      `${band.count} flares: no strike for ${band.darkMs} ms of the minute (budget ${0.05 * HORIZON_MS} ms)`,
+    );
+  }
+
+  // And the band gets a longer swell the sparser it is: the strike on a phone is
+  // a 3.6 s breath, the one on the 36-dot field 0.45 s. Same count, different
+  // window — that is how "1–4 at once" survives at 6 and at 36 dots.
+  const window = (name) => {
+    const stops = keyframeStops(name);
+    const opacity = opacityAt(stops);
     let lit = 0;
-    for (const flare of FIELD_FLARES) {
-      if (ms < flare.delay * 1000) continue;
-      const phase = ((ms - flare.delay * 1000) / (flare.dur * 1000)) % 1;
-      if (phase >= BRIGHT_FROM && phase <= BRIGHT_TO) lit += 1;
+    for (let percent = 0; percent < 100; percent += 0.05) {
+      if (opacity(percent) > LIT_THRESHOLD) lit += 0.05;
     }
     return lit;
   };
-
-  // Steady state: before `max(delay) + max(dur)` a flare is still in its first
-  // cycle (or parked at 0 %), which is the page load, not the field.
-  const warmUp =
-    Math.max(...FIELD_FLARES.map((flare) => flare.delay)) * 1000 +
-    Math.max(...FIELD_FLARES.map((flare) => flare.dur)) * 1000;
-
-  let max = 0;
-  let sum = 0;
-  let samples = 0;
-  let insideTarget = 0;
-  for (let ms = warmUp; ms <= warmUp + HORIZON_MS; ms += STEP_MS) {
-    const lit = litAt(ms);
-    if (lit > max) max = lit;
-    sum += lit;
-    samples += 1;
-    if (lit >= 1 && lit <= 4) insideTarget += 1;
-  }
-
-  // Duty cycle arithmetic: 36 cycles of 8 % lit = 2.88 at any instant, which is
-  // the "1–4 at once" the design asks for (the shader held ~18 continuously).
-  const mean = sum / samples;
-  assert.ok(mean >= 1 && mean <= 4, `mean lit ${mean.toFixed(2)} is outside 1–4`);
-  assert.ok(
-    Math.abs(mean - SPEC_COUNT * (BRIGHT_TO - BRIGHT_FROM)) <= 0.15,
-    `mean lit ${mean.toFixed(2)} does not match 36 × 8 % of a cycle`,
-  );
-  // The pinned ceiling: distinct cycles decorrelate the flares, so the count is
-  // a distribution around 2.88 and not a constant. Over the measured minute it
-  // stays under a third of what the shader held, and in the 1–4 band most of the
-  // time. A synchronous field would blow both numbers up at once.
-  assert.ok(max <= 6, `at most 6 flares may be lit at once, saw ${max}`);
-  const share = insideTarget / samples;
-  assert.ok(share >= 0.9, `only ${(share * 100).toFixed(1)} % of instants had 1–4 lit`);
+  const seconds = (count) => (window(KEYFRAME_OF_BAND[count]) / 100) * 9;
+  assert.ok(seconds(6) > seconds(22), "the phone's strike must be the longest");
+  assert.ok(seconds(36) < seconds(12), "the dense field must carry the shortest one");
 });
 
 test("the stylesheet places flares by cell coordinate, not by percentage", () => {
@@ -256,4 +423,15 @@ test("density is a max-width cascade, never JavaScript", () => {
     false,
     "a min-width flare rule reopens the gap a max-width cascade closes",
   );
+
+  // Each step carries the cadence for the dots it leaves visible: the same
+  // breakpoint that hides the surplus switches the bell (see the cadence test).
+  for (const [width, name] of [
+    ["100rem", "flare-22"],
+    ["64rem", "flare-12"],
+    ["40rem", "flare-6"],
+  ]) {
+    const block = blockOf(`@media (max-width: ${width})`);
+    assert.match(block, new RegExp(`animation-name:\\s*${name}`), `the ${width} band must run ${name}`);
+  }
 });
