@@ -279,3 +279,55 @@ el build anterior y el nuevo — 15 diferencias, todas nombradas (cola genérica
 pila de fuentes, `z-index auto→0` en la capa del campo, `isolation` en `.work-go`,
 `rounded-sm` 4→6 px según §14.4, `9999px→999px` que clampa igual). **No hay baseline
 visual commiteado**: el pixel diff sigue siendo deuda declarada de §21.2.
+
+## Ronda 2 (revisión independiente + correcciones)
+
+**L16 — lo que verificó la ronda de auditoría (verificador + revisor adversarial).**
+Cumplen con evidencia S1, S2, S3, S5, S6, S8, S10, S15. Parciales S4, S7, S9, S11,
+S12, S13, S14. Se refutaron dos afirmaciones mías: (a) "el −40 % de JS no existe":
+medido con la definición del propio repo (JS crítico antes de engagement) es
+**−46,6 %** (399 → 213 kB), lo que no existe es el peso de las secciones, que era
+~1,5 KB; (b) "el idle es inalcanzable": con 1 destello animado da 100 ms y con los
+destellos quietos 49 ms — el costo es lineal en nodos animados (~11 ms/nodo sobre un
+piso de 48 ms). Lo que no se puede es tener 22 destellos vivos y ≤100 ms en este
+host, y eso ahora está dicho con números, no con una opinión.
+
+**L17 — defectos encontrados y corregidos.** El punto de estado vivo había perdido
+su clase en la migración a utilidades (el dot no se dibujaba); el refresh de 6 h
+escribía dentro del filesystem desplegado (500 en Vercel y `generatedAt` congelado,
+lo que congelaba `lastmod`, `dateModified` y el "última actualización" de las 18
+páginas); el allowlist no aceptaba ningún deploy real (`foo.vercel.app`) y tiraba el
+link de demo sin avisar; `PINNED_FALLBACK` era una segunda fuente y el default del
+render. Además: tags sin sanear llegaban a `/llms.txt`, `Vary: Cookie` fragmentaba
+caché, y el reveal podía dejar secciones invisibles para siempre si el lector
+cambiaba `prefers-reduced-motion` a mitad de sesión.
+
+**L18 — la lista de proyectos (lo que reportó el dueño).** No era caché: el snapshot
+se había sembrado desde `PINNED_FALLBACK` mientras el build anterior renderizaba el
+scrape de pines en vivo, así que cuatro proyectos (AhorrAR, OpenBalance, Myrk Studio,
+Pelis en Casa) desaparecieron y entraron cuatro repos no fijados. El snapshot se
+re-sembró desde el perfil real (`--public`, sin token, mismo `validate()` y escritura
+atómica): Turnos App, OpenBalance, Myrk Studio, Pelis en Casa, AhorrAR, App Despensa.
+Se restauró además el pill `GitHub` de cada fila (el título va al caso, el pill al
+repo, el overlay al demo), que era lo que acortaba el documento 244 px.
+
+**L19 — destellos y reveal (percepción del dueño).** Los destellos iban 0 → 1 → 0,6
+→ 0 en tres pasos duros y el campo quedaba oscuro la mayor parte del minuto (1440:
+media 1,4 encendidos, 9,8 % del tiempo a oscuras; 390: media 0,4, 62,8 %). Ahora cada
+banda de densidad tiene su campana con ataque y caída suaves, pico 0,5 y fase
+brillante de 0,5–3,6 s según cuántos puntos haya: 1440 media 1,66, pico 4, 3,3 % a
+oscuras; 390 media 2,29, pico 4, 1,2 %. El reveal bajó de 1,1 s con `blur(6px)` y
+70 ms de stagger a 0,45 s sin filtro y 45 ms. **Medido en GPU real (RX 570): el
+scroll no tiene ni un frame sobre 32 ms y los 14 nodos del observer se revelan
+todos** — el "reveal deficiente" que se sentía no se reprodujo en hardware; el
+número que sí existe es que el campo pesa más en un teléfono sin GPU.
+
+**L20 — números finales de la ronda (renderer en cada línea).** HW: scroll desktop
+p95 **16,8 ms**, jank **0 %**, blur **0,02 Mpx**; mobile 4× p95 **16,7 ms**, jank
+**0 %**; idle canvas montado, **0 draws** en 10 s, recalc **1,0/frame**,
+`TaskDuration` **299 ms** (sigue sobre 100 por las 22 animaciones de identidad, L14);
+`visual:diff` **45/45 a 0,0000 %** contra baseline commiteado; e2e functional /
+no-js / runtime en verde; vitals LCP 204–232 ms, CLS 0, TBT 122–155 ms, JS 213 kB.
+Sigue en rojo, y se reporta: `idle/task` (decisión de producto sobre la densidad de
+destellos), p95 en SwiftShader (50 ms, rasterizador por CPU) y `@layer components`
+en 28 476 B contra el techo de 28 672 B.
