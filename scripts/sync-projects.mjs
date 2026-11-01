@@ -8,14 +8,31 @@
  * snapshot keeps being served.
  *
  *   GITHUB_TOKEN=… node scripts/sync-projects.mjs
+ *   node scripts/sync-projects.mjs --public
  *
- * No token → exit 1, snapshot untouched (degrade, never wipe). Any fetch,
- * GraphQL or validation failure behaves the same way. The sha256 of the written
- * bytes goes to the run log, so a refresh is attributable from CI output alone.
+ * Two ways in, one way out:
  *
- * Network facts: one GraphQL request (pins and their homepages in a single
- * payload — no per-repo fan-out), 4 s timeout, and `redirect: "error"` so a
- * request can never be walked off-host.
+ *   - with a token, one GraphQL request returns the pins and their homepages;
+ *   - with `--public`, no token is needed: the profile page is read for the
+ *     pinned repository names (the profile still ships them) and each of those
+ *     repositories is read from the public REST API — one request per repo,
+ *     against the unauthenticated limit (60/h), which is why the fan-out is a
+ *     loop and not a crawl. GitHub needs a `User-Agent`, and the pins keep the
+ *     order the profile gives them.
+ *
+ * Both fetch strategies hand the same `node` shape to `toProject()` and both
+ * end in `commitProjectsSnapshot()`: `validate()` first, then the atomic write
+ * with its `sha256` in the log. Nothing reaches the file that would not have
+ * been accepted had a token been present.
+ *
+ * No token and no `--public` → exit 1, snapshot untouched (degrade, never wipe).
+ * Any fetch, parse, API or validation failure behaves the same way. The sha256
+ * of the written bytes goes to the run log, so a refresh is attributable from
+ * CI output alone.
+ *
+ * Network facts: two hosts (`github.com`, `api.github.com`), a 4 s timeout on
+ * every request, and `redirect: "error"` so a request can never be walked
+ * off-host.
  */
 import path from "node:path";
 import { pathToFileURL } from "node:url";
@@ -27,13 +44,29 @@ import {
 } from "../src/data/projects.js";
 import { resolveProjectLinks } from "../src/lib/project-links.js";
 import { commitProjectsSnapshot } from "../src/lib/projects-snapshot.js";
-import { formatErrors, isAllowedHost } from "../src/lib/validate-projects.js";
+import {
+  NAME_PATTERN,
+  formatErrors,
+  isAllowedHost,
+} from "../src/lib/validate-projects.js";
 
 const GRAPHQL_ENDPOINT = "https://api.github.com/graphql";
+const PUBLIC_REPO_ENDPOINT = "https://api.github.com/repos";
+const PROFILE_URL = `https://github.com/${GITHUB_USERNAME}`;
 const USER_AGENT = "PortfolioReact-projects-sync/1.0";
 
 /** A slow GitHub must never hold the cron job open. */
 const REQUEST_TIMEOUT_MS = 4000;
+
+/**
+ * What the public profile page still emits around its pins: the list wrapper,
+ * one `<li>` per pin, and the pin's own name in `<span class="repo">`. Same
+ * markers the render path read before the snapshot existed, so the profiles
+ * that worked then are parsed here today.
+ */
+const PINNED_LIST_MARKER = "js-pinned-items-reorder-list";
+const PINNED_ITEM_MARKER = "pinned-item-list-item js-pinned-item-list-item";
+const PINNED_NAME = /<span class="repo">([^<]+)<\/span>/;
 
 const PINS_QUERY = `query PinnedProjects($login: String!, $count: Int!) {
   user(login: $login) {
@@ -146,26 +179,147 @@ async function fetchPinnedItems(token) {
 }
 
 /**
+ * The pinned repository names, in the profile's order.
+ *
+ * Pure on purpose: the profile markup is the one thing that can drift without
+ * any API changing, and a pin whose name cannot be read has to fail the run
+ * instead of shrinking the list — six pins rendering as five is exactly the
+ * silent loss this mode exists to end.
+ *
+ * @param {string} html
+ * @returns {string[]}
+ */
+export function parsePinnedNames(html) {
+  if (typeof html !== "string" || html === "") {
+    throw new Error("the profile page came back empty");
+  }
+
+  const start = html.indexOf(PINNED_LIST_MARKER);
+  if (start < 0) {
+    throw new Error(`the profile page carries no ${PINNED_LIST_MARKER} list: the markup changed`);
+  }
+
+  const blocks = html.slice(start).split(PINNED_ITEM_MARKER).slice(1);
+  if (blocks.length === 0) {
+    throw new Error("the pinned list carries no items: the markup changed");
+  }
+
+  const names = [];
+  for (const block of blocks) {
+    const name = block.match(PINNED_NAME)?.[1]?.trim();
+    if (!name) {
+      throw new Error("a pinned item carries no repository name: the markup changed");
+    }
+    // The name goes into `repoLink`, so it is refused here with the snapshot's
+    // own rule rather than laundered into a URL the validator would reject.
+    if (!NAME_PATTERN.test(name)) {
+      throw new Error(`the profile returned a pinned name the snapshot refuses: ${JSON.stringify(name)}`);
+    }
+    if (!names.includes(name)) names.push(name);
+  }
+
+  return names;
+}
+
+/** The profile page, same timeout and the same ban on redirects as the API. */
+async function fetchProfileHtml() {
+  const response = await fetch(PROFILE_URL, {
+    redirect: "error",
+    headers: { Accept: "text/html", "User-Agent": USER_AGENT },
+    signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+  });
+
+  if (!response.ok) {
+    throw new Error(`GitHub profile HTTP ${response.status}`);
+  }
+
+  return response.text();
+}
+
+/**
+ * One pinned repository, mapped onto the shape the GraphQL path produces, so
+ * `toProject()` below never learns which endpoint answered.
+ *
+ * The repository URL is *built from the pin*, not read from the payload: the
+ * allowlist is about hosts, and a URL this file constructs cannot point a card
+ * somewhere `validate()` would have to reject.
+ */
+async function fetchPublicNode(name) {
+  const url = `${PUBLIC_REPO_ENDPOINT}/${GITHUB_USERNAME}/${encodeURIComponent(name)}`;
+  const response = await fetch(url, {
+    redirect: "error",
+    headers: { Accept: "application/vnd.github+json", "User-Agent": USER_AGENT },
+    signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+  });
+
+  if (!response.ok) {
+    const exhausted = response.headers.get("x-ratelimit-remaining") === "0";
+    throw new Error(
+      `GitHub REST HTTP ${response.status} for ${name}${
+        exhausted ? " (unauthenticated rate limit exhausted: retry later or set GITHUB_TOKEN)" : ""
+      }`,
+    );
+  }
+
+  const repo = await response.json();
+  const fullName = typeof repo?.full_name === "string" ? repo.full_name : "";
+  if (fullName.toLowerCase() !== `${GITHUB_USERNAME}/${name}`.toLowerCase()) {
+    throw new Error(
+      `GitHub REST answered ${JSON.stringify(fullName)} for ${name}: refusing a repository that is not the pin`,
+    );
+  }
+
+  return {
+    name,
+    description: typeof repo.description === "string" ? repo.description : null,
+    url: `https://github.com/${GITHUB_USERNAME}/${name}`,
+    homepageUrl: typeof repo.homepage === "string" ? repo.homepage : null,
+    primaryLanguage:
+      typeof repo.language === "string" && repo.language ? { name: repo.language } : null,
+  };
+}
+
+/** Profile names → one REST request each, in the profile's order. */
+async function fetchPublicPinnedItems({ log = () => {} } = {}) {
+  const names = parsePinnedNames(await fetchProfileHtml());
+  log(
+    `[sync-projects] public mode: ${names.length} pin(s) on ${PROFILE_URL}: ${names.join(", ")}`,
+  );
+
+  const nodes = [];
+  for (const name of names.slice(0, MAX_PINNED_PROJECTS)) {
+    nodes.push(await fetchPublicNode(name));
+    log(`[sync-projects] public mode: read ${GITHUB_USERNAME}/${name}`);
+  }
+  return nodes;
+}
+
+/**
  * Fetch, map, validate, write. Shared by the CLI below and by the cron Route
  * Handler (`src/app/api/sync-projects/route.js`), so the endpoint and the
  * scheduled job cannot drift apart.
  *
- * @param {{ token?: string, file?: string, log?: (line: string) => void }} [options]
+ * @param {{ token?: string, public?: boolean, file?: string, log?: (line: string) => void }} [options]
  * @returns {Promise<{ ok: true, sha256: string, items: number, generatedAt: string }
  *   | { ok: false, reason: string, message: string, errors?: object[] }>}
  */
-export async function syncProjects({ token = process.env.GITHUB_TOKEN, file, log = console.log } = {}) {
-  if (!token) {
+export async function syncProjects({
+  token = process.env.GITHUB_TOKEN,
+  public: publicMode = false,
+  file,
+  log = console.log,
+} = {}) {
+  if (!publicMode && !token) {
     return {
       ok: false,
       reason: "missing-token",
-      message: "GITHUB_TOKEN is not set: snapshot kept as is",
+      message: "GITHUB_TOKEN is not set and --public was not asked for: snapshot kept as is",
     };
   }
 
   let nodes;
   try {
-    nodes = await fetchPinnedItems(token);
+    nodes = publicMode ? await fetchPublicPinnedItems({ log }) : await fetchPinnedItems(token);
   } catch (error) {
     return {
       ok: false,
@@ -212,9 +366,14 @@ export async function syncProjects({ token = process.env.GITHUB_TOKEN, file, log
   };
 }
 
-/** CLI entry: exit non-zero on any failure, and never write in that case. */
+/**
+ * CLI entry: exit non-zero on any failure, and never write in that case.
+ *
+ *   node scripts/sync-projects.mjs            # GraphQL, needs GITHUB_TOKEN
+ *   node scripts/sync-projects.mjs --public   # profile page + public REST
+ */
 async function main() {
-  const result = await syncProjects();
+  const result = await syncProjects({ public: process.argv.includes("--public") });
 
   if (!result.ok) {
     console.error(`[sync-projects] FAILED (${result.reason}): ${result.message}`);

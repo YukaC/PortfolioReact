@@ -137,3 +137,6 @@ odd/tasks/archive/
 .playwright-mcp/
 .vercel
 .env*
+
+# Visual baseline (§14.5): the manifest is tracked, the 45 captures are not
+visual/baseline/**/*.png

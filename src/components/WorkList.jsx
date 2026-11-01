@@ -7,7 +7,6 @@ import WorkFilters from "@/components/WorkFilters";
 import {
   GITHUB_USERNAME,
   MAX_PINNED_PROJECTS,
-  PINNED_FALLBACK,
   projectCategories,
   projectMonogram,
 } from "@/data/projects";
@@ -65,14 +64,22 @@ const ProjectCover = ({ project, index, sizes }) => {
 };
 
 /**
- * Project row: the title opens the project's own page (§24 S6), the row's
- * overlay still opens the live demo, and a small secondary action keeps the
- * repository one click away when it is a different place.
+ * Project row: the title opens the project's own page (§24 S6), the overlay
+ * opens the live demo, and the pill under the copy opens the repository.
  *
  * Three destinations, three elements, no lie: the demo keeps the label it
  * always had (`work.demoAria`), the repository keeps its own, and the new
  * internal link carries nothing but the project's name — so a crawler finds the
  * citable URL and a reader who wanted the demo still lands on the demo.
+ *
+ * The two conditions are opposite halves of `resolveProjectLinks()`, and that
+ * is on purpose. The pill follows the repository, not "the demo is somewhere
+ * else": sharing `showRepoLink` with the overlay meant a pin with no homepage
+ * (every `PROJECT_OVERRIDES` entry today, and any repository whose Website
+ * field is empty) rendered a row with no GitHub link at all, which is exactly
+ * the affordance the list lost. The overlay follows the demo, because with no
+ * demo it used to point at the repository under the label "view demo" — a
+ * control that lies (§20.4-3).
  *
  * Rendered on the server and handed to the filter island as an element, so the
  * copy in a row is in the HTML whether or not a script runs.
@@ -118,7 +125,7 @@ const WorkRow = ({ project, index, labels, href }) => {
         {project.tags?.length ? (
           <p className="work-tags">{project.tags.join(" · ")}</p>
         ) : null}
-        {showRepoLink ? (
+        {repoUrl ? (
           <a
             href={repoUrl}
             target="_blank"
@@ -136,13 +143,15 @@ const WorkRow = ({ project, index, labels, href }) => {
         <SwapArrow direction="d" />
       </span>
 
-      <a
-        className="absolute inset-0 focus-ring"
-        href={siteUrl}
-        target="_blank"
-        rel="noopener noreferrer"
-        aria-label={labels.demoAria}
-      />
+      {showRepoLink ? (
+        <a
+          className="absolute inset-0 focus-ring"
+          href={siteUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label={labels.demoAria}
+        />
+      ) : null}
     </li>
   );
 };
@@ -161,8 +170,20 @@ const WorkRow = ({ project, index, labels, href }) => {
  * layers) as already-rendered elements, so filtering is the only thing it
  * decides. That is also why the no-script page shows every project: the island
  * server-renders with `filter === "all"`.
+ *
+ * `projects` is required. It used to default to `PINNED_FALLBACK`, a second,
+ * unvalidated copy of the cards: a call site that forgot the prop rendered
+ * seven stale rows instead of the six the snapshot serves, and nothing failed.
+ * There is one source now (`src/data/pinned-projects.json`, through
+ * `PageFrame`), so a missing prop has to be loud.
  */
-const WorkList = ({ projects = PINNED_FALLBACK, locale = "en" }) => {
+const WorkList = ({ projects, locale = "en" }) => {
+  if (!Array.isArray(projects)) {
+    throw new TypeError(
+      "[WorkList] projects is required: pass the validated snapshot (readProjectsSnapshot().projects)",
+    );
+  }
+
   const { t } = translator(locale);
   const items = projects.slice(0, MAX_PINNED_PROJECTS);
 

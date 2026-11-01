@@ -92,6 +92,14 @@ pnpm e2e:runtime                                   # reuse the server on :3000
 pnpm e2e:runtime -- --url http://127.0.0.1:3100    # or point it at another one
 ```
 
+### Visual baseline
+
+`pnpm visual:baseline` captures the 45 screenshots of `audit.md` §14.5 into
+`visual/baseline/<viewport>/<scroll>/<lang>.png` and records the build, the renderer and the
+vitals in `visual/baseline/manifest.json`. The PNGs stay out of git
+(`visual/baseline/**/*.png`) and CI uploads its captures as an artifact, so the manifest is
+the part that gets reviewed and the 31 MB of pixels are regenerated instead of committed.
+
 ### Wordmark motion
 
 The footer surname reacts to the pointer: each letter lifts, scales and brightens. That
@@ -135,10 +143,34 @@ Tailscale: if that matters, bind the tailnet address alone with `pnpm dev -- -H 
 Re-check the hosts after a tailnet rename or an IP change (`tailscale ip -4`,
 `tailscale status --json`).
 
+## 🔄 Project data
+
+The work list is served from one file, `src/data/pinned-projects.json`, which is validated
+by `src/lib/validate-projects.js` (https-only allowlisted links, `name`/`description`/`tags`
+shape, ≤ 6 items, no duplicates) and rendered as-is: the build and the render never talk to
+GitHub.
+
+Refreshing it is a commit, not a request. `.github/workflows/projects-sync.yml` runs every
+6 h, checks the repository out with `contents: write`, runs
+`node scripts/sync-projects.mjs` (one GraphQL call, 4 s timeout, no redirects), and commits
+`src/data/pinned-projects.json` only when the file changed — so `generatedAt` moves only
+when the data did, and the sitemap `lastmod`, the JSON-LD `dateModified` and the page's
+"última actualización" stay honest.
+
+Without a token, `node scripts/sync-projects.mjs --public` does the same write from public
+endpoints: it reads the pinned names out of the profile page and one
+`https://api.github.com/repos/YukaC/<name>` per pin (4 s timeout, no redirects,
+unauthenticated limit), then runs the same `validate()` and the same atomic write.
+
+`/api/sync-projects` remains for a host whose repository directory is writable (a VPS, a
+container, `pnpm start` on your own box): same validation, same atomic write, guarded by
+`CRON_SECRET`. On a read-only filesystem it answers `501` with the job's name instead of
+failing with a 500 that looks like a bug.
+
 ## 🌍 Languages
 
 The site is written in English and translated into Spanish and Portuguese, and the
-visitor does not choose: `middleware.js` reads `Accept-Language`, and `/` answers with the
+visitor does not choose: `src/proxy.js` reads `Accept-Language`, and `/` answers with the
 matching prerendered page — `/es` or `/pt` — through an internal rewrite, so the URL bar
 keeps `/` and the language never becomes part of the public address.
 
@@ -146,16 +178,21 @@ keeps `/` and the language never becomes part of the public address.
 so the bytes that arrive already carry the translated copy, `<title>`, description and
 social tags. There is no dictionary swap after hydration and therefore no flash of
 English. The six hours are the snapshot's own cadence: the pages re-render from
-`src/data/pinned-projects.json` when the cron endpoint refreshes it, not on a timer of
-their own.
+`src/data/pinned-projects.json` when the `projects-sync` CI job commits a refreshed
+snapshot, not on a timer of their own.
 
-Resolution order is `?lang=` → cookie → `Accept-Language` → English. The middleware stores
-the detected tag (one year, `SameSite=Lax`), sets `Vary: Accept-Language, Cookie` and sends
-the decision to the render as `x-pf-locale` / `x-pf-html-lang`.
+Resolution order is `?lang=` → cookie → `Accept-Language` → English. The proxy stores the
+detected tag (one year, `SameSite=Lax`) on `/` — the only route whose language is
+negotiated, and therefore the only one that answers with a cookie — sets
+`Vary: Accept-Language` and sends the decision to the render as `x-pf-locale` /
+`x-pf-html-lang`. `/es` and `/pt` carry their language in the path, so their response is
+the same for everybody and a shared cache can keep it (audit.md §24 S3).
 
 A static HTML file cannot know a region, so `<html lang>` ships as `es` and
 `LocaleProvider` refines it to `es-AR` / `pt-BR` from that cookie after mount — the
-attribute only, never the text. `es-419` keeps the language and drops the region: HTML has
+attribute only, never the text. The cookie is written on `/`, where the language is
+negotiated, so a reader who lands straight on `/es` keeps the base tag (which is still
+correct, just not regional). `es-419` keeps the language and drops the region: HTML has
 no exact regional tag for it.
 
 The decisions live in one pure module (`src/i18n/locale.js`) shared by the edge runtime,
@@ -242,9 +279,13 @@ pnpm build:nvme
 Prefer **pnpm** (`packageManager`); `npm run …` works but locks/CI use pnpm.
 
 **Not the main bottleneck:** the project list is read from the versioned snapshot
-(`src/data/pinned-projects.json`) — a build makes no request to GitHub at all. The one network
-call lives in the scheduled refresh (`src/app/api/sync-projects/route.js`), which validates
-before it writes. See [#20](https://github.com/YukaC/PortfolioReact/issues/20).
+(`src/data/pinned-projects.json`) — a build makes no request to GitHub at all. The one
+network call lives in the scheduled refresh, which validates before it writes: the
+`projects-sync` workflow (`.github/workflows/projects-sync.yml`) runs
+`node scripts/sync-projects.mjs` every 6 h and commits the snapshot when it changed. A
+serverless filesystem is read-only, so `/api/sync-projects` cannot write there: it answers
+`501` naming that job and stays as the self-hosted trigger. See
+[#20](https://github.com/YukaC/PortfolioReact/issues/20).
 
 ## Visual system
 
@@ -317,18 +358,23 @@ Dark tokens live in `@theme static` (`src/styles/globals.css`):
 ```css
 @theme static {
   --color-ink: #060b1a;
-  --color-night: #0a1226;
   --color-deep: #0e1830;
   --color-mist: #16233d;
-  --color-fog: #c9d6ea;
   --color-paper: #eef2ff;
-  --color-mut: #a9b6d3;
-  --color-dim: #93a2ba;
-  --color-sky: #8fcbff;   /* type accent */
-  --color-ice: #8fcbff;   /* alias of sky */
-  --color-coral: #e2727f; /* field lattice */
+  --color-mut: #c2cde4;
+  --color-dim: #9eabc4;
+  --color-sky: #8fcbff;        /* type accent */
+  --color-coral: #e2727f;      /* field lattice */
+  --color-live: #4ade80;       /* the status dot */
+  --color-on-solid: #07102a;   /* ink on the one white surface */
+  --color-white: #fff;
+  --color-amber-glow: #8fcbff; /* Bebop's own module */
 }
 ```
+
+A token enters that block only together with the rule or utility that consumes it, so the
+list is shorter than it once was (`night`, `fog` and `ice` are gone, and `mut`/`dim` are the
+AA-measured values the sheet actually ships).
 
 ## 📄 License
 
