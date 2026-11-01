@@ -26,7 +26,17 @@
  *   pnpm measure:scroll                       # desktop + mobile-4x
  *   pnpm measure:scroll --profile desktop     # one profile
  *   pnpm measure:scroll --software-gl         # only the SwiftShader gate
+ *   pnpm measure:scroll --swiftshader         # run the chosen profiles on the CPU rasterizer
+ *   pnpm measure:scroll --headed              # watch it, GPU included
  *   pnpm measure:scroll --out scroll.json     # artefact for CI
+ *
+ * **Renderer.** The launch — and therefore the renderer — comes from
+ * `visual-baseline.mjs`: hardware (`--use-gl=angle --use-angle=gl`) by default,
+ * SwiftShader only when a profile asks for it (`software-gl`) or when
+ * `--swiftshader` opts out. Without that, Chromium reports SwiftShader on this
+ * GPU host and `desktop` measures the same machine as `software-gl` while
+ * claiming to be a desktop profile (L14). Every profile prints the renderer
+ * string it ran on.
  *
  * Exit codes: 0 budgets met · 1 a budget was missed · 2 bad usage · 3 no server.
  */
@@ -36,7 +46,7 @@ import net from "node:net";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { chromium } from "playwright";
+import { launchChromium, rendererOf } from "./visual-baseline.mjs";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const DEFAULT_PORT = 4173;
@@ -79,8 +89,6 @@ const PROFILES = {
   },
 };
 
-const SWIFTSHADER_ARGS = ["--use-gl=angle", "--use-angle=swiftshader", "--enable-unsafe-swiftshader"];
-
 const results = [];
 const record = (profile, id, ok, detail) => {
   results.push({ profile, id, ok, detail });
@@ -93,17 +101,20 @@ const fail = (code, message) => {
 };
 
 const parseArgs = (argv) => {
-  const args = { url: "", port: DEFAULT_PORT, only: null, out: "", headed: false };
+  const args = { url: "", port: DEFAULT_PORT, only: null, out: "", headed: false, software: false };
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
     if (arg === "--url") args.url = argv[(i += 1)] ?? "";
     else if (arg === "--port") args.port = Number(argv[(i += 1)] ?? DEFAULT_PORT);
     else if (arg === "--out") args.out = argv[(i += 1)] ?? "";
     else if (arg === "--headed") args.headed = true;
+    else if (arg === "--swiftshader") args.software = true;
     else if (arg === "--software-gl") args.only = ["software-gl"];
     else if (arg === "--profile") args.only = (argv[(i += 1)] ?? "").split(",").map((name) => name.trim());
     else if (arg === "--help" || arg === "-h") {
-      console.log("uso: measure:scroll [--url <url>] [--port <n>] [--profile <name,…>] [--software-gl] [--out <file>]");
+      console.log(
+        "uso: measure:scroll [--url <url>] [--port <n>] [--profile <name,…>] [--software-gl] [--swiftshader] [--headed] [--out <file>]",
+      );
       process.exit(0);
     } else if (arg.startsWith("-")) fail(2, `unknown argument: ${arg}`);
   }
@@ -262,15 +273,14 @@ async function scrollThrough(page) {
 
 /* -------------------------------------------------------------------- one profile */
 
-async function runProfile(browserArgs, profile, url) {
+async function runProfile(profile, url, options) {
   console.log(`\n${profile.name}`);
-  const browser = await chromium.launch({
-    headless: true,
-    args: browserArgs,
-    ...(process.env.BROWSER_VERIFY_CHROMIUM ? { executablePath: process.env.BROWSER_VERIFY_CHROMIUM } : {}),
+  const browser = await launchChromium({
+    software: profile.swiftshader || options.software,
+    headed: options.headed,
   });
 
-  const report = { profile: profile.name };
+  const report = { profile: profile.name, renderer: "" };
 
   try {
     const context = await browser.newContext(profile.context);
@@ -286,16 +296,8 @@ async function runProfile(browserArgs, profile, url) {
     await page.waitForTimeout(1200);
 
     const canvas = await page.locator("canvas").count();
-    const renderer = await page.evaluate(() => {
-      const probe = document.createElement("canvas");
-      const gl = probe.getContext("webgl2") ?? probe.getContext("webgl");
-      if (!gl) return { vendor: "no webgl", renderer: "no webgl" };
-      const info = gl.getExtension("WEBGL_debug_renderer_info");
-      return {
-        vendor: info ? gl.getParameter(info.UNMASKED_VENDOR_WEBGL) : gl.getParameter(gl.VENDOR),
-        renderer: info ? gl.getParameter(info.UNMASKED_RENDERER_WEBGL) : gl.getParameter(gl.RENDERER),
-      };
-    });
+    report.renderer = await rendererOf(page);
+    console.log(`  renderer: ${report.renderer}`);
 
     let blur = null;
     if (profile.measureBlur) {
@@ -318,7 +320,6 @@ async function runProfile(browserArgs, profile, url) {
 
     Object.assign(report, {
       canvas,
-      gpu: renderer,
       blur,
       scroll: {
         distance: gesture.total,
@@ -336,7 +337,7 @@ async function runProfile(browserArgs, profile, url) {
       profile.name,
       "scroll/complete",
       complete,
-      `${gesture.position}/${gesture.total} px scrolled in ${gesture.elapsed} ms · ${frames.length} frames · canvas=${canvas} · renderer=${renderer.renderer}`,
+      `${gesture.position}/${gesture.total} px scrolled in ${gesture.elapsed} ms · ${frames.length} frames · canvas=${canvas} · renderer=${report.renderer}`,
     );
     record(
       profile.name,
@@ -368,7 +369,7 @@ async function main() {
   try {
     for (const name of names) {
       const profile = PROFILES[name];
-      reports.push(await runProfile(profile.swiftshader ? SWIFTSHADER_ARGS : [], profile, server.url));
+      reports.push(await runProfile(profile, server.url, args));
     }
   } finally {
     server.stop();
