@@ -24,24 +24,58 @@ import {
   WebGLRenderer,
 } from 'three';
 
-// The smoke has three phases and no idle loop of its own (audit.md §18.3).
+// The smoke has four phases (audit.md §18.3, then the owner's brief of L21).
 // Below the first threshold the field runs at display rate; between the two it
 // settles — every other animation frame for 1.2 s while the dye thins out and
-// leaves downward — and then the loop is cancelled outright. Nothing wakes it
-// but an event: the canvas keeps its last frame (the mist at the bottom) for as
-// long as the reader is still. The lattice and its flares are CSS and live
-// outside this component, so repose can cost nothing without the field going
-// dead (§18.1: that is why the 143 ms breath existed and why it is gone).
+// leaves downward — and then one of two things happens:
+//
+//   • `ambient` (opt-in, `ambient` prop): one presented frame every
+//     AMBIENT_INTERVAL_MS with a faint inflow, so the plume is still being born
+//     and still drifting down at rest. It is a cadence, not a loop: no rAF runs
+//     between presents, so a resting tab is idle for the same reason the frozen
+//     build was.
+//   • `frozen` (everything else: `lite`, `static`, reduced motion, a coarse
+//     pointer, a narrow viewport): the loop is cancelled outright and the canvas
+//     keeps its last frame.
+//
+// Either way the way out is by event, never by a timer: an interaction wakes the
+// field. The lattice and its flares are CSS and live outside this component, so
+// repose can cost nothing without the field going dead (§18.1: that is why the
+// 143 ms breath existed and why it is gone — the ambient phase brings the smoke
+// back at a fifth of that cadence over a pipeline that no longer has the grid
+// pass, and the honest price is measured in `measure:idle`).
 const SETTLE_AFTER_MS = 350;
 const SETTLE_DURATION_MS = 1200;
 const PHASE_ACTIVE = 'active';
 const PHASE_SETTLING = 'settling';
+const PHASE_AMBIENT = 'ambient';
 const PHASE_FROZEN = 'frozen';
 // The dissipation the settling phase runs with. It is the simulation's own
 // value, stated here because the phase is the one place the behaviour is
 // specified: the dye keeps thinning, and because the mist is fed from the floor
 // the ink leaves downward (§18.1 rule 2).
 const SETTLE_DISSIPATION = 0.993;
+// ~5 fps: one presented frame every 190 ms. Below the AutoDriver's 0.2 s delta
+// clamp on purpose, so an ambient step is a real ambient step and not 16 ms of
+// motion followed by 184 ms of nothing.
+const AMBIENT_INTERVAL_MS = 190;
+// Ambient thinning. The phase is a cadence, so the dye is fed once per 190 ms
+// instead of once per display frame, and the injection itself cannot be made
+// smaller (a moving driver always lays down the same wake). What keeps the mist
+// faint is therefore the pair: the dye is thinned faster here, and the source
+// travels far enough between presents that a point is hit a few times instead of
+// dozens — so what accumulates is haze, not a headlight.
+const AMBIENT_DISSIPATION = 0.925;
+// The ambient inflow is the same `AutoDriver` the demo pointer uses, at a low
+// speed: a slow wander that keeps laying dye down and keeps the velocity field
+// moving. Normalized units per second.
+const AMBIENT_DRIFT_SPEED = 0.28;
+// Where that wander may go: the lower half of the field. The mist is fed from the
+// floor and leaves downward (§18.1 rule 2), so `active`, `ambient` and the CSS
+// blobs all agree about where the smoke lives — an ambient source wandering into
+// the top edge reads as a light leak over the headline, not as mist.
+const AMBIENT_Y_MIN = -0.95;
+const AMBIENT_Y_MAX = 0.1;
 
 export default function LiquidEther({
   mouseForce = 20,
@@ -66,6 +100,11 @@ export default function LiquidEther({
   backgroundColor = '#FFFFFF',
   lightMode = false,
   onUnavailable = null,
+  // Keep the plume alive at rest instead of freezing it (audit.md §18.3 as
+  // amended by the owner's brief, L21). `AppBackground` passes this only for the
+  // tier and the pointer that can afford it, so the default is the frozen field:
+  // nothing that is not explicitly opted in ever pays for it.
+  ambient = false,
   // A phone's plume trailing the finger reads as a smudge chasing the thumb while
   // the reader is trying to scroll, so touch input does not drive the dye unless
   // a design explicitly asks for it. Mouse movement is unaffected.
@@ -384,6 +423,10 @@ export default function LiquidEther({
         this.mouse = mouse;
         this.manager = manager;
         this.enabled = opts.enabled;
+        // The demo driver yields to a pointer resting on the page; the ambient one
+        // cannot, because the reader parked over the page is exactly who it is
+        // for. Only the pointer *moving* takes the field back (see `wake`).
+        this.respectsHover = opts.respectsHover !== false;
         this.speed = opts.speed; // normalized units/sec
         this.resumeDelay = opts.resumeDelay || 3000; // ms
         this.rampDurationMs = (opts.rampDuration || 0) * 1000;
@@ -393,12 +436,22 @@ export default function LiquidEther({
         this.lastTime = performance.now();
         this.activationTime = 0;
         this.margin = 0.2;
+        // Where the wander may go, vertically. The default is the whole canvas
+        // (±(1 - margin)), which is what a demo pointer standing in for a hand
+        // should cover; the ambient field keeps its source near the floor. Read
+        // after `margin` because the edges are derived from it.
+        const edge = 1 - this.margin;
+        this.yMin = typeof opts.yMin === 'number' ? opts.yMin : -edge;
+        this.yMax = typeof opts.yMax === 'number' ? opts.yMax : edge;
         this._tmpDir = new Vector2(); // reuse temp vector to avoid per-frame alloc
         this.pickNewTarget();
       }
       pickNewTarget() {
         const r = Math.random;
-        this.target.set((r() * 2 - 1) * (1 - this.margin), (r() * 2 - 1) * (1 - this.margin));
+        this.target.set(
+          (r() * 2 - 1) * (1 - this.margin),
+          this.yMin + r() * (this.yMax - this.yMin)
+        );
       }
       forceStop() {
         this.active = false;
@@ -412,7 +465,7 @@ export default function LiquidEther({
           if (this.active) this.forceStop();
           return;
         }
-        if (this.mouse.isHoverInside) {
+        if (this.respectsHover && this.mouse.isHoverInside) {
           if (this.active) this.forceStop();
           return;
         }
@@ -1300,6 +1353,8 @@ export default function LiquidEther({
         this.frameIndex = 0;
         this.phase = PHASE_ACTIVE;
         this.reallocTimer = null;
+        this.ambientTimer = null;
+        this.ambient = props.ambient === true;
         Mouse.onInteract = () => {
           this.wake();
         };
@@ -1309,7 +1364,22 @@ export default function LiquidEther({
           resumeDelay: props.autoResumeDelay,
           rampDuration: props.autoRampDuration
         });
+        /* The ambient inflow is this same driver at a low speed, never a second
+           splat path: whatever `AutoDriver` does to the mouse — and therefore to
+           the force and dye passes — is what the ambient phase does, slower. */
+        this.ambientDriver = new AutoDriver(Mouse, this, {
+          enabled: true,
+          speed: AMBIENT_DRIFT_SPEED,
+          resumeDelay: 0,
+          rampDuration: 1.6,
+          respectsHover: false,
+          yMin: AMBIENT_Y_MIN,
+          yMax: AMBIENT_Y_MAX
+        });
         this.init();
+        // The values the simulation was built with, so leaving a phase can always
+        // restore them instead of guessing (see `enterPhase`).
+        this.baseDissipation = this.output.simulation.options.dissipation;
         this._loop = this.loop.bind(this);
         this._resize = this.resize.bind(this);
         window.addEventListener('resize', this._resize);
@@ -1334,6 +1404,44 @@ export default function LiquidEther({
         this.props.$wrapper.prepend(Common.renderer.domElement);
         this.output = new Output();
       }
+      /** The dye values a phase runs with: one owner, one place. */
+      enterPhase(phase) {
+        this.phase = phase;
+        if (!this.output) return;
+        const options = this.output.simulation.options;
+        const ambient = phase === PHASE_AMBIENT;
+        options.dissipation = ambient
+          ? AMBIENT_DISSIPATION
+          : phase === PHASE_SETTLING
+            ? SETTLE_DISSIPATION
+            : this.baseDissipation;
+      }
+      /**
+       * Enables or disables the ambient phase in place.
+       *
+       * The prop is applied through the manager rather than by remounting the
+       * canvas: a tier that downgrades mid-session has to be able to take the
+       * ambient cadence away without paying for a new WebGL context.
+       */
+      setAmbient(enabled) {
+        const next = enabled === true;
+        if (next === this.ambient) return;
+        this.ambient = next;
+        if (!next) {
+          this.clearAmbient();
+          if (this.phase === PHASE_AMBIENT) {
+            // Back to the frozen design: park the field on its last frame.
+            this.enterPhase(PHASE_FROZEN);
+            this.running = false;
+          }
+          return;
+        }
+        // Turning it on while parked resumes the cadence, but never over a hidden
+        // tab or an off-screen canvas.
+        if (this.running || !isVisibleRef.current || document.hidden) return;
+        const idleMs = performance.now() - this.lastUserInteraction;
+        if (this.phaseFor(idleMs) === PHASE_AMBIENT) this.start();
+      }
       /* Adopts a new device-pixel ratio without rebuilding the context: the
          framebuffers are sized in simulation units, so only the drawing buffer
          and the output pass have to follow. */
@@ -1345,11 +1453,18 @@ export default function LiquidEther({
         Common.renderer.setSize(Common.width, Common.height, false);
         this.needsPresent = true;
       }
-      /** The idle phase, from how long the reader has been still (§18.3). */
+      /**
+       * The idle phase, from how long the reader has been still (§18.3).
+       *
+       * `active → settling → ambient | frozen`. Which of the last two the field
+       * lands in is the `ambient` prop and nothing else: the phase order and the
+       * wake-up-by-event rule are the same for both, so a device that freezes and
+       * a device that drifts cannot diverge in any other way.
+       */
       phaseFor(idleMs) {
         if (idleMs < SETTLE_AFTER_MS) return PHASE_ACTIVE;
         if (idleMs < SETTLE_AFTER_MS + SETTLE_DURATION_MS) return PHASE_SETTLING;
-        return PHASE_FROZEN;
+        return this.ambient ? PHASE_AMBIENT : PHASE_FROZEN;
       }
       resize() {
         // A resize is an interaction (§18.3), and it also leaves stale targets
@@ -1372,7 +1487,13 @@ export default function LiquidEther({
         }, 120);
       }
       render(shouldSimulate = true, shouldPresent = true) {
-        if (this.autoDriver && this.autoDriver.enabled) this.autoDriver.update();
+        // One injector at a time: the ambient driver only in `ambient`, the demo
+        // pointer (off unless a design asks for it) in every other phase.
+        if (this.phase === PHASE_AMBIENT) {
+          if (this.ambientDriver) this.ambientDriver.update();
+        } else if (this.autoDriver && this.autoDriver.enabled) {
+          this.autoDriver.update();
+        }
         Mouse.update();
         Common.update();
         this.output.update(shouldSimulate, shouldPresent);
@@ -1382,21 +1503,28 @@ export default function LiquidEther({
         this.frameIndex += 1;
         const idleMs = performance.now() - this.lastUserInteraction;
         const phase = this.phaseFor(idleMs);
+        if (phase === PHASE_AMBIENT) {
+          // Hand the display-rate loop over to the ambient cadence: the rAF chain
+          // stops here and a single timer re-arms one present at a time, so no
+          // frame between presents does any work at all.
+          this.enterPhase(PHASE_AMBIENT);
+          if (this.needsPresent) {
+            this.needsPresent = false;
+            this.render(true, true);
+          }
+          this.scheduleAmbient();
+          return;
+        }
         if (phase === PHASE_FROZEN) {
           // Frozen: no rAF, no timers, no GPU work at all. The last frame stays
           // on the canvas with the mist at the bottom, and only an event may
           // leave this phase — a timer here is what kept the old build drawing
           // every 143 ms for an unchanged image.
-          this.phase = PHASE_FROZEN;
+          this.enterPhase(PHASE_FROZEN);
           this.running = false;
           return;
         }
-        if (phase !== this.phase) {
-          this.phase = phase;
-          if (phase === PHASE_SETTLING && this.output) {
-            this.output.simulation.options.dissipation = SETTLE_DISSIPATION;
-          }
-        }
+        if (phase !== this.phase) this.enterPhase(phase);
         // One fixed simulation step per drawn frame (simProps.dt is a constant,
         // not a wall-clock delta), so the cadence changes how much the fluid
         // advances, never how a single frame looks.
@@ -1424,16 +1552,61 @@ export default function LiquidEther({
         }
         rafRef.current = requestAnimationFrame(this._loop);
       }
-      /** Event-driven wake: the only way out of `settling` and `frozen`. */
+      /** Arms the next ambient present. One timer, cleared by every exit path. */
+      scheduleAmbient() {
+        if (!this.running || this.ambientTimer) return;
+        this.ambientTimer = window.setTimeout(() => {
+          this.ambientTimer = null;
+          this.ambientTick();
+        }, AMBIENT_INTERVAL_MS);
+      }
+      clearAmbient() {
+        if (!this.ambientTimer) return;
+        window.clearTimeout(this.ambientTimer);
+        this.ambientTimer = null;
+      }
+      /** One ambient present: the whole pipeline, once, then re-arm. */
+      ambientTick() {
+        if (!this.running || !this.ambient) return;
+        // Belt and braces on top of `pause()`: a timer that fires while the tab
+        // is hidden or the canvas is off-screen must not touch the GPU.
+        if (document.hidden || !isVisibleRef.current) return;
+        const idleMs = performance.now() - this.lastUserInteraction;
+        const phase = this.phaseFor(idleMs);
+        if (phase !== PHASE_AMBIENT) {
+          // The answer changed between ticks (an interaction we do not listen to,
+          // or `ambient` turned off): give the phase back to the frame loop
+          // instead of presenting the wrong one.
+          this.enterPhase(phase);
+          if (phase === PHASE_FROZEN) this.running = false;
+          else this.scheduleNext();
+          return;
+        }
+        this.enterPhase(PHASE_AMBIENT);
+        this.render(true, true);
+        this.scheduleAmbient();
+      }
+      /** Event-driven wake: the only way out of `settling`, `ambient` and `frozen`. */
       wake() {
+        const wasAmbient = this.phase === PHASE_AMBIENT;
         this.lastUserInteraction = performance.now();
         this.phase = PHASE_ACTIVE;
+        this.clearAmbient();
         if (this.autoDriver) this.autoDriver.forceStop();
-        if (!this.running && isVisibleRef.current && !document.hidden) this.start();
+        // Stopped before the pointer's own coordinates are read, so a pointer that
+        // moves after a long rest takes the field over in the same event and with
+        // no takeover animation: the reader's hand always wins instantly.
+        if (this.ambientDriver) this.ambientDriver.forceStop();
+        if (!isVisibleRef.current || document.hidden) return;
+        if (!this.running) this.start();
+        // An ambient timer is not a frame loop: promote back to display rate from
+        // the very next frame instead of waiting for the next present.
+        else if (wasAmbient) this.scheduleNext();
       }
       start() {
         if (this.running) return;
         this.running = true;
+        this.clearAmbient();
         // A restart (re-entering the viewport, tab visible again) always redraws
         // once, so the canvas can never stay stale while the simulation idles.
         this.needsPresent = true;
@@ -1441,6 +1614,7 @@ export default function LiquidEther({
       }
       pause() {
         this.running = false;
+        this.clearAmbient();
         if (rafRef.current) {
           cancelAnimationFrame(rafRef.current);
           rafRef.current = null;
@@ -1495,6 +1669,7 @@ export default function LiquidEther({
     try {
       webgl = new WebGLManager({
         $wrapper: container,
+        ambient,
         autoDemo,
         autoSpeed,
         autoIntensity,
@@ -1584,7 +1759,8 @@ export default function LiquidEther({
     // tear down the WebGL context, and the option-only props are deliberately
     // absent from this list for that reason. `pixelRatio` and `powerPreference`
     // are read here once (the context is built once) and then kept current by
-    // the effect below, which is why they are also not dependencies.
+    // the effect below, which is why they are also not dependencies. `ambient` is
+    // read here once for the same reason: `setAmbient` flips it in place.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     colors,
@@ -1619,6 +1795,7 @@ export default function LiquidEther({
       resolution,
       isBounce
     });
+    webgl.setAmbient(ambient);
     if (webgl.autoDriver) {
       webgl.autoDriver.enabled = autoDemo;
       webgl.autoDriver.speed = autoSpeed;
@@ -1655,7 +1832,8 @@ export default function LiquidEther({
     autoIntensity,
     takeoverDuration,
     autoResumeDelay,
-    autoRampDuration
+    autoRampDuration,
+    ambient
   ]);
 
   return (

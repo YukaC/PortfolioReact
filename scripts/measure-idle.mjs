@@ -6,23 +6,41 @@
  * ten seconds of repose, measured through CDP, with the canvas instrumented
  * before the page loads.
  *
- * Asserts, over a 10 s window with no input:
- *   1. draws      the canvas draws 0 frames after the smoke freezes (§18.3: the
- *                 loop is cancelled, not slowed down) — `drawElements` and
- *                 `drawArrays` are wrapped in an init script, so a draw that
- *                 comes from a timer is counted exactly like one from a rAF;
+ * **Two idle paths, two checks.** §18.3 ends the smoke in `frozen` (0 draws) and
+ * that is still what every device that is not a full-tier desktop gets. A desktop
+ * with the conditions of the owner's brief (L21) ends in `ambient` instead: one
+ * presented frame every ~190 ms with a faint inflow, so the plume is alive at
+ * rest. The script reads which path the page is on and applies the matching gate:
+ *
+ *   frozen   1. draws      0 draw calls in the whole window (§18.3: the loop is
+ *                          cancelled, not slowed down);
+ *   ambient  1'. cadence   4.5–5.5 presents per second… reported, with the draws
+ *                          over the window printed beside it — the field must be
+ *                          drawing, and it must not be drawing at display rate;
+ *
+ * and, on both paths, unchanged:
+ *
  *   2. recalc     `RecalcStyleCount` ≤ 1.5 × animation frames: one style
- *                 invalidation per frame is the budget of P1-1, and 1.5 leaves
- *                 room for the channels a single frame legitimately writes;
+ *                  invalidation per frame is the budget of P1-1, and 1.5 leaves
+ *                  room for the channels a single frame legitimately writes;
  *   3. task       `TaskDuration` ≤ 100 ms in the whole window: repose may not
- *                 spend a tenth of a second of main thread;
- *   4. flares     the CSS flares are still animating (the field is asleep, the
- *                 identity is not): a running `flare` animation and at least one
- *                 flare whose opacity moved during the window.
+ *                  spend a tenth of a second of main thread. The ambient path
+ *                  pays for its presents here and the budget is **not** relaxed:
+ *                  if 5 fps of the pipeline cannot fit, this is red;
+ *   4. flares     the CSS flares are still animating (the identity is not the
+ *                  smoke): a running `flare` animation and at least one flare
+ *                  whose opacity moved during the window.
+ *
+ * A draw is counted by wrapping `drawElements`/`drawArrays` in an init script, so
+ * a draw that comes from a timer is counted exactly like one from a rAF, and the
+ * per-present cadence is recovered by grouping those calls (gaps ≥ 60 ms) instead
+ * of assuming one draw per frame.
  *
  *   pnpm measure:idle                        # reuse :4173, else start the build
  *   pnpm measure:idle --url http://…:3000    # a server already running
  *   pnpm measure:idle --window 15000         # longer window (ms)
+ *   pnpm measure:idle --reduced-motion       # the path that must stay frozen
+ *   pnpm measure:idle --viewport 390x844     # a phone: no canvas at all
  *   pnpm measure:idle --swiftshader          # the potato, for contrast
  *   pnpm measure:idle --headed               # watch it, GPU included
  *   pnpm measure:idle --out idle.json        # artefact for CI
@@ -59,7 +77,16 @@ const BUDGET = {
   recalcPerFrame: Number(process.env.IDLE_RECALC_PER_FRAME ?? 1.5),
   taskMs: Number(process.env.IDLE_TASK_MS ?? 100),
   draws: 0,
+  /* The ambient path's design cadence is one presented frame every 190 ms, i.e.
+     5.3 fps. The gate brackets that (4.5–5.5 fps would fail on timer jitter that
+     costs nothing) without leaving room for "it fell back to display rate". */
+  ambientFpsMin: Number(process.env.IDLE_AMBIENT_FPS_MIN ?? 4),
+  ambientFpsMax: Number(process.env.IDLE_AMBIENT_FPS_MAX ?? 6),
 };
+
+/* §18.3: 350 ms of full rate, then 1.2 s settling. +850 ms of margin so the
+   window never starts inside a phase transition. */
+const SETTLE_MS = 2400;
 
 const results = [];
 const record = (id, ok, detail) => {
@@ -73,18 +100,34 @@ const fail = (code, message) => {
 };
 
 const parseArgs = (argv) => {
-  const args = { url: "", port: DEFAULT_PORT, windowMs: BUDGET.windowMs, out: "", software: false, headed: false };
+  const args = {
+    url: "",
+    port: DEFAULT_PORT,
+    windowMs: BUDGET.windowMs,
+    out: "",
+    software: false,
+    headed: false,
+    reducedMotion: false,
+    viewport: VIEWPORT,
+  };
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
     if (arg === "--url") args.url = argv[(i += 1)] ?? "";
     else if (arg === "--port") args.port = Number(argv[(i += 1)] ?? DEFAULT_PORT);
     else if (arg === "--window") args.windowMs = Number(argv[(i += 1)] ?? BUDGET.windowMs);
     else if (arg === "--out") args.out = argv[(i += 1)] ?? "";
-    else if (arg === "--swiftshader" || arg === "--software-gl") args.software = true;
+    else if (arg === "--reduced-motion") args.reducedMotion = true;
+    else if (arg === "--viewport") {
+      const [width, height] = String(argv[(i += 1)] ?? "")
+        .split("x")
+        .map(Number);
+      if (!(width > 0 && height > 0)) fail(2, "--viewport wants <width>x<height>");
+      args.viewport = { width, height };
+    } else if (arg === "--swiftshader" || arg === "--software-gl") args.software = true;
     else if (arg === "--headed") args.headed = true;
     else if (arg === "--help" || arg === "-h") {
       console.log(
-        "uso: measure:idle [--url <url>] [--port <n>] [--window <ms>] [--out <file>] [--swiftshader] [--headed]",
+        "uso: measure:idle [--url <url>] [--port <n>] [--window <ms>] [--out <file>] [--reduced-motion] [--viewport <w>x<h>] [--swiftshader] [--headed]",
       );
       process.exit(0);
     } else if (arg.startsWith("-")) fail(2, `unknown argument: ${arg}`);
@@ -166,7 +209,7 @@ async function ensureServer(args) {
  * browser's own calls instead of inferred from a screenshot.
  */
 const INSTRUMENT = () => {
-  window.__idle = { draws: 0, frames: 0 };
+  window.__idle = { draws: 0, frames: 0, drawTimes: [] };
 
   const count = (proto) => {
     if (!proto) return;
@@ -175,12 +218,34 @@ const INSTRUMENT = () => {
       if (typeof original !== "function") continue;
       proto[name] = function counted(...args) {
         window.__idle.draws += 1;
+        /* Timestamps make "one presented frame" measurable: the passes of one
+           present land in one task, so a gap starts a new present. The array is
+           capped so a long window cannot grow it without bound. */
+        if (window.__idle.drawTimes.length < 60_000) {
+          window.__idle.drawTimes.push(performance.now());
+        }
         return original.apply(this, args);
       };
     }
   };
   count(window.WebGL2RenderingContext?.prototype);
   count(window.WebGLRenderingContext?.prototype);
+};
+
+/**
+ * Presented frames from the draw timestamps: a run of draw calls closer together
+ * than `gapMs` is one present (one simulation step + one output pass), so 5 fps of
+ * ambient presents cannot be mistaken for 90 draw calls of display rate.
+ */
+const READ_PRESENTS = (gapMs) => {
+  const times = window.__idle.drawTimes ?? [];
+  let presents = 0;
+  let previous = Number.NEGATIVE_INFINITY;
+  for (const time of times) {
+    if (time - previous >= gapMs) presents += 1;
+    previous = time;
+  }
+  return presents;
 };
 
 /** The flare probe: how many are on screen, their opacity, and their animations. */
@@ -205,27 +270,23 @@ const READ_FLARES = () => {
 
 const readDraws = (page) => page.evaluate(() => window.__idle.draws);
 
-/** Wait until the smoke has stopped drawing, then half a second more. */
-async function waitForFreeze(page, timeoutMs = 25_000) {
-  const deadline = Date.now() + timeoutMs;
-  let previous = await readDraws(page);
-  let stableSince = null;
-
-  while (Date.now() < deadline) {
-    await page.waitForTimeout(250);
-    const current = await readDraws(page);
-    if (current === previous) {
-      stableSince ??= Date.now();
-      if (Date.now() - stableSince >= 1500) {
-        await page.waitForTimeout(500);
-        return { frozen: true, drawsBeforeWindow: await readDraws(page) };
-      }
-    } else {
-      stableSince = null;
-      previous = current;
-    }
-  }
-  return { frozen: false, drawsBeforeWindow: previous };
+/** Wait until the smoke has picked its idle path, then read which one it is. */
+async function readIdlePath(page, settleMs = SETTLE_MS) {
+  await page.waitForTimeout(settleMs);
+  const drawsBefore = await readDraws(page);
+  const presentsBefore = await page.evaluate(READ_PRESENTS, 60);
+  await page.waitForTimeout(1000);
+  const drawsAfter = await readDraws(page);
+  const presentsAfter = await page.evaluate(READ_PRESENTS, 60);
+  const drawsPerSecond = drawsAfter - drawsBefore;
+  const presentsPerSecond = presentsAfter - presentsBefore;
+  return {
+    path: drawsPerSecond > 0 ? "ambient" : "frozen",
+    drawsPerSecond,
+    presentsPerSecond,
+    drawsBeforeWindow: drawsAfter,
+    presentsBeforeWindow: presentsAfter,
+  };
 }
 
 /* --------------------------------------------------------------------- assertions */
@@ -235,15 +296,20 @@ async function main() {
   const server = await ensureServer(args);
   const browser = await launchChromium({ software: args.software, headed: args.headed });
   const report = {
-    viewport: VIEWPORT,
+    viewport: args.viewport,
     windowMs: args.windowMs,
     budget: BUDGET,
     server: server.url,
     renderer: "",
+    reducedMotion: args.reducedMotion,
   };
 
   try {
-    const context = await browser.newContext({ viewport: VIEWPORT, deviceScaleFactor: 1 });
+    const context = await browser.newContext({
+      viewport: args.viewport,
+      deviceScaleFactor: 1,
+      reducedMotion: args.reducedMotion ? "reduce" : undefined,
+    });
     const page = await context.newPage();
     page.on("pageerror", (error) => console.log(`  [pageerror] ${String(error).slice(0, 200)}`));
     await page.addInitScript(INSTRUMENT);
@@ -266,7 +332,10 @@ async function main() {
       .catch(() => {});
 
     const canvasCount = await page.locator("canvas").count();
-    console.log(`\nrepose · ${VIEWPORT.width}x${VIEWPORT.height} · ${args.windowMs} ms · canvas=${canvasCount}`);
+    console.log(
+      `\nrepose · ${args.viewport.width}x${args.viewport.height} · ${args.windowMs} ms · canvas=${canvasCount}` +
+        `${args.reducedMotion ? " · prefers-reduced-motion: reduce" : ""}`,
+    );
 
     record(
       "idle/canvas",
@@ -276,9 +345,14 @@ async function main() {
         : `no canvas mounted in ${BUDGET.canvasMs} ms — "0 draws" would be vacuous`,
     );
 
-    const freeze = await waitForFreeze(page);
+    const idle = await readIdlePath(page);
     report.canvas = canvasCount;
-    report.frozen = freeze.frozen;
+    report.path = idle.path;
+    console.log(
+      idle.path === "ambient"
+        ? `  path: ambient — ${idle.drawsPerSecond} draw call(s)/s · ${idle.presentsPerSecond} presented frame(s)/s before the window`
+        : "  path: frozen — 0 draws/s before the window",
+    );
 
     const cdp = await context.newCDPSession(page);
     await cdp.send("Performance.enable");
@@ -290,6 +364,7 @@ async function main() {
     const flaresBefore = await page.evaluate(READ_FLARES);
     const before = await metricsOf();
     const drawsBefore = await readDraws(page);
+    const presentsBefore = await page.evaluate(READ_PRESENTS, 60);
     const framesBefore = await page.evaluate(() => window.__idle.frames);
 
     /* The frame counter runs inside the page for the whole window: it is the
@@ -307,6 +382,7 @@ async function main() {
     const frames = (await page.evaluate(() => window.__idle.frames)) - framesBefore;
     const after = await metricsOf();
     const drawsAfter = await readDraws(page);
+    const presents = (await page.evaluate(READ_PRESENTS, 60)) - presentsBefore;
     const flaresAfter = await page.evaluate(READ_FLARES);
 
     const recalc = Math.round((after.RecalcStyleCount ?? 0) - (before.RecalcStyleCount ?? 0));
@@ -327,6 +403,8 @@ async function main() {
       taskMs,
       scriptMs,
       draws,
+      presents,
+      presentsPerSecond: Number((presents / (args.windowMs / 1000)).toFixed(2)),
       flares: {
         visible: flaresAfter.visible,
         running: flaresAfter.running,
@@ -334,15 +412,34 @@ async function main() {
       },
     };
 
-    record(
-      "idle/draws",
-      draws === BUDGET.draws && canvasCount > 0,
-      canvasCount === 0
-        ? "no canvas in the page — the 0-draw budget was not exercised"
-        : draws === 0
-          ? `0 draws in ${args.windowMs} ms${freeze.frozen ? "" : " (the smoke never reported a stable frame)"}`
-          : `${draws} draw call(s) after the freeze — the loop is not parked`,
-    );
+    if (idle.path === "ambient") {
+      /* The ambient path is not a frozen page and nothing here pretends it is:
+         the field must be drawing, at the cadence of its own design, and the
+         draws it costs are printed beside the frames they buy. */
+      const fps = report.metrics.presentsPerSecond;
+      record(
+        "idle/ambient",
+        canvasCount > 0 && draws > 0,
+        canvasCount === 0
+          ? "no canvas in the page — the ambient path was not exercised"
+          : `${draws} draw calls in ${args.windowMs} ms = ${presents} presented frame(s): the plume is alive at rest, not parked`,
+      );
+      record(
+        "idle/ambient-cadence",
+        fps >= BUDGET.ambientFpsMin && fps <= BUDGET.ambientFpsMax,
+        `${fps} presented frame(s)/s (design 5.3/s · gate ${BUDGET.ambientFpsMin}–${BUDGET.ambientFpsMax}) · ${draws} draw calls over ${args.windowMs} ms`,
+      );
+    } else {
+      record(
+        "idle/draws",
+        draws === BUDGET.draws && canvasCount > 0,
+        canvasCount === 0
+          ? "no canvas in the page — the 0-draw budget was not exercised"
+          : draws === 0
+            ? `0 draws in ${args.windowMs} ms`
+            : `${draws} draw call(s) after the freeze — the loop is not parked`,
+      );
+    }
 
     record(
       "idle/recalc",

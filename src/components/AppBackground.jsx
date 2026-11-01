@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import dynamic from "next/dynamic";
 import { FIELD_FLARES } from "@/lib/field-flares";
+import { BREAKPOINT, mediaQuery } from "@/lib/breakpoints";
 import {
   WATCHDOG_FRAMES,
   readTierEnv,
@@ -13,6 +14,7 @@ import {
   prefersReducedMotion,
   subscribeReducedMotion,
 } from "@/motion/prefersReducedMotion";
+import { MOTION_MEDIA } from "@/motion/config";
 
 const LiquidEther = dynamic(() => import("@/components/LiquidEther"), {
   ssr: false,
@@ -95,6 +97,39 @@ function sampleFrames(count, onSample) {
 }
 
 /**
+ * Whether the smoke may stay alive at rest (the ambient phase of `LiquidEther`).
+ *
+ * The owner's brief wins over §18.7's "0 rAF en reposo": a desktop reader should
+ * not watch the plume evaporate. It does not win over the cost that brief was
+ * written about, so the answer is deliberately the same four conditions that
+ * already decide the canvas is worth its full build — `full` tier, a fine
+ * pointer, a viewport at or above `wide`, and no reduced-motion request. Every
+ * other device keeps the frozen field exactly as §18.3 specifies, including the
+ * ones the watchdog downgrades mid-session.
+ *
+ * The two media answers are live: a window dragged below `wide` (or a pointer
+ * that changes) turns the cadence off, and `LiquidEther` applies that in place.
+ */
+function useAmbientField(tier, isReducedMotion) {
+  const [env, setEnv] = useState({ wide: false, fine: false });
+
+  useEffect(() => {
+    const wide = window.matchMedia(mediaQuery.min(BREAKPOINT.wide));
+    const fine = window.matchMedia(MOTION_MEDIA.finePointer);
+    const apply = () => setEnv({ wide: wide.matches, fine: fine.matches });
+    apply();
+    wide.addEventListener("change", apply);
+    fine.addEventListener("change", apply);
+    return () => {
+      wide.removeEventListener("change", apply);
+      fine.removeEventListener("change", apply);
+    };
+  }, []);
+
+  return tier === "full" && env.wide && env.fine && !isReducedMotion;
+}
+
+/**
  * One blob of the field: the hue is two fixed gradients cross-faded by
  * `opacity` (see `.field-blob` in globals.css), inside the element that
  * `useFieldMotion` translates with the reading progress.
@@ -137,9 +172,10 @@ const FLARE_ELEMENTS = FIELD_FLARES.map((flare) => (
  * because there is only one lattice left to paint (§18.2).
  *
  * **Layer 2, the smoke**: the WebGL dye, mounted only for the tiers that can
- * afford it and frozen by `LiquidEther` itself once the reader is still. Behind
- * it: the navy cobalt sky and three blobs whose hue travels with the reading
- * progress; in front of it: the cursor light and grain.
+ * afford it and kept alive by `LiquidEther` at a low cadence once the reader is
+ * still (`ambient`) — or frozen outright on everything that cannot afford it.
+ * Behind it: the navy cobalt sky and three blobs whose hue travels with the
+ * reading progress; in front of it: the cursor light and grain.
  *
  * Cost is still a tier (S3), and `tier` still only moves down. `static` no
  * longer mounts a canvas: that device gate is safe **now** and only now, because
@@ -186,6 +222,7 @@ const AppBackground = () => {
     tier && tier !== "static" && connectionAllows ? SIM_QUALITY[tier] : null;
   const fieldMounted =
     Boolean(simQuality) && canUseWebgl && !isReducedMotion && !webglFailed;
+  const ambient = useAmbientField(tier, isReducedMotion);
 
   /* The 181 KB of `three` is not spent until the page is idle, and the tier is
      read in that same window: both are questions about this device, and both
@@ -261,6 +298,7 @@ const AppBackground = () => {
             mouseForce={10}
             cursorSize={110}
             autoDemo={false}
+            ambient={ambient}
             autoSpeed={0.2}
             autoIntensity={1.25}
             takeoverDuration={0.35}
