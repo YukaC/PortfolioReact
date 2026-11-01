@@ -1,14 +1,38 @@
 import { useEffect } from "react";
+import { MOTION_MEDIA } from "@/motion/config";
+import { damp } from "@/motion/damp";
 import {
   prefersReducedMotion,
   subscribeReducedMotion,
 } from "@/motion/prefersReducedMotion";
+import { getScrollPosition } from "@/motion/smoothScroll";
 
 const clamp01 = (value) => Math.min(1, Math.max(0, value));
-const SCROLL_LERP = 0.11;
-const TILT_LERP = 0.07;
-const POINTER_LERP = 0.14;
+
+/**
+ * Smoothing rates in 1/s, not per-frame factors.
+ *
+ * These were `SCROLL_LERP 0.11`, `TILT_LERP 0.07` and `POINTER_LERP 0.14`
+ * multiplied into the remaining distance once per frame, so the trail depended
+ * on the refresh rate (audit.md §10 P0-2, P2-5's sibling). Each surviving factor
+ * is now `lambda = -60 · ln(1 - f)` at 60 fps:
+ *
+ *   scroll  0.11 → gone: the scroll layer owns that value, this file reads it
+ *   tilt    0.07 → 4.35  .field-blob, .hero-ornament
+ *   pointer 0.14 → 9.05  .field-glow
+ */
+const TILT_LAMBDA = 4.35;
+const POINTER_LAMBDA = 9.05;
 const SETTLE = 0.05;
+const DEFAULT_DT = 1 / 60;
+/** A dropped frame or a backgrounded tab eases in as one 60 fps frame instead
+    of arriving in a lurch. */
+const MAX_DT = 1 / 20;
+/** The document height moves without a window resize (fonts, a filter narrowing
+    the list, a late image), and both the resize event and the layout observer
+    fire every frame while it happens. Re-measuring is cheap but re-binding the
+    channels is not, so the work waits for the box to settle. */
+const MEASURE_DEBOUNCE_MS = 160;
 
 /**
  * The motion channel, scoped to the elements that read it.
@@ -26,6 +50,10 @@ const SETTLE = 0.05;
  *   --py   pointer y, -0.5..0.5          .field-blob x3, .hero-ornament
  *   --mx   raw pointer x (px)            .field-glow
  *   --my   raw pointer y (px)            .field-glow
+ *
+ * The scroll channels are read from the smooth layer, never re-interpolated
+ * here: two lerps in series over one value is what put the field 0.5–0.7 s
+ * behind the content it sits under (audit.md §10 P0-2).
  *
  * The `:root` defaults in globals.css stay: they are the settled state, so a
  * reader that never receives a write — or a reader with no JS at all — is still
@@ -82,11 +110,13 @@ const write = (channel, value) => {
 };
 
 /**
- * Single smoothing engine for the field.
+ * The field's motion channel.
  *
- * One rAF loop with inertia, the way the reference does it: layers trail the
- * scroll and the pointer instead of snapping to them. Under reduced motion the
- * loop never starts and the channel is left at its settled values.
+ * Two writers, one per question: the scroll channels are written where the
+ * scroll is reported (the value is already smoothed by its single owner, so
+ * there is nothing to interpolate), and the pointer channels are damped in one
+ * rAF loop that only runs while the pointer is still travelling. Under reduced
+ * motion neither writes and the channel is left at its settled values.
  */
 export function useFieldMotion() {
   useEffect(() => {
@@ -116,7 +146,11 @@ export function useFieldMotion() {
 
     let raf = 0;
     let running = false;
-    let smoothedScroll = window.scrollY;
+    let lastFrameTime = 0;
+    let pointerBound = false;
+    let measureTimer = 0;
+    let pendingRebind = false;
+
     let targetPointerX = 0;
     let targetPointerY = 0;
     let smoothedPointerX = 0;
@@ -126,28 +160,27 @@ export function useFieldMotion() {
     let smoothedMouseX = -999;
     let smoothedMouseY = -999;
 
-    const frame = () => {
-      const scrollY = window.scrollY;
-      smoothedScroll += (scrollY - smoothedScroll) * SCROLL_LERP;
-      smoothedPointerX += (targetPointerX - smoothedPointerX) * TILT_LERP;
-      smoothedPointerY += (targetPointerY - smoothedPointerY) * TILT_LERP;
+    const frame = (now) => {
+      const dt = lastFrameTime
+        ? Math.min((now - lastFrameTime) / 1000, MAX_DT)
+        : DEFAULT_DT;
+      lastFrameTime = now;
+
+      smoothedPointerX = damp(smoothedPointerX, targetPointerX, TILT_LAMBDA, dt);
+      smoothedPointerY = damp(smoothedPointerY, targetPointerY, TILT_LAMBDA, dt);
       if (smoothedMouseX < -900) {
         smoothedMouseX = targetMouseX;
         smoothedMouseY = targetMouseY;
       }
-      smoothedMouseX += (targetMouseX - smoothedMouseX) * POINTER_LERP;
-      smoothedMouseY += (targetMouseY - smoothedMouseY) * POINTER_LERP;
+      smoothedMouseX = damp(smoothedMouseX, targetMouseX, POINTER_LAMBDA, dt);
+      smoothedMouseY = damp(smoothedMouseY, targetMouseY, POINTER_LAMBDA, dt);
 
-      write(channels.scy, smoothedScroll);
-      write(channels.p, clamp01(smoothedScroll / maxScroll));
-      write(channels.hf, clamp01(1 - smoothedScroll / (viewport * 0.75)));
       write(channels.px, smoothedPointerX);
       write(channels.py, smoothedPointerY);
       write(channels.mx, smoothedMouseX);
       write(channels.my, smoothedMouseY);
 
       const remaining =
-        Math.abs(scrollY - smoothedScroll) +
         Math.abs(targetPointerX - smoothedPointerX) +
         Math.abs(targetPointerY - smoothedPointerY) +
         Math.abs(targetMouseX - smoothedMouseX) +
@@ -157,6 +190,8 @@ export function useFieldMotion() {
         raf = requestAnimationFrame(frame);
       } else {
         running = false;
+        // The next kick starts a fresh interval instead of inheriting the gap.
+        lastFrameTime = 0;
       }
     };
 
@@ -166,23 +201,21 @@ export function useFieldMotion() {
       raf = requestAnimationFrame(frame);
     };
 
-    // The document height moves without a window resize (fonts, images, the
-    // intro settling, a filter narrowing the list). Watching the layout box
-    // costs one observer instead of one forced layout per frame.
-    const layoutObserver =
-      typeof ResizeObserver === "function"
-        ? new ResizeObserver(() => {
-            measure();
-            kick();
-          })
-        : null;
-
-    const onScroll = () => kick();
-    const onResize = () => {
-      measure();
-      channels = bindChannels();
-      kick();
+    /* The scroll channels are written where the scroll arrives, not in the rAF
+       loop: the value is already smoothed by the one owner, so there is nothing
+       to interpolate, and a scroll handler that writes one already-computed
+       value is the shortest path from the reader's gesture to the field (one
+       frame instead of two). The loop is left to the pointer layers, which is
+       also why a scroll no longer wakes them up. */
+    const writeScroll = () => {
+      const scroll = getScrollPosition();
+      write(channels.scy, scroll);
+      write(channels.p, clamp01(scroll / maxScroll));
+      write(channels.hf, clamp01(1 - scroll / (viewport * 0.75)));
     };
+
+    const onScroll = () => writeScroll();
+
     // The measured viewport is also what a pointer event divides by: reading
     // it here would force a layout on every event, right after the loop dirtied
     // style, which is the per-frame layout this rewrite exists to remove.
@@ -194,12 +227,75 @@ export function useFieldMotion() {
       kick();
     };
 
+    /* A coarse pointer has nothing to point with, and the layers it drives
+       (.field-glow, .hero-ornament) are `display: none` there — the listeners
+       were a per-event cost for a channel nobody reads (audit.md §10 P2-5). The
+       capability is watched, not sampled once: a tablet that gains a mouse gets
+       the channel, and a hybrid that loses it returns to the settled values. */
+    const bindPointer = (fine) => {
+      if (fine === pointerBound) return;
+      pointerBound = fine;
+      if (fine) {
+        window.addEventListener("pointermove", onPointerMove, { passive: true });
+        return;
+      }
+      window.removeEventListener("pointermove", onPointerMove);
+      targetPointerX = 0;
+      targetPointerY = 0;
+      targetMouseX = -999;
+      targetMouseY = -999;
+      kick();
+    };
+
+    const onPointerCapability = (event) => bindPointer(event.matches);
+
+    const scheduleMeasure = (rebind = false) => {
+      pendingRebind = pendingRebind || rebind;
+      if (measureTimer) clearTimeout(measureTimer);
+      measureTimer = window.setTimeout(() => {
+        measureTimer = 0;
+        measure();
+        if (pendingRebind) {
+          pendingRebind = false;
+          channels = bindChannels();
+        }
+        // The extent and the viewport changed: the scroll channels are wrong
+        // even though nobody scrolled.
+        writeScroll();
+        kick();
+      }, MEASURE_DEBOUNCE_MS);
+    };
+
+    // The document height moves without a window resize (fonts, images, the
+    // intro settling, a filter narrowing the list). Watching the layout box
+    // costs one observer instead of one forced layout per frame, and the
+    // measurement it triggers is coalesced so a resize drag does not re-measure
+    // — or re-bind the channels — sixty times a second (audit.md §10 P2-6).
+    const layoutObserver =
+      typeof ResizeObserver === "function"
+        ? new ResizeObserver(() => scheduleMeasure())
+        : null;
+
+    const onResize = () => scheduleMeasure(true);
+    const pointerQuery = window.matchMedia(MOTION_MEDIA.finePointer);
+
+
     const stop = () => {
       cancelAnimationFrame(raf);
       running = false;
+      lastFrameTime = 0;
+      if (measureTimer) {
+        clearTimeout(measureTimer);
+        measureTimer = 0;
+      }
+      pendingRebind = false;
       window.removeEventListener("scroll", onScroll);
       window.removeEventListener("resize", onResize);
-      window.removeEventListener("pointermove", onPointerMove);
+      pointerQuery.removeEventListener("change", onPointerCapability);
+      if (pointerBound) {
+        window.removeEventListener("pointermove", onPointerMove);
+        pointerBound = false;
+      }
       layoutObserver?.disconnect();
     };
 
@@ -208,8 +304,12 @@ export function useFieldMotion() {
       measure();
       window.addEventListener("scroll", onScroll, { passive: true });
       window.addEventListener("resize", onResize);
-      window.addEventListener("pointermove", onPointerMove, { passive: true });
+      pointerQuery.addEventListener("change", onPointerCapability);
+      bindPointer(pointerQuery.matches);
       layoutObserver?.observe(document.body);
+      // A page restored mid-document is already scrolled: the field starts where
+      // the reader is, not at the top.
+      writeScroll();
       kick();
     };
 
