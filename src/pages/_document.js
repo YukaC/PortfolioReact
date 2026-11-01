@@ -11,11 +11,22 @@ import { DEFAULT_LOCALE, htmlLangFromPath } from "@/i18n/locale";
  *   2. otherwise the language of the prerendered route (`/es` → `es`), because a
  *      static HTML file cannot know a visitor's region — the client refines the
  *      attribute to the regional tag after mount, without touching any text.
+ *
+ * The inline head script marks `html.js` before the first paint. Every reveal in
+ * CSS hangs off that class, so the served HTML is legible on its own and the
+ * animation is something JS opts into — the reverse (hiding by default and
+ * letting hydration reveal) is what left three headings blank without JS
+ * (audit.md §10 P0-1). It is a one-liner with no `eval`, so a future enforcing
+ * CSP only needs a hash for it.
  */
+const MARK_JS = 'document.documentElement.classList.add("js")';
+
 export default function Document({ htmlLang = DEFAULT_LOCALE }) {
   return (
     <Html lang={htmlLang} dir="ltr" className="dark">
-      <Head />
+      <Head>
+        <script dangerouslySetInnerHTML={{ __html: MARK_JS }} />
+      </Head>
       <body>
         <Main />
         <NextScript />
