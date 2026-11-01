@@ -43,6 +43,14 @@ const fraunces = Fraunces({
  * still parsed and executed before any markup after it exists, so no reveal can
  * ever match the hidden state in a paint. It is a one-liner with no `eval`, so a
  * future enforcing CSP only needs a hash for it.
+ *
+ * The script writes a class onto `<html>`, which the server rendered without it:
+ * React sees an attribute its own markup does not have and logs a hydration
+ * mismatch on every page. `suppressHydrationWarning` on `<html>` is the standard
+ * answer (next-themes does the same) — the class is applied before hydration, it
+ * is the same class on the server and on the client after it, and there is
+ * nothing to reconcile. Suppressing it on that one element silences the warning
+ * for `<html>`'s attributes only; the rest of the tree is still diffed.
  */
 const MARK_JS = 'document.documentElement.classList.add("js")';
 
@@ -111,7 +119,10 @@ export default function RootShell({ lang = DEFAULT_LOCALE, children }) {
   const htmlLang = normalizeLocale(lang)?.locale ?? DEFAULT_LOCALE;
 
   return (
-    <html lang={htmlLang} dir="ltr">
+    // `suppressHydrationWarning` is a property of this element's attributes, not
+    // of its children: the `js` class the inline script adds above is the one
+    // difference React would otherwise report (see MARK_JS).
+    <html lang={htmlLang} dir="ltr" suppressHydrationWarning>
       <body>
         <script dangerouslySetInnerHTML={{ __html: MARK_JS }} />
         <div

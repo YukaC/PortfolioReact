@@ -118,7 +118,7 @@
   --text-copy: 1.0625rem; /* 17px, off the framework's grid on purpose */
 
   /* --- form and depth, layer 1 (§14.4) ----------------------------------
-     Five radii, five blurs and four shadows: the values the sheet actually
+     Five radii, four blurs and four shadows: the values the sheet actually
      used. `999px` and `9999px` collapse into `--radius-pill` — both exceed
      half the element's height, so they render as the same pill (§14.4).
 
@@ -134,7 +134,6 @@
   --blur-glass: 26px;
   --blur-panel: 20px;
   --blur-soft: 14px;
-  --blur-reveal: 6px;
   --shadow-nav: 0 18px 44px -20px rgb(0 0 0 / 0.6);
   --shadow-float: 0 24px 60px -24px rgb(0 0 0 / 0.6);
   --shadow-preview: 0 30px 70px -20px rgb(0 0 0 / 0.7);
@@ -181,7 +180,6 @@
      • `max-xs` — the 560px line has no `--breakpoint-*` token because nothing
        min-width-560 exists to consume one (§14.1: a token enters with its
        consumer), and a media query cannot read `var()` anyway.
-     • `narrow-or-touch` — an OR of a width and a pointer query.
 
    `pointer-fine`, `pointer-coarse`, `motion-reduce` and the other pointer
    conditions are the framework's own variants, so a hover that must not fire on
@@ -190,21 +188,6 @@
 @custom-variant no-hover (@media (hover: none));
 @custom-variant max-xs (@media (max-width: 35rem)); /* 560px, narrow phones */
 @custom-variant max-wide (@media (max-width: 56.25rem)); /* inclusive, see above */
-/* The reveal drops its blur on anything that is either narrow or touched
-   (`max-width: 64rem` OR `pointer: coarse`). One custom variant, because an
-   OR between a breakpoint and a pointer query has no built-in spelling. The two
-   queries are written as separate rules on purpose: a comma-separated `@media`
-   list is emitted by the dev CSS pipeline as two blocks and the second loses its
-   `@media`, which fails to parse (measured: `/` returned 500 in `next dev` while
-   the production build was fine). */
-@custom-variant narrow-or-touch {
-  @media (max-width: 64rem) {
-    @slot;
-  }
-  @media (pointer: coarse) {
-    @slot;
-  }
-}
 
 /* The composite stacks resolve their `var()` at the element that declares
    them, so they have to live on the element that carries the next/font
@@ -260,22 +243,26 @@
   --duration-fast: 0.3s; /* the shortest beat the page uses */
   --duration-ui-slow: 0.34s; /* config.uiSlow · the drawer */
   --duration-base: 0.4s; /* the default hover */
+  --duration-reveal: 0.45s; /* the entrance, painted or observed */
   --duration-slow: 0.5s; /* buttons, the nav pill, the preview */
   --duration-narrative: 0.55s; /* config.narrative */
   --duration-slower: 0.6s; /* the rolling label, the logo dash */
   --duration-drift: 0.7s; /* the work row's own travel */
   --duration-draw: 0.9s; /* the mail underline, the section flash */
-  --duration-reveal: 1.1s; /* the entrance, painted or observed */
   --duration-orn: 1.15s; /* the hero ornament */
   --duration-ping: 2.4s; /* the status pulse */
-  --stagger-word: 70ms; /* between the words of a split heading */
+  --stagger-word: 45ms; /* between the words of a split heading */
   --stagger-phrase: 40ms; /* config STAGGER.phrase */
   --stagger-min: 30ms; /* config STAGGER.min, the floor for a sibling beat */
-  /* The three curves the sheet owns. The springs stay in `motion/config.js`:
+  /* The curves the sheet owns. The springs stay in `motion/config.js`:
      they are sampled CustomEases, not cubic-beziers (§14.4). */
   --ease-out-field: cubic-bezier(0.2, 0.7, 0.2, 1);
   --ease-snap: cubic-bezier(0.23, 1, 0.32, 1);
   --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+  /* The one symmetric curve: the flare's attack and decay are the same shape,
+     and a curve with a slow start and a slow finish is what reads as a shimmer
+     instead of the blink the stepped keyframes produced (§19.2). */
+  --ease-in-out-field: cubic-bezier(0.45, 0, 0.55, 1);
 
   /* Motion channel. `useFieldMotion` writes each property on the elements that
      read it (see the hook), ScrollTrigger owns `--tlp` and `--fp`. These are the
@@ -935,6 +922,28 @@
   }
 }
 
+/* The timeline and portrait type recipes: box and colour, nothing this layer is
+   allowed to keep (§13.2). They live here so the components layer can hold the
+   four things it is actually for — keyframes, composition, script-owned state and
+   conditions with no variant. */
+@utility timeline-org {
+  display: block;
+  font-size: var(--text-ui-sm);
+  color: var(--color-dim);
+}
+
+@utility timeline-desc {
+  margin-top: 0.625rem;
+  font-size: var(--text-ui);
+  color: var(--color-mut);
+  max-width: 46ch;
+}
+
+@utility about-portrait-role {
+  font-size: var(--text-meta);
+  color: var(--color-mut);
+}
+
 @layer components {
   /* --- field -------------------------------------------------------------- */
   .bocanada-field {
@@ -952,20 +961,10 @@
       linear-gradient(180deg, #081430 0%, #050d20 54%, #04091a 100%);
   }
 
-  /* Blobs answer the reading progress: the hue travels, the height falls away.
-     The hue is two fixed gradients per blob cross-faded by `opacity` — blob1
-     212deg -> 222deg, blob2 222deg -> 210deg, blob3 204deg -> 214deg — instead
-     of an `hsl()` interpolated by `--p`: an opacity change is composited, while
-     a hue inside a background gradient re-resolves and re-rasterises the layer
-     every frame. `plus-lighter` adds the two premultiplied layers, so the pair
-     composites to exactly the alpha and colour of the interpolated gradient; a
-     normal blend would dim it mid-scroll, because both are translucent.
-
-     `filter: blur(110px)` is the narrow layout's glow: at 900px and up the same
-     six layers are 1.69 Mpx of Gaussian surface against the §21.3 budget of
-     2 Mpx, so the wide layout bakes the blur into the stops instead
-     (`@variant wide` below). Those stops are the only difference between the
-     two layouts. */
+  /* Blobs answer the reading progress: two fixed gradients per blob, cross-faded
+     by `opacity` (composited) instead of an `hsl()` inside a background, which
+     would re-rasterise the layer every frame. Why `plus-lighter`, why the wide
+     layout bakes the blur into its stops: docs/css-map.md §field. */
   .field-blob {
     position: absolute;
     border-radius: 50%;
@@ -1027,14 +1026,8 @@
   }
 
   /* The wide layout's glow, with the 110px blur convolved into the stops
-     (audit.md §10 P1-2, §21.3). `blur(σ)` is linear, so blurring the radial
-     ramp (`A` at the centre, transparent at 68 % of the farthest corner, σ =
-     110px) gives the profile sampled here: 0.689 · A at the centre, then
-     0.941, 0.782, 0.571, 0.356, 0.176, 0.066, 0.017 of it every 12.5 % of the
-     radius (blob1) and every 25 % (blobs 2–3, whose 0.26 and 0.12 peaks keep
-     the linear error inside 0.007 alpha). Worst deviation from the true blur:
-     0.004 alpha, under one 8-bit step. Same centres, same alphas, same
-     cross-fade. */
+     (audit.md §10 P1-2, §21.3): the sampled profile, its worst-case error and
+     the arithmetic behind it are in docs/css-map.md §field. */
   @variant wide {
     .field-blob-layer {
       filter: none;
@@ -1140,19 +1133,11 @@
   }
 
   /* --- field layer 1: the identity (§18.2, §18.4) -------------------------- */
-  /* The coral lattice is CSS and it is the only lattice there is. One tiled
-     raster, tile origin pinned at `0 0`, one 48 px cell — so the centre of a dot
-     is at `n * 48 + 24` from the top-left corner of the viewport, in every
-     state: `active`, `frozen`, `static`, reduced motion, no WebGL (§18.2).
-
-     The shader used to draw its own `coverGrid` on top of this stand-in, which
-     is why keeping both drawn read as doubled dots: two grids never share an
-     origin. The grid left the shader in the same change, so there is exactly
-     one, and the canvas no longer has to stay awake to keep the field alive.
-
-     `fixed` + `contain: strict` is what makes it free: one viewport-sized raster
-     whose paint never invalidates the document, and it never grows to the length
-     of the page however far the reader scrolls. */
+  /* The coral lattice is CSS and it is the only lattice there is: one tiled
+     raster, tile origin pinned at `0 0`, one 48 px cell, so a dot centre is at
+     `n * 48 + 24` in every state — `active`, `frozen`, `static`, reduced motion.
+     `fixed` + `contain: strict` is what makes it free (§18.2, docs/css-map.md
+     §identity). */
   .bocanada-lattice {
     position: fixed;
     inset: 0;
@@ -1173,11 +1158,8 @@
      whole cell coordinates and staggered by `--dur`/`--delay`. Only `opacity`
      and `transform` animate, so each one is composited and never repaints or
      forces layout — no JavaScript, no hydration, no ResizeObserver (§18.4 rule
-     4). The table lives in `src/lib/field-flares.js`.
-
-     The position is `calc(var(--cx) * 48px + 24px)`, never a percentage: a
-     percentage of the viewport cannot land on a fixed grid, which is exactly
-     why the previous attempt at this design was reverted (§19.3, `8164756`). */
+     4). The table lives in `src/lib/field-flares.js`; the cadence, and why the
+     bell narrows as the density grows, are in docs/css-map.md §identity. */
   .bocanada-flares {
     position: fixed;
     inset: 0;
@@ -1199,12 +1181,15 @@
       color-mix(in srgb, var(--color-coral) 45%, transparent) 45%,
       transparent 70%
     );
-    opacity: 0;
-    animation: flare var(--dur, 8s) var(--delay, 0s) infinite;
+    opacity: var(--flare-rest, 0.04);
+    animation: flare var(--dur, 9s) var(--ease-in-out-field) var(--delay, 0s) infinite;
   }
 
-  /* Bright for the last 8 % of the cycle — ≈ 0.6 s at 7–11 s — then gone. The
-     rest state is the dot underneath, which is the point: the field is calm. */
+  /* One keyframe per density band (docs/css-map.md §identity): the bell covers a
+     fixed slice of the cycle, so a band with six strikes keeps a long soft swell
+     and the 36-strike field keeps 1–4 of them lit at once. The rest opacity is
+     not zero — the field never goes fully dark — and the eased attack/decay
+     leaves no step anywhere in the cycle. */
 
   /* Density by viewport: 6 / 12 / 22 / 36 visible, counted by computed `display`
      and driven by no script. Three cumulative `max-width` steps in this order
@@ -1214,17 +1199,29 @@
     .flare:nth-child(n + 23) {
       display: none;
     }
+
+    .flare {
+      animation-name: flare-22;
+    }
   }
 
   @media (max-width: 64rem) {
     .flare:nth-child(n + 13) {
       display: none;
     }
+
+    .flare {
+      animation-name: flare-12;
+    }
   }
 
   @media (max-width: 40rem) {
     .flare:nth-child(n + 7) {
       display: none;
+    }
+
+    .flare {
+      animation-name: flare-6;
     }
   }
 
@@ -1242,14 +1239,10 @@
     background: var(--color-live);
   }
 
-  /* The pulse used to animate `box-shadow`, which no engine can composite: it
-     forced a style recalculation for the whole document on every frame, for
-     ever (measured at rest: 231 recalcs over 231 frames with zero DOM writes),
-     so the document never went quiet. That shadow had no blur and no offset,
-     i.e. it was a filled disc of live green behind the dot — the same disc is
-     now a pseudo-element that only fades and scales, which the compositor
-     owns. An idle page asks for 0 frames of work, and the geometry is
-     unchanged: radius 3.5px + spread, reproduced by `scale`. */
+  /* The pulse used to animate `box-shadow`, which no engine can composite, so
+     the document never went quiet (231 recalcs over 231 idle frames). The same
+     disc as a pseudo-element fading and scaling is the compositor's: 0 frames at
+     rest, same geometry (docs/css-map.md §status). */
   .status i::before {
     content: "";
     position: absolute;
@@ -1423,58 +1416,33 @@
   }
 
   /* --- reveal + word split ------------------------------------------------ */
-  /* The default is a page that already reads: a reveal is decoration, and
-     decoration may never be the reason the page looks empty. Hidden is a state
-     a script opts into, and the opt-in is the `js` class an inline script puts
-     on `<html>` before the first paint (S1). So the base stylesheet — what a
-     visitor without JavaScript gets, and what a script that fails before its
-     observer mounts leaves behind — is visible, still and unfiltered.
-
-     Measured before this change: with JS disabled, 19 of the 26 `.w > span`
-     words sat displaced outside their clipping box, and the viewport of a
-     6x-throttled phone stayed invisible for 13.7s in dev. */
+  /* The default is a page that already reads: hidden is a state a script opts
+     into through the `js` class, so a document without a script — or one whose
+     observer never mounts — is visible, still and unfiltered (S1). The long
+     version, with the measurements behind it, is in docs/css-map.md §reveal. */
   [data-r] {
     transition: none;
   }
 
-  /* From here down the hidden states exist only in a scripted document. */
+  /* From here down the hidden states exist only in a scripted document. Two
+     properties and no `will-change`: a hint that outlives its transition is the
+     permanent offscreen surface S4 removed, and a composited opacity/transform
+     transition does not need one. */
   html.js [data-r]:not([data-r="paint"]) {
     transition:
       opacity var(--duration-reveal) var(--ease-out-field),
-      transform var(--duration-reveal) var(--ease-out-field),
-      filter var(--duration-reveal) var(--ease-out-field);
+      transform var(--duration-reveal) var(--ease-out-field);
     transition-delay: var(--d, 0ms);
   }
 
   /* Hidden is `:not(.is-in)` and nothing else: the observer in
      `useRevealOnEnter` only ever adds `.is-in`, so a node the script found in
      view never flashes hidden and there is no second state to keep in sync.
-     Both live under `html.js`. */
+     No filter: a blur was the most expensive thing one reveal asked of a phone
+     GPU, and it is gone from the entrance, not merely narrowed. */
   html.js [data-r]:not(.is-in):not([data-r="paint"]) {
     opacity: 0;
-    transform: translateY(28px);
-    filter: blur(var(--blur-reveal));
-  }
-
-  /* Animating `filter: blur()` is the single most expensive thing this page asks
-     of a phone GPU, and there is one per reveal: a mid-range Android renders the
-     entrance smeared for seconds, which reads as "the reveal is broken" (a Moto
-     G82 recording showed exactly that). The travel and the fade carry the beat
-     on their own; the blur stays where there is headroom, on a wide pointer. */
-  @variant narrow-or-touch {
-    html.js [data-r]:not([data-r="paint"]) {
-      transition:
-        opacity var(--duration-reveal) var(--ease-out-field),
-        transform var(--duration-reveal) var(--ease-out-field);
-    }
-
-    html.js [data-r]:not(.is-in):not([data-r="paint"]) {
-      filter: none;
-    }
-
-    html.js [data-r="paint"] {
-      animation-name: r-paint-plain;
-    }
+    transform: translateY(16px);
   }
 
   [data-r].is-in {
@@ -1483,16 +1451,11 @@
     filter: none;
   }
 
-  /* Above-the-fold reveals paint on the first frame. Same travel and same blur,
-     driven by CSS instead of waiting for hydration and an IntersectionObserver:
-     text that starts at `opacity: 0` cannot be the largest paint until that
-     round trip finishes, which measured 2.2s with no network at all and 10.5s
-     on Slow 3G. `[data-r="paint"]` keeps the choreography, not the gate.
-
-     `backwards` rather than `both`: while the animation runs it fills the
-     opening frame, and once it ends nothing of it is applied any more. A filled
-     animation keeps every hero node in the effect stack for the life of the
-     page, which measured 200ms of extra style work across a six second scroll. */
+  /* Above-the-fold reveals paint on the first frame, driven by CSS instead of
+     waiting for hydration and an observer: text that starts at `opacity: 0`
+     cannot be the largest paint until that round trip finishes (2.2 s measured
+     with no network, 10.5 s on Slow 3G). `backwards` rather than `both` keeps
+     nothing of the animation in the effect stack once it ends. */
   html.js [data-r="paint"] {
     opacity: 1;
     transform: none;
@@ -2034,11 +1997,6 @@
     color: var(--color-paper);
   }
 
-  .about-portrait-role {
-    font-size: var(--text-meta);
-    color: var(--color-mut);
-  }
-
   .about-socials {
     display: flex;
     gap: 0.5rem;
@@ -2189,23 +2147,13 @@
     color: var(--color-paper);
   }
 
-  .timeline-org {
-    display: block;
-    font-size: var(--text-ui-sm);
-    color: var(--color-dim);
-  }
-
-  .timeline-desc {
-    margin-top: 0.625rem;
-    font-size: var(--text-ui);
-    color: var(--color-mut);
-    max-width: 46ch;
-  }
+  /* `.timeline-org` and `.timeline-desc` are `@utility` recipes above: they are
+     box and type, which §13.2 keeps out of this layer. */
 
   /* --- contact ------------------------------------------------------------
-     `.contact-actions` is an inline utility in `CopyButton`. What stays: the
-     giant mail, because the underline it grows is a `::after` with a gradient
-     and a `scaleX` origin (`background-clip`/pseudo = bucket C). */
+     The actions under the mail are inline utilities in `CopyButton`. What
+     stays: the giant mail, because the underline it grows is a `::after` with
+     a gradient and a `scaleX` origin (`background-clip`/pseudo = bucket C). */
   .bigmail {
     position: relative;
     display: inline-flex;
@@ -2246,13 +2194,6 @@
   .bigmail:hover::after,
   .bigmail:focus-visible::after {
     transform: scaleX(1);
-  }
-
-  .contact-actions {
-    display: flex;
-    gap: 0.75rem;
-    margin-top: 2.375rem;
-    flex-wrap: wrap;
   }
 
   /* --- footer -------------------------------------------------------------
@@ -2440,49 +2381,84 @@
    reasons this layer keeps: the flare's cycle, the two reveal entries (with
    and without the blur), the word split, the arrival flash, the status pulse
    and the ornament's entrance. */
+/* --- keyframes -----------------------------------------------------------
+   All of them in one place: a keyframe is a global name, so living next to the
+   rule that plays it only hides the list. Each one is named by the `animation`
+   that asks for it.
+
+   The flares come in one bell per density band: `rise` is where the pulse leaves
+   its rest opacity, so the slice of the cycle that is above the "lit" threshold
+   is fixed per band. Six strikes on a phone get a long swell, the 36-strike
+   field keeps 1–4 lit at once (§19.2), and every band keeps a rest above zero so
+   the field is never completely dark. `--ease-in-out-field` shapes both flanks:
+   no stop in this cycle is a step. */
 @keyframes flare {
   0%,
-  90%,
+  47.1%,
+  52.9%,
   100% {
-    opacity: 0;
-    transform: scale(0.6);
+    opacity: 0.04;
+    transform: scale(0.94);
   }
 
-  93% {
-    opacity: 1;
-    transform: scale(1);
-  }
-
-  96% {
-    opacity: 0.6;
-    transform: scale(1.25);
-  }
-
-  98% {
-    opacity: 0;
-    transform: scale(0.9);
+  50% {
+    opacity: 0.5;
+    transform: scale(1.06);
   }
 }
 
-@keyframes r-paint-plain {
-  from {
-    translate: 0 28px;
+@keyframes flare-22 {
+  0%,
+  45.6%,
+  54.4%,
+  100% {
+    opacity: 0.04;
+    transform: scale(0.94);
   }
 
-  to {
-    translate: 0 0;
+  50% {
+    opacity: 0.5;
+    transform: scale(1.06);
+  }
+}
+
+@keyframes flare-12 {
+  0%,
+  42%,
+  58%,
+  100% {
+    opacity: 0.04;
+    transform: scale(0.94);
+  }
+
+  50% {
+    opacity: 0.5;
+    transform: scale(1.06);
+  }
+}
+
+@keyframes flare-6 {
+  0%,
+  28%,
+  72%,
+  100% {
+    opacity: 0.04;
+    transform: scale(0.94);
+  }
+
+  50% {
+    opacity: 0.5;
+    transform: scale(1.06);
   }
 }
 
 @keyframes r-paint {
   from {
-    translate: 0 28px;
-    filter: blur(var(--blur-reveal));
+    translate: 0 16px;
   }
 
   to {
     translate: 0 0;
-    filter: none;
   }
 }
 

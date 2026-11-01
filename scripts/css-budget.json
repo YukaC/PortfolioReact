@@ -1,7 +1,8 @@
 {
-  "note": "Baseline of the compiled stylesheet for `pnpm check:css`. The number is measured from the source, not from a build: src/styles/globals.css compiled in-process with @tailwindcss/postcss (the plugin the app itself uses), so any machine and any CI job gets the same byte count. The guard fails when the compiled sheet grows more than `growthAllowance` over `compiledBytes` (audit.md §13.3 S7 / §21.3). Raising the baseline is a decision that belongs in the same commit as the CSS that makes it grow, with the reason in the feature doc.",
+  "note": "Baseline of the compiled stylesheet for `pnpm check:css`. The number is measured from the source, not from a build: src/styles/globals.css compiled in-process with @tailwindcss/postcss (the plugin the app itself uses), so any machine and any CI job gets the same byte count. The guard fails when the compiled sheet grows more than `growthAllowance` over `compiledBytes` (audit.md §13.3 S7 / §21.3), and when `@layer components` exceeds `componentsCeiling` (§14.3, spec S14). Raising either number is a decision that belongs in the same commit as the CSS that makes it grow, with the reason in the feature doc.",
   "compiledBytes": 74149,
-  "componentsBytes": 29081,
+  "componentsBytes": 28476,
+  "componentsCeiling": 28672,
   "growthAllowance": 0.05,
   "history": [
     {
@@ -40,6 +41,12 @@
       "bytes": 74149,
       "deltaPct": 2.25,
       "source": "the six `filter: blur(110px)` layers became, at 900px and up, radial gradients whose stops sample the convolved profile (38 stops, two per line) while the narrow layout keeps the ramp and the filter it can afford; the measured delta is +2.25 % and `@layer components` lands at 29 081 B, 1.4 % over the 28 kB target of §14.3 because the wide layout carries both the ramp and its pre-blurred replacement"
+    },
+    {
+      "stage": "T12 — S11/S14 (`@layer components` ceiling enforced, reveal and flare rework)",
+      "bytes": 76580,
+      "deltaPct": 3.28,
+      "source": "`pnpm check:css` now compares `@layer components` against `componentsCeiling` (28 672 B = §14.3's 28 KB) instead of only reporting it, and the layer is measured at 28 476 B: `.contact-actions` (no consumer), the `narrow-or-touch` reveal variant and the blur variant of `r-paint` left, and `.timeline-org`/`.timeline-desc`/`.about-portrait-role` moved to `@utility` because §13.2 keeps box and type out of the layer. The comment prose inside kept blocks does not reach this number: Tailwind strips comments before the layer is compiled (measured — moving ~1 kB of prose out changed the byte count by 0), which is why the 28 KB had to be earned with declarations. The sheet itself grew to 76 580 B (+3.28 %, still under the 5 % allowance) with the four flare keyframes (`flare`, `flare-22`, `flare-12`, `flare-6`), the `--ease-in-out-field` curve and the new 36-entry flare table's durations."
     }
   ]
 }

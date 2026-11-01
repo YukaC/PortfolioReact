@@ -18,7 +18,10 @@
  *                 from a media query, where `var()` cannot go, so for that
  *                 namespace the consumer is the generated query itself;
  *   4. growth     the compiled stylesheet more than 5 % over the recorded
- *                 baseline in `scripts/css-budget.json`.
+ *                 baseline in `scripts/css-budget.json`, and — since §14.3 gives
+ *                 the layer its own ceiling — `@layer components` over the
+ *                 `componentsBytes` recorded there. Both numbers are measured
+ *                 from the source, so the guard never needs a build.
  *
  * The stylesheet is compiled in-process with the same `@tailwindcss/postcss`
  * plugin the app uses, so the check needs no build, no browser and no network,
@@ -430,6 +433,24 @@ if (compiledBytes > ceiling) {
   );
 }
 
+/*
+ * The layer's own ceiling (§14.3, spec S14: `@layer components` ≤ 28 KB). It is
+ * a separate number from the 5 % growth allowance above because the two measure
+ * different things: the sheet may grow while the layer that is supposed to be
+ * shrinking grows with it. The recorded figure is the measured size at the
+ * moment the ceiling was enforced, so the check fails on the next byte over —
+ * a layer that needs to grow has to say why in `scripts/css-budget.json` first.
+ */
+const componentsCeiling = budget.componentsCeiling ?? budget.componentsBytes;
+
+if (typeof componentsCeiling === "number" && componentsBytes > componentsCeiling) {
+  add(
+    "components-growth",
+    `@layer components is ${componentsBytes} B, over the recorded ceiling of ${componentsCeiling} B ` +
+      `(§14.3: 28 KB) — move prose out of the layer or move a recipe to @utility`,
+  );
+}
+
 /* ------------------------------------------------------------------------- report */
 
 const args = parseArgs(process.argv.slice(2));
@@ -438,6 +459,7 @@ const report = {
   compiledBytes,
   componentsBytes,
   baseline: { bytes: budget.compiledBytes, allowance, history: budget.history },
+  componentsCeiling,
   growthPct: Number((growth * 100).toFixed(2)),
   stats: {
     themeTokens: themeTokens.length,
@@ -451,7 +473,7 @@ if (args.json) {
   console.log(JSON.stringify(report, null, 2));
 } else {
   console.log(
-    `\ncompiled CSS ${compiledBytes} B · @layer components ${(componentsBytes / 1024).toFixed(1)} kB · ` +
+    `\ncompiled CSS ${compiledBytes} B · @layer components ${componentsBytes} B (ceiling ${componentsCeiling ?? "not recorded"} B) · ` +
       `baseline ${budget.compiledBytes} B (+${(growth * 100).toFixed(2)} %, ceiling +${(allowance * 100).toFixed(0)} %)`,
   );
   console.log(
@@ -460,7 +482,9 @@ if (args.json) {
   );
 
   if (violations.length === 0) {
-    console.log("OK — no literal colour, no z literal, no dead class, no orphan token, no size drift");
+    console.log(
+      "OK — no literal colour, no z literal, no dead class, no orphan token, no size drift",
+    );
   } else {
     for (const violation of violations) {
       console.log(`FAIL ${violation.check} — ${violation.message}`);
