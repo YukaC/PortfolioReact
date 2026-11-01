@@ -59,7 +59,14 @@ export default function LiquidEther({
   // A phone's plume trailing the finger reads as a smudge chasing the thumb while
   // the reader is trying to scroll, so touch input does not drive the dye unless
   // a design explicitly asks for it. Mouse movement is unaffected.
-  touchSmoke = false
+  touchSmoke = false,
+  // Tier knobs from `AppBackground` (audit.md §18.6). A background is not worth
+  // three device pixels per CSS pixel, a sleeping GPU should not be woken for a
+  // field that is frozen anyway, and the breath below is the only reason the loop
+  // ever woke up in repose.
+  pixelRatio = 1,
+  powerPreference = 'high-performance',
+  idleBreath = true
 }) {
   const mountRef = useRef(null);
   const webglRef = useRef(null);
@@ -144,16 +151,16 @@ export default function LiquidEther({
         this.renderer = null;
         this.timer = null;
       }
-      init(container) {
+      init(container, options = {}) {
         this.container = container;
-        this.pixelRatio = 1;
+        this.pixelRatio = options.pixelRatio > 0 ? options.pixelRatio : 1;
         this.resize();
         this.renderer = new WebGLRenderer({
           antialias: false,
           alpha: true,
           depth: false,
           stencil: false,
-          powerPreference: 'high-performance',
+          powerPreference: options.powerPreference || 'high-performance',
           premultipliedAlpha: true
         });
         this.renderer.autoClear = false;
@@ -1329,7 +1336,10 @@ export default function LiquidEther({
     class WebGLManager {
       constructor(props) {
         this.props = props;
-        Common.init(props.$wrapper);
+        Common.init(props.$wrapper, {
+          pixelRatio: props.pixelRatio,
+          powerPreference: props.powerPreference
+        });
         Mouse.init(props.$wrapper);
         Mouse.autoIntensity = props.autoIntensity;
         Mouse.takeoverDuration = props.takeoverDuration;
@@ -1339,6 +1349,7 @@ export default function LiquidEther({
         this.idleTimer = null;
         this.needsPresent = true;
         this.reallocTimer = null;
+        this.idleBreath = props.idleBreath !== false;
         Mouse.onInteract = () => {
           this.lastUserInteraction = performance.now();
           if (this.autoDriver) this.autoDriver.forceStop();
@@ -1370,6 +1381,17 @@ export default function LiquidEther({
       init() {
         this.props.$wrapper.prepend(Common.renderer.domElement);
         this.output = new Output();
+      }
+      /* Adopts a new device-pixel ratio without rebuilding the context: the
+         framebuffers are sized in simulation units, so only the drawing buffer
+         and the output pass have to follow. */
+      setPixelRatio(ratio) {
+        const next = ratio > 0 ? ratio : 1;
+        if (!Common.renderer || Math.abs(Common.pixelRatio - next) < 0.001) return;
+        Common.pixelRatio = next;
+        Common.renderer.setPixelRatio(next);
+        Common.renderer.setSize(Common.width, Common.height, false);
+        this.needsPresent = true;
       }
       resize() {
         // Cheap half: adopt the container size for the drawing buffer. Returning
@@ -1434,6 +1456,13 @@ export default function LiquidEther({
           this.idleTimer = null;
         }
         if (idleMs > IDLE_BREATH_AFTER_MS) {
+          // A tier that does not pay for the breath parks the loop instead: the
+          // last frame stays on the canvas and the next interaction wakes it
+          // through `Mouse.onInteract`, so repose costs nothing at all.
+          if (!this.idleBreath) {
+            this.running = false;
+            return;
+          }
           this.idleTimer = window.setTimeout(this._loop, IDLE_BREATH_INTERVAL_MS);
           return;
         }
@@ -1511,36 +1540,16 @@ export default function LiquidEther({
         takeoverDuration,
         autoResumeDelay,
         autoRampDuration,
-        touchSmoke
+        touchSmoke,
+        pixelRatio,
+        powerPreference,
+        idleBreath
       });
     } catch (error) {
       reportUnavailable(error);
       return undefined;
     }
     webglRef.current = webgl;
-
-    const applyOptionsFromProps = () => {
-      if (!webglRef.current) return;
-      const sim = webglRef.current.output?.simulation;
-      if (!sim) return;
-      const prevRes = sim.options.resolution;
-      Object.assign(sim.options, {
-        mouse_force: mouseForce,
-        cursor_size: cursorSize,
-        isViscous,
-        viscous,
-        iterations_viscous: iterationsViscous,
-        iterations_poisson: iterationsPoisson,
-        dt,
-        BFECC,
-        resolution,
-        isBounce
-      });
-      if (resolution !== prevRes) {
-        sim.resize();
-      }
-    };
-    applyOptionsFromProps();
 
     webgl.start();
 
@@ -1609,17 +1618,15 @@ export default function LiquidEther({
       }
       webglRef.current = null;
     };
+    // Only the props that change what gets built live here. Simulation options
+    // (`resolution`, the iteration counts, the forces) belong to the effect
+    // below: they are applied in place, so a quality-tier downgrade must never
+    // tear down the WebGL context, and the option-only props are deliberately
+    // absent from this list for that reason. `pixelRatio`, `powerPreference` and
+    // `idleBreath` are read here once (the context is built once) and then kept
+    // current by the effect below, which is why they are also not dependencies.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
-    BFECC,
-    cursorSize,
-    dt,
-    isBounce,
-    isViscous,
-    iterationsPoisson,
-    iterationsViscous,
-    mouseForce,
-    resolution,
-    viscous,
     colors,
     autoDemo,
     autoSpeed,
@@ -1638,6 +1645,8 @@ export default function LiquidEther({
     const sim = webgl.output?.simulation;
     if (!sim) return;
     const prevRes = sim.options.resolution;
+    const prevPoisson = sim.options.iterations_poisson;
+    const prevViscousIterations = sim.options.iterations_viscous;
     Object.assign(sim.options, {
       mouse_force: mouseForce,
       cursor_size: cursorSize,
@@ -1661,10 +1670,18 @@ export default function LiquidEther({
         webgl.autoDriver.mouse.touchSmoke = touchSmoke === true;
       }
     }
-    if (resolution !== prevRes) {
+    if (
+      resolution !== prevRes ||
+      iterationsPoisson !== prevPoisson ||
+      iterationsViscous !== prevViscousIterations
+    ) {
       sim.resize();
     }
+    webgl.idleBreath = idleBreath !== false;
+    webgl.setPixelRatio(pixelRatio);
   }, [
+    pixelRatio,
+    idleBreath,
     mouseForce,
     cursorSize,
     isViscous,
