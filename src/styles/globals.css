@@ -797,11 +797,11 @@
     transition-delay: var(--d, 0ms);
   }
 
-  /* `.is-pending` is the class the observer puts on the nodes it has queued;
-     `:not(.is-in)` is the same state without an extra round trip, so a node the
-     script found in view never flashes hidden. Both live under `html.js`. */
-  html.js [data-r]:not(.is-in):not([data-r="paint"]),
-  html.js [data-r].is-pending {
+  /* Hidden is `:not(.is-in)` and nothing else: the observer in
+     `useRevealOnEnter` only ever adds `.is-in`, so a node the script found in
+     view never flashes hidden and there is no second state to keep in sync.
+     Both live under `html.js`. */
+  html.js [data-r]:not(.is-in):not([data-r="paint"]) {
     opacity: 0;
     transform: translateY(28px);
     filter: blur(6px);
@@ -819,8 +819,7 @@
         transform 1.1s var(--ease);
     }
 
-    html.js [data-r]:not(.is-in):not([data-r="paint"]),
-    html.js [data-r].is-pending {
+    html.js [data-r]:not(.is-in):not([data-r="paint"]) {
       filter: none;
     }
 
@@ -1651,7 +1650,11 @@
        the displaced word both live under `html.js`, which no script can set
        here, so this block is a belt as well as braces: nothing hidden, no
        transform, nothing animating — including `.w > span`, which used to keep
-       its 112 % offset and left 19 of 26 words outside their box. */
+       its 112 % offset and left 19 of 26 words outside their box. The two
+       decorations whose state a scroll trigger owns (the reading bar and the
+       lit rail of the timeline) are finished in the no-script section at the
+       end of this file: they are declared below, and a block written here
+       would lose the tie on source order. */
     [data-r],
     [data-r="paint"],
     [data-r="paint"] .w > span,
@@ -1942,22 +1945,50 @@
     bottom: 0;
   }
 
-  .menu-toggle[data-open="true"] .menu-toggle-bar-top {
+  /* The toggle is a native <summary> inside a <details>: with no script the
+     browser's own disclosure is the mobile navigation (audit.md §10 P0-4), and
+     `[open]` is then the only state there is — the icon and the label read it
+     straight, with nothing to hydrate and nothing to keep in sync. */
+  .menu-summary {
+    list-style: none;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .menu-summary::-webkit-details-marker {
+    display: none;
+  }
+
+  /* Both labels are in the markup; the one that matches the disclosure's state
+     is the summary's accessible name, so "open menu" can never describe an
+     already open drawer — script or no script. */
+  .menu-disclosure[open] .menu-label-open,
+  .menu-disclosure:not([open]) .menu-label-close {
+    display: none;
+  }
+
+  .menu-disclosure[open] .menu-toggle-bar-top {
     top: 50%;
     transform: translateY(-50%) rotate(45deg);
   }
 
-  .menu-toggle[data-open="true"] .menu-toggle-bar-bot {
+  .menu-disclosure[open] .menu-toggle-bar-bot {
     bottom: 50%;
     transform: translateY(50%) rotate(-45deg);
   }
 
   .mobile-menu-panel {
-    pointer-events: none;
-    visibility: hidden;
     border-radius: 0;
     background-color: color-mix(in srgb, var(--color-ink) 97%, transparent);
     backdrop-filter: blur(20px);
+  }
+
+  /* With a script the entrance and the exit are GSAP's, so the panel waits for
+     it hidden. Without one the browser's <details> is the whole mechanism and
+     this rule never matches (see the no-script block at the end of the file). */
+  html.js .mobile-menu-panel {
+    pointer-events: none;
+    visibility: hidden;
   }
 
   .btn-icon {
@@ -2349,4 +2380,48 @@
   html {
     --p: 0;
   }
+}
+
+/* ---------------------------------------------------------------------------
+   No script (§20.4). Everything a scriptless document needs beyond the resets
+   written next to the rules they undo: the markers, the drawer, and the two
+   decorations whose state a scroll trigger owns.
+
+   Unlayered on purpose. The elements' own `display` comes from utilities and
+   the rail's `transform` from the components layer, and an unlayered rule is
+   the one thing that beats a cascade layer without a specificity war.
+--------------------------------------------------------------------------- */
+
+/* A focusable control that cannot answer a click is worse than an absent one
+   (audit.md §10 P1-7, §20.4-3). The work filters and the copy button are a
+   script's, and each has a static equivalent: the list shows every project by
+   default, and the giant `mailto:` already carries the address. */
+html:not(.js) .js-only {
+  display: none;
+}
+
+/* The drawer. The `<details>` inside the pill is the state and the panel has to
+   stay a sibling of the header — the pill turns glass on scroll, and a
+   `backdrop-filter` ancestor becomes the containing block of a `fixed`
+   descendant, which would shrink the drawer to the pill — so the open state is
+   carried across with `:has()` instead of nesting. */
+html:not(.js) .mobile-menu-panel {
+  display: none;
+}
+
+@media (max-width: 47.999rem) {
+  html:not(.js) .site-header:has(.menu-disclosure[open]) ~ .mobile-menu-panel {
+    display: block;
+  }
+}
+
+/* The reading bar is fed by `--p` and the timeline rail by `--tlp`, both written
+   by ScrollTrigger. With no script they would sit at zero forever: one has no
+   static equivalent and is removed, the other is drawn at its finished state. */
+html:not(.js) .field-progress {
+  display: none;
+}
+
+html:not(.js) .timeline::after {
+  transform: scaleY(1);
 }

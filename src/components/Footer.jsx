@@ -1,4 +1,10 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react";
 import dynamic from "next/dynamic";
 import { SOCIAL_LINKS } from "@/data/constants";
 import { useBebopAnimation } from "@/hooks/useBebopAnimation";
@@ -18,6 +24,16 @@ const WORDMARK = "CIUCANI";
 const clamp01 = (value) => Math.min(1, Math.max(0, value));
 
 /**
+ * "Is a script actually running?" — the honest answer for a control only a
+ * script can back. The server cannot know, so it answers `false` and the client
+ * flips to `true` after hydration; `useSyncExternalStore` is React's own way to
+ * read a value the server cannot compute, without a state write in an effect.
+ */
+const subscribeToNothing = () => () => {};
+const onClient = () => true;
+const onServer = () => false;
+
+/**
  * Footer - the last frame, and the wordmark that closes it.
  *
  * Three columns on the reference's grid, then the surname at scale: each letter
@@ -34,6 +50,14 @@ const Footer = () => {
   // footer is about to be seen. The stylesheet starts on the system serif and
   // `is-serif` switches the family, which is what makes the browser fetch it.
   const [serif, setSerif] = useState(false);
+  // Bebop is a script. The tagline is a button only in a document that can run
+  // one; server-rendered and scriptless it stays the sentence it looks like, so
+  // it is not a focusable control that cannot answer (audit.md §10 P1-7).
+  const isInteractive = useSyncExternalStore(
+    subscribeToNothing,
+    onClient,
+    onServer,
+  );
   const {
     phase,
     isActive,
@@ -207,11 +231,15 @@ const Footer = () => {
             <SiteLogo className="h-8 w-auto opacity-80" />
             <p
               ref={setTriggerRef}
-              tabIndex={0}
-              role="button"
-              className="tagline focus-ring max-w-fit cursor-help select-none touch-none"
-              title={t("footer.triggerTitle")}
-              aria-label={`${t("footer.tagline")} — ${t("footer.triggerAria")}`}
+              tabIndex={isInteractive ? 0 : undefined}
+              role={isInteractive ? "button" : undefined}
+              className={`tagline max-w-fit${isInteractive ? " focus-ring cursor-help select-none touch-none" : ""}`}
+              title={isInteractive ? t("footer.triggerTitle") : undefined}
+              aria-label={
+                isInteractive
+                  ? `${t("footer.tagline")} — ${t("footer.triggerAria")}`
+                  : undefined
+              }
               onMouseEnter={handleTriggerEnter}
               onMouseLeave={handleTriggerLeave}
               onPointerDown={handleTriggerPointerDown}

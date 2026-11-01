@@ -4,7 +4,6 @@ import Footer from "./Footer";
 import Head from "next/head";
 import AppBackground from "./AppBackground";
 import SiteJsonLd from "./SiteJsonLd";
-import { useIntroTimeline } from "@/hooks/useIntroTimeline";
 import { useFieldMotion } from "@/hooks/useFieldMotion";
 import { usePointerLight } from "@/hooks/usePointerLight";
 import { useRevealOnEnter } from "@/hooks/useRevealOnEnter";
@@ -30,7 +29,6 @@ const Layout = ({ children, title, description, projects = [] }) => {
   useFieldMotion();
   usePointerLight();
   useRevealOnEnter();
-  useIntroTimeline(rootRef);
 
   return (
     <>
