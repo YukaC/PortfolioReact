@@ -38,13 +38,31 @@ const DESKTOP = {
 
 const framesAt = (ms, count = WATCHDOG_FRAMES) => Array.from({ length: count }, () => ms);
 
-test("a software renderer never starts in full", () => {
+test("a software renderer is static: no canvas, no `three` download", () => {
   const tier = resolveTier({
     ...DESKTOP,
     renderer: "Google SwiftShader",
   });
   assert.notEqual(tier, "full", "SwiftShader asked for the full simulation");
-  assert.equal(tier, "lite");
+  // §18.6/§21.3: a CPU rasterizer cannot hold a 24 ms frame whatever the
+  // resolution, and `static` is the only tier that mounts no canvas at all —
+  // the measured SwiftShader scroll was 283 ms p95 with the canvas up against
+  // 21 ms for the CSS field. The lattice and its strikes are CSS, so nothing
+  // the identity layer draws is lost.
+  assert.equal(tier, "static", "a software rasterizer must not spend a canvas");
+});
+
+test("every software rasterizer resolves to static, not to lite", () => {
+  for (const renderer of [
+    "Google SwiftShader",
+    "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero)))",
+    "llvmpipe (LLVM 15.0.7, 256 bits)",
+    "Mesa softpipe",
+    "Mesa swrast",
+    "Microsoft Basic Render Driver",
+  ]) {
+    assert.equal(resolveTier({ ...DESKTOP, renderer }), "static", `${renderer} was not static`);
+  }
 });
 
 test("every known software rasterizer is recognised", () => {
