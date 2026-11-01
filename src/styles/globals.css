@@ -331,11 +331,24 @@
     background: linear-gradient(90deg, var(--color-sky), var(--color-paper));
   }
 
-  /* Reduced-motion / no-WebGL stand-in for the shader lattice. It is also what
-     the served HTML paints, and it is deliberately NOT kept under the canvas:
-     the two grids do not share an origin, so keeping both drawn reads as
-     doubled dots. One lattice at a time, never two. */
-  .bocanada-sparks {
+  /* --- field layer 1: the identity (§18.2, §18.4) -------------------------- */
+  /* The coral lattice is CSS and it is the only lattice there is. One tiled
+     raster, tile origin pinned at `0 0`, one 48 px cell — so the centre of a dot
+     is at `n * 48 + 24` from the top-left corner of the viewport, in every
+     state: `active`, `frozen`, `static`, reduced motion, no WebGL (§18.2).
+
+     The shader used to draw its own `coverGrid` on top of this stand-in, which
+     is why keeping both drawn read as doubled dots: two grids never share an
+     origin. The grid left the shader in the same change, so there is exactly
+     one, and the canvas no longer has to stay awake to keep the field alive.
+
+     `fixed` + `contain: strict` is what makes it free: one viewport-sized raster
+     whose paint never invalidates the document, and it never grows to the length
+     of the page however far the reader scrolls. */
+  .bocanada-lattice {
+    position: fixed;
+    inset: 0;
+    contain: strict;
     /* literal: the drop of pale pink at the dot core is the lattice's own mark,
        somewhere between --color-coral and white; §14.6 keeps it literal. */
     background-image:
@@ -344,7 +357,90 @@
     background-size:
       192px 192px,
       48px 48px;
+    background-position: 0 0;
     opacity: 0.55;
+  }
+
+  /* The strikes on those dots: 36 elements served in the HTML, positioned in
+     whole cell coordinates and staggered by `--dur`/`--delay`. Only `opacity`
+     and `transform` animate, so each one is composited and never repaints or
+     forces layout — no JavaScript, no hydration, no ResizeObserver (§18.4 rule
+     4). The table lives in `src/lib/field-flares.js`.
+
+     The position is `calc(var(--cx) * 48px + 24px)`, never a percentage: a
+     percentage of the viewport cannot land on a fixed grid, which is exactly
+     why the previous attempt at this design was reverted (§19.3, `8164756`). */
+  .bocanada-flares {
+    position: fixed;
+    inset: 0;
+    contain: strict;
+    pointer-events: none;
+  }
+
+  .flare {
+    position: absolute;
+    left: calc(var(--cx) * 48px + 24px);
+    top: calc(var(--cy) * 48px + 24px);
+    width: 24px;
+    height: 24px;
+    margin: -12px 0 0 -12px;
+    border-radius: 50%;
+    background: radial-gradient(
+      circle,
+      color-mix(in srgb, var(--color-coral) 16%, var(--color-white)) 0%,
+      color-mix(in srgb, var(--color-coral) 45%, transparent) 45%,
+      transparent 70%
+    );
+    opacity: 0;
+    animation: flare var(--dur, 8s) var(--delay, 0s) infinite;
+  }
+
+  /* Bright for the last 8 % of the cycle — ≈ 0.6 s at 7–11 s — then gone. The
+     rest state is the dot underneath, which is the point: the field is calm. */
+  @keyframes flare {
+    0%,
+    90%,
+    100% {
+      opacity: 0;
+      transform: scale(0.6);
+    }
+
+    93% {
+      opacity: 1;
+      transform: scale(1);
+    }
+
+    96% {
+      opacity: 0.6;
+      transform: scale(1.25);
+    }
+
+    98% {
+      opacity: 0;
+      transform: scale(0.9);
+    }
+  }
+
+  /* Density by viewport: 6 / 12 / 22 / 36 visible, counted by computed `display`
+     and driven by no script. Three cumulative `max-width` steps in this order
+     rather than two-sided ranges, because a fractional viewport (page zoom, a
+     non-integer pixel ratio) must not fall between two ranges and get all 36. */
+  @media (max-width: 100rem) {
+    .flare:nth-child(n + 23) {
+      display: none;
+    }
+  }
+
+  @media (max-width: 64rem) {
+    .flare:nth-child(n + 13) {
+      display: none;
+    }
+  }
+
+  @media (max-width: 40rem) {
+    .flare:nth-child(n + 7) {
+      display: none;
+    }
   }
 
   /* --- layout ------------------------------------------------------------- */
@@ -2204,6 +2300,12 @@
   .status i,
   .status i::before {
     animation: none;
+  }
+
+  /* The identity layer keeps its lattice and drops its strikes: a reader who
+     asked for less motion gets the dots, not a field of blinking lights. */
+  .flare {
+    display: none;
   }
 
   .section-flash {
