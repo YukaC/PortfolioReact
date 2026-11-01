@@ -1,3 +1,5 @@
+"use client";
+
 import { useCallback, useEffect, useState } from "react";
 import dynamic from "next/dynamic";
 import { FIELD_FLARES } from "@/lib/field-flares";

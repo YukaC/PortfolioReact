@@ -1,8 +1,6 @@
-import Magnetic from "@/components/Magnetic";
+import HeroActions from "@/components/HeroActions";
 import SplitHeading from "@/components/SplitHeading";
-import SwapArrow from "@/components/SwapArrow";
-import { useT } from "@/i18n/LocaleProvider";
-import { scrollToSectionByHash } from "@/utils/scroll-to-section";
+import { translator } from "@/i18n/index.js";
 
 const STACK = ["React", "Next.js", "Tailwind", "Python", "PostgreSQL"];
 
@@ -13,14 +11,14 @@ const STACK = ["React", "Next.js", "Tailwind", "Python", "PostgreSQL"];
  * and the stack line. The depth cluster on the right is ornament only — it
  * answers the pointer and the scroll in layers, so the page still breathes
  * without a panel cutting the welcome in half.
+ *
+ * A Server Component (audit.md §16.2): every word above the fold is copy and
+ * CSS, and the reveal that used to hide it until hydration is a stylesheet
+ * state now. Only the CTAs hydrate — `HeroActions` — because a magnetic anchor
+ * and a smooth-scroll handler are the two things markup cannot do.
  */
-const HeroSection = () => {
-  const { t } = useT();
-
-  const handleCtaClick = (e, href) => {
-    e.preventDefault();
-    scrollToSectionByHash(href);
-  };
+const HeroSection = ({ locale = "en" }) => {
+  const { t } = translator(locale);
 
   return (
     <section id="home" className="hero">
@@ -47,25 +45,7 @@ const HeroSection = () => {
 
           <div className="hero-foot">
             <div>
-              <div className="hero-actions" data-r="paint" style={{ "--d": "640ms" }}>
-                <Magnetic>
-                  <a
-                    href="#portfolio"
-                    className="btn btn-solid focus-ring"
-                    onClick={(e) => handleCtaClick(e, "#portfolio")}
-                  >
-                    {t("hero.seeWork")}
-                    <SwapArrow direction="r" />
-                  </a>
-                </Magnetic>
-                <a
-                  href="#contact"
-                  className="btn focus-ring"
-                  onClick={(e) => handleCtaClick(e, "#contact")}
-                >
-                  {t("hero.getInTouch")}
-                </a>
-              </div>
+              <HeroActions />
 
               <p className="stackline" data-r="paint" style={{ "--d": "760ms" }}>
                 {STACK.map((item) => (
