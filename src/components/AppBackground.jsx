@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import dynamic from "next/dynamic";
+import { FIELD_FLARES } from "@/lib/field-flares";
 import {
   WATCHDOG_FRAMES,
   readTierEnv,
@@ -28,14 +29,12 @@ const FIELD_INK = "#060b1a";
    390x844 screen and is what made the mobile field look flat. See
    odd/tasks/mobile-field-parity.md.
 
-   What the tiers buy is a neighbour of that decision, not a replacement: `lite`
-   and `static` are the same fraction of a smaller budget, chosen when the device
-   cannot hold the frame (audit.md §18.6), and `static` is the cheapest canvas
-   that still draws the field. */
+   `static` has no entry: it does not mount the canvas at all (§18.6). The
+   lattice and its flares are CSS, so a phone loses nothing the field's identity
+   depends on, and the 181 KB of `three` stays undownloaded. */
 const SIM_QUALITY = {
   full: { resolution: 0.32, iterationsPoisson: 12 },
   lite: { resolution: 0.22, iterationsPoisson: 8 },
-  static: { resolution: 0.16, iterationsPoisson: 6 },
 };
 
 /* A phone on 3G would spend 181 KB of `three` to mount a field whose first frame
@@ -47,9 +46,7 @@ const SIM_QUALITY = {
    This is a separate question from the quality tier. The tier says how much the
    canvas may spend once it exists; this says whether the 181 KB download is a
    promise the reader consented to. `saveData` therefore answers both (a static
-   tier and no download), which is what §18.6 asks for; a coarse pointer only
-   answers the first one, because in this run the device gate over the canvas is
-   deliberately still off (see the comment on `tier` below). */
+   tier and no download), which is what §18.6 asks for. */
 const SLOW_EFFECTIVE_TYPES = new Set(["slow-2g", "2g", "3g"]);
 
 function getConnection() {
@@ -108,23 +105,44 @@ const FieldBlob = ({ index }) => (
 );
 
 /**
- * Bocanada field, retoned for the glass-motion system.
+ * The 36 strikes of the identity layer, built once from the pre-generated table
+ * (audit.md §18.4, §19.2). They are plain markup: integer cell coordinates in
+ * `--cx`/`--cy` — the stylesheet turns them into `calc(var(--cx) * 48px + 24px)`
+ * so every flare lands on a dot centre, which a viewport percentage cannot do
+ * (§19.3) — plus the cycle and its offset. Nothing here is computed at runtime
+ * and nothing here needs hydration.
+ */
+const FLARE_ELEMENTS = FIELD_FLARES.map((flare) => (
+  <i
+    key={`${flare.cx}x${flare.cy}`}
+    className="flare"
+    style={{
+      "--cx": String(flare.cx),
+      "--cy": String(flare.cy),
+      "--dur": `${flare.dur}s`,
+      "--delay": `${flare.delay}s`,
+    }}
+  />
+));
+
+/**
+ * Bocanada field, in the two layers of audit.md §18.2.
  *
- * Layers, back to front: the navy cobalt sky, three blobs whose hue travels
- * with the reading progress, the WebGL dye (smoke + the coral lattice and its
- * spring flares live in the shader), the cursor light, then grain.
+ * **Layer 1, the identity**: the coral lattice (`.bocanada-lattice`, one tiled
+ * raster) and its 36 flares (`.flare`). Both are CSS, both are always rendered,
+ * and no state is allowed to change either: `active`, `frozen`, `static`,
+ * reduced motion and no-WebGL all paint the same dots at the same 48 px origin,
+ * because there is only one lattice left to paint (§18.2).
  *
- * The coral lattice never leaves: without WebGL, or under reduced motion, the
- * CSS stand-in paints the same dots.
+ * **Layer 2, the smoke**: the WebGL dye, mounted only for the tiers that can
+ * afford it and frozen by `LiquidEther` itself once the reader is still. Behind
+ * it: the navy cobalt sky and three blobs whose hue travels with the reading
+ * progress; in front of it: the cursor light and grain.
  *
- * Cost is a tier, not a switch (S3). `tier` starts as the device's answer and
- * only the watchdog moves it, one step down at a time. It is deliberately NOT a
- * device gate over the canvas yet: audit.md §19.3 records that removing the
- * canvas before the coral lattice with cell-aligned flares lives in CSS lost the
- * visual identity, and commit `8164756` was reverted for it. That gate, together
- * with `coverGrid()` leaving the shader, belongs to task T6 — which is why
- * `static` here still renders a canvas, with the cheapest simulation and no DPR
- * boost of its own.
+ * Cost is still a tier (S3), and `tier` still only moves down. `static` no
+ * longer mounts a canvas: that device gate is safe **now** and only now, because
+ * the lattice with cell-aligned flares lives in CSS (§19.2, §19.3 — the earlier
+ * attempt at exactly this was reverted in `8164756` for losing the identity).
  */
 const AppBackground = () => {
   const [isReducedMotion, setIsReducedMotion] = useState(false);
@@ -134,8 +152,8 @@ const AppBackground = () => {
   const [connectionAllows, setConnectionAllows] = useState(connectionAllowsField);
   const [canUseWebgl, setCanUseWebgl] = useState(false);
   /* WebGL can be advertised and still refuse a context, or lose it later. When
-     that happens the canvas draws nothing, so the field falls back to the CSS
-     lattice for good instead of showing an empty background. */
+     that happens the canvas draws nothing, so the field drops it for good and
+     leaves the CSS lattice — which is always there — as the whole field. */
   const [webglFailed, setWebglFailed] = useState(false);
 
   const handleUnavailable = useCallback(() => {
@@ -162,7 +180,8 @@ const AppBackground = () => {
     };
   }, []);
 
-  const simQuality = tier && connectionAllows ? SIM_QUALITY[tier] : null;
+  const simQuality =
+    tier && tier !== "static" && connectionAllows ? SIM_QUALITY[tier] : null;
   const fieldMounted =
     Boolean(simQuality) && canUseWebgl && !isReducedMotion && !webglFailed;
 
@@ -247,21 +266,19 @@ const AppBackground = () => {
             autoRampDuration={0.85}
             resolution={simQuality.resolution}
             iterationsPoisson={simQuality.iterationsPoisson}
-            /* The three tier knobs of §18.6. `LiquidEther` still hardcodes
-               `pixelRatio = 1`, `powerPreference: "high-performance"` and the
-               always-on idle breath inside its own renderer, and that file is
-               not part of this work unit: until it accepts these three props
-               the tier is honoured by the simulation quality alone. The exact
-               patch is in the T3 handoff (work item 3, "could not verify"). */
+            /* The two tier knobs of §18.6 that survive the split. `pixelRatio`
+               is the DPR cap, `powerPreference` stays `default`: a background
+               that freezes in repose is not worth waking a discrete GPU for. */
             pixelRatio={pixelRatioFor(tier)}
             powerPreference="default"
-            idleBreath={tier !== "static"}
           />
         </div>
       ) : null}
-      {isReducedMotion || !canUseWebgl || webglFailed ? (
-        <div className="bocanada-sparks absolute inset-0" />
-      ) : null}
+      {/* Over the canvas, because the dots are the top of the field: the shader
+          stopped drawing its own grid in the same change, so this is the only
+          lattice in every state (§18.2). */}
+      <div className="bocanada-lattice" />
+      <div className="bocanada-flares">{FLARE_ELEMENTS}</div>
       <div className="field-glow" />
       <div className="field-grain" />
     </div>

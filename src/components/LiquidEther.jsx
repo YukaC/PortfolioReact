@@ -24,14 +24,24 @@ import {
   WebGLRenderer,
 } from 'three';
 
-// Presentation cadence, driven by how long the pointer has been still. Below the
-// first threshold the field runs at display rate; between the two it runs on
-// every other animation frame; after the second it settles into a slow breath so
-// the haze keeps drifting instead of freezing, at ~7 composite passes per second
-// instead of the 15 the previous build spent on unchanged output.
-const IDLE_HALF_RATE_AFTER_MS = 320;
-const IDLE_BREATH_AFTER_MS = 2200;
-const IDLE_BREATH_INTERVAL_MS = 143;
+// The smoke has three phases and no idle loop of its own (audit.md §18.3).
+// Below the first threshold the field runs at display rate; between the two it
+// settles — every other animation frame for 1.2 s while the dye thins out and
+// leaves downward — and then the loop is cancelled outright. Nothing wakes it
+// but an event: the canvas keeps its last frame (the mist at the bottom) for as
+// long as the reader is still. The lattice and its flares are CSS and live
+// outside this component, so repose can cost nothing without the field going
+// dead (§18.1: that is why the 143 ms breath existed and why it is gone).
+const SETTLE_AFTER_MS = 350;
+const SETTLE_DURATION_MS = 1200;
+const PHASE_ACTIVE = 'active';
+const PHASE_SETTLING = 'settling';
+const PHASE_FROZEN = 'frozen';
+// The dissipation the settling phase runs with. It is the simulation's own
+// value, stated here because the phase is the one place the behaviour is
+// specified: the dye keeps thinning, and because the mist is fed from the floor
+// the ink leaves downward (§18.1 rule 2).
+const SETTLE_DISSIPATION = 0.993;
 
 export default function LiquidEther({
   mouseForce = 20,
@@ -60,13 +70,11 @@ export default function LiquidEther({
   // the reader is trying to scroll, so touch input does not drive the dye unless
   // a design explicitly asks for it. Mouse movement is unaffected.
   touchSmoke = false,
-  // Tier knobs from `AppBackground` (audit.md §18.6). A background is not worth
-  // three device pixels per CSS pixel, a sleeping GPU should not be woken for a
-  // field that is frozen anyway, and the breath below is the only reason the loop
-  // ever woke up in repose.
+  // Tier knob from `AppBackground` (audit.md §18.6). A background is not worth
+  // three device pixels per CSS pixel, and a sleeping GPU should not be woken
+  // for a field that is about to freeze anyway.
   pixelRatio = 1,
-  powerPreference = 'high-performance',
-  idleBreath = true
+  powerPreference = 'high-performance'
 }) {
   const mountRef = useRef(null);
   const webglRef = useRef(null);
@@ -580,64 +588,9 @@ export default function LiquidEther({
     uniform float time;
     uniform vec2 texelSize;
     uniform float hazeStrength;
-    uniform vec2 resolution;
     uniform vec2 pointerUv;
     varying vec2 uv;
     ${noise_glsl}
-    // Underdamped step toward 1. zeta < 1 overshoots, then settles.
-    float springStep(float t, float zeta, float wn){
-      float wd = wn * sqrt(max(1.0 - zeta * zeta, 0.0001));
-      float decay = exp(-zeta * wn * t);
-      return 1.0 - decay * (cos(wd * t) + (zeta * wn / wd) * sin(wd * t));
-    }
-    // One-shot glow: soft rise, then a slower settle. Never goes below rest.
-    float springPop(float t){
-      const float attackZeta = 0.7;
-      const float attackWn = 7.5;
-      const float attackEnd = 1.05;
-      const float releaseZeta = 0.8;
-      const float releaseWn = 3.2;
-      if (t < 0.0) return 0.0;
-      if (t < attackEnd) return springStep(t, attackZeta, attackWn);
-      float releaseT = t - attackEnd;
-      if (releaseT > 1.45) return 0.0;
-      float atSeam = springStep(attackEnd, attackZeta, attackWn);
-      float wd = releaseWn * sqrt(max(1.0 - releaseZeta * releaseZeta, 0.0001));
-      float decay = exp(-releaseZeta * releaseWn * releaseT);
-      float release = decay * (cos(wd * releaseT) + (releaseZeta * releaseWn / wd) * sin(wd * releaseT));
-      return atSeam * max(release, 0.0);
-    }
-    // Cover dot is constant. A few cells per cycle add one spring glow.
-    void coverGrid(vec2 pixel, inout vec3 premul, inout float outA){
-      const float cellSize = 48.0;
-      vec2 cell = floor(pixel / cellSize);
-      vec2 cellCenter = (cell + 0.5) * cellSize;
-      vec2 delta = pixel - cellCenter;
-      float dist = length(delta);
-      vec3 coral = vec3(0.886, 0.447, 0.498);
-
-      float dotMask = 1.0 - smoothstep(1.5, 2.0, dist);
-      premul = mix(premul, coral * 0.55, dotMask);
-      outA = mix(outA, 0.55, dotMask);
-
-      float period = mix(22.0, 34.0, hash(cell + 4.2));
-      float shifted = time + hash(cell) * period;
-      float cycle = floor(shifted / period);
-      float localT = shifted - cycle * period;
-      float roll = hash(cell + vec2(cycle, 7.7));
-      float fires = step(roll, 0.58);
-      float rollLeft = hash(cell + vec2(-1.0, 0.0) + vec2(cycle, 7.7));
-      float rollDown = hash(cell + vec2(0.0, -1.0) + vec2(cycle, 7.7));
-      float leftWins = step(rollLeft, 0.58) * step(rollLeft, roll);
-      float downWins = step(rollDown, 0.58) * step(rollDown, roll);
-      fires *= 1.0 - max(leftWins, downWins);
-      float hot = springPop(localT) * fires;
-      float core = exp(-dist * dist / 8.0) * hot;
-      float bloom = 6.0 + 7.0 * min(hot, 1.1);
-      float halo = exp(-dist * dist / (bloom * bloom)) * hot;
-      vec3 hotColor = mix(coral, vec3(1.0, 0.86, 0.87), clamp(hot * 0.35, 0.0, 0.55));
-      premul += hotColor * (core * 0.62 + halo * 0.28);
-    }
     void main(){
     float aspect = texelSize.y / texelSize.x;
     vec2 aspectUv = vec2(uv.x * aspect, uv.y);
@@ -681,10 +634,12 @@ export default function LiquidEther({
     vec3 ink = lightMode ? chroma : smoke;
     float alpha = density * 0.64;
     float outA = mix(bgColor.a, 1.0, alpha);
-    // Premultiplied smoke (renderer + material use premultipliedAlpha)
+    // Premultiplied smoke (renderer + material use premultipliedAlpha). The
+    // coral lattice is not drawn here any more: it is one CSS raster plus 36
+    // composited flares (.bocanada-lattice / .flare), which took coverGrid
+    // — ~40 % of the ALU of this pass — out of the shader and let the canvas
+    // freeze in repose without the field going dead (§18.2, §18.5).
     vec3 premul = mix(bgColor.rgb, ink, density) * outA;
-    // Static cover dots, plus a rare spring glow. Halo does not change alpha.
-    coverGrid(uv * resolution, premul, outA);
     gl_FragColor = vec4(premul, outA);
 }
 `;
@@ -1293,7 +1248,6 @@ export default function LiquidEther({
               time: { value: 0 },
               texelSize: { value: this.simulation.cellScale },
               hazeStrength: { value: this.simulation.options.haze_strength },
-              resolution: { value: new Vector2(Common.width, Common.height) },
               pointerUv: { value: new Vector2(0.5, 0.5) }
             }
           })
@@ -1305,7 +1259,6 @@ export default function LiquidEther({
       }
       resize() {
         this.simulation.resize();
-        this.output.material.uniforms.resolution.value.set(Common.width, Common.height);
       }
       render() {
         Common.renderer.setRenderTarget(null);
@@ -1317,7 +1270,6 @@ export default function LiquidEther({
         const uniforms = this.output.material.uniforms;
         uniforms.dye.value = this.simulation.dyeRead.texture;
         uniforms.time.value = Common.time;
-        uniforms.resolution.value.set(Common.width, Common.height);
         uniforms.pointerUv.value.set(Mouse.coords.x * 0.5 + 0.5, Mouse.coords.y * 0.5 + 0.5);
         this.render();
       }
@@ -1346,16 +1298,10 @@ export default function LiquidEther({
         Mouse.touchSmoke = props.touchSmoke === true;
         this.lastUserInteraction = performance.now();
         this.frameIndex = 0;
-        this.idleTimer = null;
-        this.needsPresent = true;
+        this.phase = PHASE_ACTIVE;
         this.reallocTimer = null;
-        this.idleBreath = props.idleBreath !== false;
         Mouse.onInteract = () => {
-          this.lastUserInteraction = performance.now();
-          if (this.autoDriver) this.autoDriver.forceStop();
-          if (!this.running && isVisibleRef.current && !document.hidden) {
-            this.start();
-          }
+          this.wake();
         };
         this.autoDriver = new AutoDriver(Mouse, this, {
           enabled: props.autoDemo,
@@ -1367,12 +1313,18 @@ export default function LiquidEther({
         this._loop = this.loop.bind(this);
         this._resize = this.resize.bind(this);
         window.addEventListener('resize', this._resize);
+        // Every event §18.3 names as an interaction wakes the field. The scroll
+        // family matters most: a reader who never moves the mouse would
+        // otherwise never see the smoke, and `wheel` is what a trackpad sends.
+        this._onWake = () => this.wake();
+        window.addEventListener('wheel', this._onWake, { passive: true });
+        window.addEventListener('touchstart', this._onWake, { passive: true });
         this._onVisibility = () => {
           const hidden = document.hidden;
           if (hidden) {
             this.pause();
           } else if (isVisibleRef.current) {
-            this.start();
+            this.wake();
           }
         };
         document.addEventListener('visibilitychange', this._onVisibility);
@@ -1393,7 +1345,16 @@ export default function LiquidEther({
         Common.renderer.setSize(Common.width, Common.height, false);
         this.needsPresent = true;
       }
+      /** The idle phase, from how long the reader has been still (§18.3). */
+      phaseFor(idleMs) {
+        if (idleMs < SETTLE_AFTER_MS) return PHASE_ACTIVE;
+        if (idleMs < SETTLE_AFTER_MS + SETTLE_DURATION_MS) return PHASE_SETTLING;
+        return PHASE_FROZEN;
+      }
       resize() {
+        // A resize is an interaction (§18.3), and it also leaves stale targets
+        // behind, so it has to wake a parked loop rather than just flag it.
+        this.wake();
         // Cheap half: adopt the container size for the drawing buffer. Returning
         // early when the pixel size did not change means a burst of observer
         // callbacks that lands on the same size does no work at all.
@@ -1420,19 +1381,30 @@ export default function LiquidEther({
         if (!this.running) return;
         this.frameIndex += 1;
         const idleMs = performance.now() - this.lastUserInteraction;
+        const phase = this.phaseFor(idleMs);
+        if (phase === PHASE_FROZEN) {
+          // Frozen: no rAF, no timers, no GPU work at all. The last frame stays
+          // on the canvas with the mist at the bottom, and only an event may
+          // leave this phase — a timer here is what kept the old build drawing
+          // every 143 ms for an unchanged image.
+          this.phase = PHASE_FROZEN;
+          this.running = false;
+          return;
+        }
+        if (phase !== this.phase) {
+          this.phase = phase;
+          if (phase === PHASE_SETTLING && this.output) {
+            this.output.simulation.options.dissipation = SETTLE_DISSIPATION;
+          }
+        }
         // One fixed simulation step per drawn frame (simProps.dt is a constant,
         // not a wall-clock delta), so the cadence changes how much the fluid
         // advances, never how a single frame looks.
         let advance = true;
         let present = true;
-        if (idleMs > IDLE_BREATH_AFTER_MS) {
-          // Slow breath: the timer in scheduleNext is the throttle here, and each
-          // tick only re-composites the field against a fresh shader clock. The
-          // fluid does not advance, so a tick costs one draw call (the previous
-          // build did the same at 15/s), while the time-driven haze and lattice
-          // flares keep drifting instead of freezing.
-          advance = false;
-        } else if (idleMs > IDLE_HALF_RATE_AFTER_MS) {
+        if (phase === PHASE_SETTLING) {
+          // Half rate: the dye thins out and stops moving, so every other frame
+          // is a full picture and the crowds of draws buy nothing.
           advance = (this.frameIndex & 1) === 0;
           present = advance;
         }
@@ -1443,30 +1415,21 @@ export default function LiquidEther({
           this.needsPresent = false;
           this.render(mustPresent ? true : advance, true);
         }
-        this.scheduleNext(idleMs);
+        this.scheduleNext();
       }
-      scheduleNext(idleMs) {
+      scheduleNext() {
         if (!this.running) return;
         if (rafRef.current) {
           cancelAnimationFrame(rafRef.current);
-          rafRef.current = null;
-        }
-        if (this.idleTimer) {
-          window.clearTimeout(this.idleTimer);
-          this.idleTimer = null;
-        }
-        if (idleMs > IDLE_BREATH_AFTER_MS) {
-          // A tier that does not pay for the breath parks the loop instead: the
-          // last frame stays on the canvas and the next interaction wakes it
-          // through `Mouse.onInteract`, so repose costs nothing at all.
-          if (!this.idleBreath) {
-            this.running = false;
-            return;
-          }
-          this.idleTimer = window.setTimeout(this._loop, IDLE_BREATH_INTERVAL_MS);
-          return;
         }
         rafRef.current = requestAnimationFrame(this._loop);
+      }
+      /** Event-driven wake: the only way out of `settling` and `frozen`. */
+      wake() {
+        this.lastUserInteraction = performance.now();
+        this.phase = PHASE_ACTIVE;
+        if (this.autoDriver) this.autoDriver.forceStop();
+        if (!this.running && isVisibleRef.current && !document.hidden) this.start();
       }
       start() {
         if (this.running) return;
@@ -1482,15 +1445,13 @@ export default function LiquidEther({
           cancelAnimationFrame(rafRef.current);
           rafRef.current = null;
         }
-        if (this.idleTimer) {
-          window.clearTimeout(this.idleTimer);
-          this.idleTimer = null;
-        }
       }
       dispose() {
         try {
           this.pause();
           window.removeEventListener('resize', this._resize);
+          window.removeEventListener('wheel', this._onWake);
+          window.removeEventListener('touchstart', this._onWake);
           document.removeEventListener('visibilitychange', this._onVisibility);
           if (this.reallocTimer) {
             window.clearTimeout(this.reallocTimer);
@@ -1542,8 +1503,7 @@ export default function LiquidEther({
         autoRampDuration,
         touchSmoke,
         pixelRatio,
-        powerPreference,
-        idleBreath
+        powerPreference
       });
     } catch (error) {
       reportUnavailable(error);
@@ -1622,9 +1582,9 @@ export default function LiquidEther({
     // (`resolution`, the iteration counts, the forces) belong to the effect
     // below: they are applied in place, so a quality-tier downgrade must never
     // tear down the WebGL context, and the option-only props are deliberately
-    // absent from this list for that reason. `pixelRatio`, `powerPreference` and
-    // `idleBreath` are read here once (the context is built once) and then kept
-    // current by the effect below, which is why they are also not dependencies.
+    // absent from this list for that reason. `pixelRatio` and `powerPreference`
+    // are read here once (the context is built once) and then kept current by
+    // the effect below, which is why they are also not dependencies.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     colors,
@@ -1677,11 +1637,9 @@ export default function LiquidEther({
     ) {
       sim.resize();
     }
-    webgl.idleBreath = idleBreath !== false;
     webgl.setPixelRatio(pixelRatio);
   }, [
     pixelRatio,
-    idleBreath,
     mouseForce,
     cursorSize,
     isViscous,
