@@ -1,0 +1,62 @@
+# §17 — refresh the project snapshot every 6 h.
+#
+# The site serves `src/data/pinned-projects.json` and never talks to GitHub at
+# build or render time; this job is the only thing that reads the profile. It
+# calls the endpoint, which runs `validate()` over the payload before writing,
+# so a bad response keeps the previous snapshot served (fail-closed).
+#
+# Secrets: `CRON_SECRET` (required, also set in the hosting env) and
+# `PROJECTS_SYNC_URL` (the deployed origin + /api/sync-projects). A repository
+# variable of the same name works as a fallback — no secret is ever printed.
+name: projects-sync
+
+on:
+  schedule:
+    - cron: "0 */6 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: projects-sync
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    name: refresh project snapshot
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Call the sync endpoint
+        env:
+          SYNC_URL: ${{ secrets.PROJECTS_SYNC_URL || vars.PROJECTS_SYNC_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          set -euo pipefail
+
+          if [ -z "${SYNC_URL:-}" ] || [ -z "${CRON_SECRET:-}" ]; then
+            echo "::error::PROJECTS_SYNC_URL and CRON_SECRET must be configured"
+            exit 1
+          fi
+
+          status=$(curl --silent --show-error --output response.json \
+            --write-out '%{http_code}' \
+            --max-time 30 --retry 2 --retry-delay 5 \
+            --request POST \
+            --header "Authorization: Bearer ${CRON_SECRET}" \
+            --header "Accept: application/json" \
+            "${SYNC_URL}")
+
+          echo "HTTP ${status}"
+          cat response.json
+
+          if [ "${status}" != "200" ]; then
+            echo "::error::projects-sync failed with HTTP ${status}; the previous snapshot keeps being served"
+            exit 1
+          fi
+
+          sha=$(node -e 'const r=require("./response.json"); if(!r.sha256) process.exit(1); console.log(r.sha256)')
+          echo "snapshot sha256=${sha}"
+          echo "### projects-sync" >> "$GITHUB_STEP_SUMMARY"
+          echo "- sha256: \`${sha}\`" >> "$GITHUB_STEP_SUMMARY"
