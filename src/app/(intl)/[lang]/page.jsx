@@ -1,5 +1,5 @@
 import PageFrame, { localeMetadata } from "@/components/PageFrame";
-import { fetchPinnedProjects } from "@/lib/fetch-pinned-projects";
+import { readProjectsSnapshot } from "@/lib/projects-snapshot";
 import { SUPPORTED_LOCALES } from "@/i18n/locale";
 
 /**
@@ -10,8 +10,10 @@ import { SUPPORTED_LOCALES } from "@/i18n/locale";
  * render of an unknown locale (audit.md §16.4). The proxy still decides which of
  * these answers `/`; the URL the reader sees never carries the language.
  *
- * `revalidate` is the snapshot cadence (§17), and `fetchPinnedProjects` reads the
- * committed JSON: the build talks to no host at all.
+ * `revalidate` is the snapshot cadence (§17), and `readProjectsSnapshot` reads
+ * the committed JSON: the build talks to no host at all. The snapshot's date
+ * travels with the projects into the frame, so the JSON-LD's `dateModified` and
+ * the project pages' "last updated" are the same fact in every language.
  */
 export const revalidate = 21600;
 export const dynamicParams = false;
@@ -30,7 +32,9 @@ export async function generateMetadata({ params }) {
 
 export default async function LocalizedHome({ params }) {
   const { lang } = await params;
-  const projects = await fetchPinnedProjects();
+  const { projects, generatedAt } = readProjectsSnapshot();
 
-  return <PageFrame locale={lang} projects={projects} />;
+  return (
+    <PageFrame locale={lang} projects={projects} generatedAt={generatedAt} />
+  );
 }

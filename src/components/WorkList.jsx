@@ -1,4 +1,5 @@
 import Image from "next/image";
+import Link from "next/link";
 import Reveal from "@/components/Reveal";
 import SplitHeading from "@/components/SplitHeading";
 import SwapArrow from "@/components/SwapArrow";
@@ -12,6 +13,7 @@ import {
 } from "@/data/projects";
 import { translator } from "@/i18n/index.js";
 import { resolveProjectLinks } from "@/lib/project-links";
+import { projectPath } from "@/lib/project-slugs";
 
 const COVER_BLUR =
   "data:image/svg+xml;charset=utf-8," +
@@ -53,13 +55,19 @@ const ProjectCover = ({ project, index, sizes }) => {
 };
 
 /**
- * Project row: the whole card opens the live demo, and a small secondary
- * action keeps the repository one click away when it is a different place.
+ * Project row: the title opens the project's own page (§24 S6), the row's
+ * overlay still opens the live demo, and a small secondary action keeps the
+ * repository one click away when it is a different place.
+ *
+ * Three destinations, three elements, no lie: the demo keeps the label it
+ * always had (`work.demoAria`), the repository keeps its own, and the new
+ * internal link carries nothing but the project's name — so a crawler finds the
+ * citable URL and a reader who wanted the demo still lands on the demo.
  *
  * Rendered on the server and handed to the filter island as an element, so the
  * copy in a row is in the HTML whether or not a script runs.
  */
-const WorkRow = ({ project, index, labels }) => {
+const WorkRow = ({ project, index, labels, href }) => {
   // `project.siteUrl` is already resolved upstream (override → GitHub "Website"
   // → repo); re-running the resolver keeps the fallback entries in sync.
   const { siteUrl, repoUrl, showRepoLink } = resolveProjectLinks({
@@ -85,7 +93,16 @@ const WorkRow = ({ project, index, labels }) => {
       <span className="work-num">{String(index + 1).padStart(2, "0")}</span>
 
       <div className="work-body">
-        <h3>{project.title}</h3>
+        <h3>
+          {/* Above the row's overlay (`z-index: 2`), like the repo action, so
+              the two links are both reachable and neither steals the other. */}
+          <Link
+            href={href}
+            className="focus-ring relative z-[3] transition-colors hover:text-sky"
+          >
+            {project.title}
+          </Link>
+        </h3>
         <p className="work-problem">{project.problem ?? project.description}</p>
         {project.tags?.length ? (
           <p className="work-tags">{project.tags.join(" · ")}</p>
@@ -146,6 +163,7 @@ const WorkList = ({ projects = PINNED_FALLBACK, locale = "en" }) => {
         key={project.name ?? project.repoLink}
         project={project}
         index={index}
+        href={projectPath(locale, project)}
         labels={{
           github: t("work.github"),
           repoAria: t("work.repoAria", { title: project.title }),
