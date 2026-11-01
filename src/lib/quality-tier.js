@@ -13,8 +13,11 @@
  * device gate (`static`) is safe **now** because the coral lattice with
  * cell-aligned flares lives in CSS (audit.md §18.2, §19.3 — the earlier attempt
  * at exactly this was reverted in `8164756` for losing the identity), so
- * `static` mounts no canvas at all: AppBackground drops the `three` chunk and
- * the CSS lattice stays, which is the whole field a phone needs.
+ * `static` is the widest answer on purpose: it is the only tier that mounts no
+ * canvas and downloads no `three` (§18.6), and everything the field is *known*
+ * by — the 48 px coral lattice with its cell-aligned strikes — is CSS, so a
+ * device sent there keeps the identity and loses only the smoke. A software
+ * rasterizer therefore resolves to `static` rather than to `lite`.
  */
 
 /** Cheapest last: the order is the downgrade path, not a preference. */
@@ -97,8 +100,16 @@ export function resolveTier(env = {}) {
     return "static";
   }
 
+  /* A CPU rasterizer is not a slow GPU, it is the absence of one: SwiftShader
+     measured 87 ms per frame at 1440x900 (§10 P0-3) and 283 ms p95 over a
+     scroll, against 21 ms for the same machine with the canvas gone, and no
+     resolution or `pixelRatio` setting closes that gap — the cost is the
+     fragment work itself. `static` is the only tier it can hold, and §18.6/
+     §19.3 allow that only because the identity layer (the lattice and its
+     strikes) is CSS and indistinguishable from the canvas version (§18.8-3). */
+  if (isSoftwareRenderer(renderer)) return "static";
+
   // --- lite: a real GPU path that cannot hold the full budget --------------
-  if (isSoftwareRenderer(renderer)) return "lite";
   if (
     typeof hardwareConcurrency === "number" &&
     hardwareConcurrency > 0 &&

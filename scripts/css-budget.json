@@ -1,7 +1,7 @@
 {
   "note": "Baseline of the compiled stylesheet for `pnpm check:css`. The number is measured from the source, not from a build: src/styles/globals.css compiled in-process with @tailwindcss/postcss (the plugin the app itself uses), so any machine and any CI job gets the same byte count. The guard fails when the compiled sheet grows more than `growthAllowance` over `compiledBytes` (audit.md §13.3 S7 / §21.3). Raising the baseline is a decision that belongs in the same commit as the CSS that makes it grow, with the reason in the feature doc.",
-  "compiledBytes": 69224,
-  "componentsBytes": 36640,
+  "compiledBytes": 74149,
+  "componentsBytes": 29081,
   "growthAllowance": 0.05,
   "history": [
     {
@@ -28,6 +28,18 @@
       "bytes": 69224,
       "deltaPct": -1.14,
       "source": "in-process compile of the current source, which is a different pipeline from `next build` (Lightning CSS), hence the lower absolute number than the 70020 B build artefact"
+    },
+    {
+      "stage": "T11A — S14 (Tailwind by buckets)",
+      "bytes": 72514,
+      "deltaPct": 4.75,
+      "source": "T11A grew the sheet +4.75 % by moving recipes into @utility (each one carries its nested variant bodies and var() references, which a single inline utility used once did not) while @layer components shrank 25 %, so the net was +3.3 kB and left only 171 B of headroom under the 5 % ceiling"
+    },
+    {
+      "stage": "T11B — S4 (blur convolved into the blob gradients)",
+      "bytes": 74149,
+      "deltaPct": 2.25,
+      "source": "the six `filter: blur(110px)` layers became, at 900px and up, radial gradients whose stops sample the convolved profile (38 stops, two per line) while the narrow layout keeps the ramp and the filter it can afford; the measured delta is +2.25 % and `@layer components` lands at 29 081 B, 1.4 % over the 28 kB target of §14.3 because the wide layout carries both the ramp and its pre-blurred replacement"
     }
   ]
 }
