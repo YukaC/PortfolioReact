@@ -1183,6 +1183,18 @@
     opacity: 0.06;
     mix-blend-mode: overlay;
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+
+    /* A blend reads its backdrop, so this tile turns the whole field group into
+       one raster unit and every frame the strikes move re-rasterises it through
+       a raster worker. On a coarse pointer — the device where that is the frame
+       budget — the grain keeps its tile and its 0.06 and drops to source-over:
+       measured on the owner's phone with the six strikes still painting and
+       animating, p95 108.9 → 83.7 ms and long tasks 3 → 0 (§T6, `.perf/phone/`).
+       Promotion (`will-change`), density and peak opacity were all measured too
+       and bought nothing: it was never the flares' own paint. */
+    @variant pointer-coarse {
+      mix-blend-mode: normal;
+    }
   }
 
   .field-progress {
