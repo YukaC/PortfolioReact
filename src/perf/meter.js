@@ -1074,15 +1074,25 @@
       for (let i = 0; i < cap; i += 1) {
         const el = all[i];
         const css = getComputedStyle(el);
-        if (css.willChange && css.willChange !== "auto") out.willChange += 1;
+        /* A `display: none` node still answers getComputedStyle, and it is not
+           composited at all. Counting it inflated the inventory by half: ten of the
+           nineteen hints reported from a phone belonged to the blob layers the
+           narrow layout hides behind one stacked background-image, and to a preview
+           that is `display: none` on touch — a surface count nobody could act on. */
+        if (css.display === "none") continue;
         const filter = css.filter && css.filter !== "none" ? css.filter : "";
         const backdrop = css.backdropFilter && css.backdropFilter !== "none" ? css.backdropFilter : "";
+        if (!filter && !backdrop && (!css.willChange || css.willChange === "auto")) continue;
+        /* One box read, only for a node that is actually drawn: a rendered element
+           with no box (a bare container, a collapsed anchor) is not a surface. */
+        const box = el.getBoundingClientRect();
+        if (box.width === 0 || box.height === 0) continue;
+        if (css.willChange && css.willChange !== "auto") out.willChange += 1;
         if (!filter && !backdrop) continue;
         out.blurred += 1;
         /* The blurred region is the box grown by the radius: that is the area the
            compositor has to raster, and the field's blobs are the known suspect. */
         const radius = Math.max(blurRadius(filter), blurRadius(backdrop));
-        const box = el.getBoundingClientRect();
         out.blurredMpx += ((box.width + radius * 2) * (box.height + radius * 2)) / 1e6;
       }
     } catch {
