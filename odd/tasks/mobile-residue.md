@@ -46,3 +46,27 @@ eran 8-9 cambios de clase en 31 s en el header (el `is-scrolled` y el
 para que deje de reportarlo); `deadTap` dio 0 en la última pasada. El smoke en
 mobile ya no existe por el tier de calidad: `resources 43 · 165 KB · 45 KB JS ·
 canvas 0`, sin descarga de `three`.
+
+**L3 — verificación final sobre el build de producción.** `pnpm perf --full`
+después de `pnpm build`: **9 etapas ok, 1 failed**.
+
+| etapa | resultado |
+|---|---|
+| budget | ok |
+| vitals | ok · peor LCP 220 ms |
+| scroll | ok · desktop 16.8 / mobile-4x 16.7 ms |
+| **raster** | **ok · swiftshader mobile-4x 16.8 ms** (antes: FAIL, 33.4) |
+| reveal | ok · 16.8 ms, enter→legible 482 ms |
+| load | ok · edge 444 / lte 940 / slow3g 2576 ms |
+| sections | ok · hw y sw 16.7 ms |
+| ablate | ok · baseline 16.8 ms |
+| stress | ok · 578 ms de long task |
+| idle | **failed** · `TaskDuration` 314 ms (budget 100) |
+
+El único rojo no es de este feature. Probado con el mismo build: con la fase
+`ambient` del plume corriendo da 314 ms; con `--reduced-motion` (sin plume) da
+**50 ms**. La causalidad es el humo respirando en reposo, agregado en `a3c4841`,
+que dejó escrito "the budget is **not** relaxed" y por lo tanto dejó el gate en
+rojo. Es un conflicto entre una decisión de diseño y un presupuesto, no una
+regresión: la decisión es del dueño (relajar el budget, o pausar `ambient` cuando
+la pestaña no está visible).
