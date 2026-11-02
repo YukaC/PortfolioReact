@@ -1,8 +1,8 @@
 {
   "note": "Baseline of the compiled stylesheet for `pnpm check:css`. The number is measured from the source, not from a build: src/styles/globals.css compiled in-process with @tailwindcss/postcss (the plugin the app itself uses), so any machine and any CI job gets the same byte count. The guard fails when the compiled sheet grows more than `growthAllowance` over `compiledBytes` (audit.md §13.3 S7 / §21.3), and when `@layer components` exceeds `componentsCeiling` (§14.3, spec S14). Raising either number is a decision that belongs in the same commit as the CSS that makes it grow, with the reason in the feature doc.",
-  "compiledBytes": 74149,
-  "componentsBytes": 29173,
-  "componentsCeiling": 29440,
+  "compiledBytes": 77888,
+  "componentsBytes": 29645,
+  "componentsCeiling": 29900,
   "growthAllowance": 0.05,
   "history": [
     {
@@ -54,6 +54,13 @@
       "componentsBytes": 29173,
       "deltaPct": 4.41,
       "source": "odd/tasks/perf-stress-harness.md L7: the six promoted .field-blob layers become one stacked background-image under max-wide, because the compositor isolated the field every frame (p95 33.4 -> 16.8 ms on the phone profile). @layer components grows 697 B for the narrow block; the ceiling moves to 29440 B with the reason recorded here."
+    },
+    {
+      "stage": "about-perf — the coarse-pointer finished state",
+      "bytes": 77888,
+      "componentsBytes": 29645,
+      "deltaPct": 5.04,
+      "source": "odd/tasks/about-perf.md: AboutScroll no longer runs on a coarse pointer (the statement scrub and the drawn rail were the section's whole frame bill), so the stylesheet owes the finished state — lit statement, drawn rail, lit dots — the same one the (scripting: none) block already promised. 472 B in @layer components; ceiling 29900 B and baseline re-registered here with the reason."
     }
   ]
 }

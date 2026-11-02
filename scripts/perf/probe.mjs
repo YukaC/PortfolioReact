@@ -22,6 +22,8 @@
  * Exit codes: 0 measured · 2 bad usage · 3 the URL did not answer.
  */
 
+import { readFileSync } from "node:fs";
+
 import {
   DEVICES,
   emitSummary,
@@ -92,6 +94,8 @@ Flags
   --gl <g>         hw | sw  (sw = SwiftShader, the phone-GPU stand-in)
   --net <n>        none | edge | lte | slow3g
   --iter <n>       repetitions for the flows that cycle (default 3)
+  --css <s>        sections only: CSS injected right after load, before the settle
+  --css-file <p>   the same read from disk, for snippets shell quoting would eat
   --headed         show the browser (ignored by load, which is headless only)
   -h, --help       this text
 `.trim();
@@ -111,6 +115,24 @@ const firstLine = (error) => String(error?.message ?? error).split("\n")[0];
 
 const headlineFor = (name, value, unit, limit) =>
   isNum(value) ? headline(name, value, unit, limit) : headline(name, "n/a", unit);
+
+/**
+ * The CSS `sections` injects, or the empty string for "measure the page as it
+ * ships". Read before the browser starts, so a bad path is a usage error (exit 2)
+ * and never a run that quietly measured the untouched page.
+ */
+function resolveInjectedCss(args) {
+  if (args.css === true || args.cssFile === true) fail(2, "--css and --css-file both need a value");
+  const inline = typeof args.css === "string" ? args.css : "";
+  const path = typeof args.cssFile === "string" ? args.cssFile : "";
+  if (inline && path) fail(2, "--css and --css-file are exclusive; pass one of them");
+  if (!path) return inline;
+  try {
+    return readFileSync(path, "utf8");
+  } catch (error) {
+    return fail(2, `--css-file ${path} is not readable (${firstLine(error)})`);
+  }
+}
 
 /** One frame series → the shape every mode reports: pacing, jank and the >32 ms count. */
 function frameReport(values) {
@@ -532,11 +554,15 @@ async function modeLoad(args) {
 }
 
 async function modeSections(args) {
+  const injectedCss = resolveInjectedCss(args);
   const browser = await launch({ gl: args.gl, headed: args.headed });
   try {
     const { page, cdp, renderer } = await openSession(browser, args);
     await page.addInitScript(FRAME_RECORDER);
     await gotoPage(page, args.url);
+    // After the load and before the settle, so the injection is neither part of
+    // the load nor of the scroll: the same gesture, one variable changed.
+    if (injectedCss) await page.addStyleTag({ content: injectedCss });
     await page.waitForTimeout(SETTLE_MS);
 
     // Measured before the gesture: reveal transitions move transforms, not boxes.
@@ -562,6 +588,7 @@ async function modeSections(args) {
 
     print(`${args.label} — sections ${args.url}`);
     row("renderer", await renderer());
+    if (injectedCss) row("injected css", `${injectedCss.length} chars`);
     row("scroll p95 / jank", `${orNA(overall.p95, "ms")} p95 · ${orNA(overall.jankPct, "%")} of frames > ${BUDGET.jankMs} ms`);
     row("frames", `${overall.n} · avg ${orNA(overall.avg, "ms")} · max ${orNA(overall.max, "ms")}`);
     row("walk", `${walk.complete ? "complete" : "incomplete"} · ${walk.position}/${walk.total}px · ${walk.steps} steps`);
@@ -593,6 +620,9 @@ async function modeSections(args) {
       cpu: args.cpu,
       gl: args.gl,
       net: args.net,
+      // Only present when something was injected: a run that changed the CSS says
+      // so in the artifact, and a clean run stays byte-identical to before.
+      ...(injectedCss ? { injectedCss } : {}),
       renderer: await renderer(),
       headline: head,
       budget: { p95Ms: BUDGET.p95Ms, jankPct: BUDGET.jankPct, jankMs: BUDGET.jankMs },
@@ -1099,6 +1129,10 @@ async function main() {
   if (!(args.net in NETWORKS)) fail(2, `--net must be one of ${Object.keys(NETWORKS).join(", ")}`);
   if (!Number.isFinite(args.iter) || args.iter < 1) fail(2, `--iter must be a number >= 1 (got ${args.iter})`);
   if (!Number.isFinite(args.cpu) || args.cpu < 0) fail(2, `--cpu must be a number >= 0 (got ${args.cpu})`);
+  // `ablate` owns its own variant list; only `sections` takes an injected sheet.
+  if (mode !== "sections" && (args.css !== undefined || args.cssFile !== undefined)) {
+    fail(2, "--css and --css-file are sections-only");
+  }
   args.label = args.label || mode;
 
   try {
