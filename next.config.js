@@ -33,6 +33,32 @@ const nextConfig = {
     // (audit.md §16.1: `pages/404.jsx` → `app/not-found.jsx`).
     globalNotFound: true,
   },
+  /**
+   * `/test` — the measuring route, and only while `next dev` runs.
+   *
+   * The meter (`src/perf/meter.js`) measures the page it runs on: frame pacing,
+   * long tasks, LCP/CLS, the anomaly scan and the field layers. So `/test` is not
+   * a page — a page of its own would only ever measure itself — it is a rewrite
+   * onto the real site, and the overlay that drives the meter mounts on the
+   * client when the URL says `/test`. `/test/es`, `/test/pt` and
+   * `/test/work/<slug>` follow the same rule, so a phone measures the document it
+   * would really open.
+   *
+   * In any other environment the list is empty: no route, no overlay, and the URL
+   * falls through to `global-not-found` like any other unknown path. That is the
+   * whole privacy of it — there is nothing to disable at deploy time, because the
+   * route does not exist in a build (`src/lib/test-route-contract.test.js` pins
+   * both halves).
+   */
+  async rewrites() {
+    if (process.env.NODE_ENV !== "development") return [];
+
+    return [
+      { source: "/test", destination: "/" },
+      { source: "/test/:path*", destination: "/:path*" },
+    ];
+  },
+
   async headers() {
     const isDev = process.env.NODE_ENV === "development";
     const csp = [
