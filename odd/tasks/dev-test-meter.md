@@ -156,3 +156,34 @@ server del dueño, que tomó el `next.config` nuevo) `/test` 200 con el sitio re
 reporte llegó a la terminal (`[perf] /test … frames 9 · p95 …`, `anomalies 14`) y a
 `.perf/browser/2026-11-02T11-51-21.826Z.json`, y una pestaña nueva en `/` no carga
 el medidor (`__perfMeterStart` ausente).
+
+**L11 — el medidor en un teléfono real (2 nov, tarde).** Dos pasadas del dueño con
+Brave/Android (5 núcleos, 352×781 @DPR 3.075) sobre el proxy: p50 16,8 y 25 ms, p95
+**100,5 y 175,4 ms**, 24,2 % y 16,3 % de frames sobre presupuesto, long tasks 11/746 ms
+y 20/2090 ms (máx 362 ms). La mediana está bien y la cola está rota: es jank por long
+tasks. El escaneo de anomalías marcó `flicker` en `span.field-blob-layer` —que es el
+cross-fade intencional `opacity: calc(1 - var(--p))` / `var(--p)`— y `jitter` en
+`a.focus-ring`, que es el `translateY` del reveal: dos falsos positivos del detector,
+pendientes de afinar.
+
+**L12 — dos defectos del instrumento, encontrados por esos números.** `54b8fff`: el
+medidor se cobraba 63,2 y 116,7 ms/s (6,3 % y 11,7 % de la ventana, pases de hasta
+41 ms); en puntero grueso pasó a 1 pase de campo cada 12 frames, sampler de 250 ms y
+watchlist de 160 nodos (19,1 → 4,7 pases/s, 31 → 9,6 ms/s en la misma máquina).
+`f6808b0`: el proxy pedía `accept-encoding: identity` a **todas** las requests — la
+página pesaba 861 KB por el proxy contra 293 KB directo y el documento 153 KB contra
+25 KB. Ahora los assets conservan su compresión, el documento inyectado sale
+comprimido (15.730 B) y el medidor también (66.314 → 17.663 B).
+
+**L13 — review nativa del slice `a2cba70..f6808b0` (lineage
+`review-0d09bbd55e2d4ec6`).** Tres CRITICAL del refuter, los tres causados por
+`f6808b0`: HTML comprimido entrando a la rama de inyección sin decodificar (por
+`fetch()`, iframes o clientes sin señales de documento) y `br;q=0` leído como
+aceptación. Corregidos en `330d2fe` (57 líneas de diff, presupuesto 73): el body se
+decodifica según el `content-encoding` real antes de inyectar, `acceptedEncoding()`
+parsea q-values, y un body que no decodifica se reenvía intacto. **Estado de la
+review: sin cerrar.** El provider pide validación dirigida y emite un binding que el
+facade rechaza dos veces como `collectBinding is missing or stale for current STATUS`
+(target `ddac8e48` del slot contra snapshot `456f0bb` del candidato). No hay verdicto
+del validador, así que no hay cierre; el dueño decidió dejarlo así y seguir. Para
+retomar: `gentle-ai review status --lineage=review-0d09bbd55e2d4ec6`.
