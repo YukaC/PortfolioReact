@@ -1814,7 +1814,20 @@
      sees the footer measures the footer: 7 s could be spent entirely in a section
      with no field and no flares, and the table would blame the layer that was off. */
   const PHASE_MS = 11000;
-  const PHASES = ["", "marquee", "field", "flares", "reveal", "blur"];
+  /**
+   * Interleaved, not a sweep.
+   *
+   * The first two real runs disagreed with themselves: the baseline came back at 117 ms
+   * in one and 33.5 ms in the next, and `blur` at 192.6 against 33.5 — the phone's own
+   * state (thermal, background apps) moves further than any layer does. A sweep measures
+   * that drift and files it under whichever layer happened to be off.
+   *
+   * So each layer is measured between two baselines: `baseline, flares, baseline, flares,
+   * baseline, flares`. The comparison that counts is a pair — the same device state, the
+   * same scroll, one layer apart — and the drift shows up as the spread between pairs
+   * instead of hiding inside a row.
+   */
+  const PHASES = ["", "flares", "", "flares", "", "flares"];
   let phaseRun = null;
 
   const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
