@@ -222,6 +222,11 @@
   --soft: rgb(255 255 255 / 0.13);
   --strong: rgb(255 255 255 / 0.22);
 
+  /* The one near-opaque ink surface: what a floating element wears when the page
+     scrolls under it. Same value as the drawer, so the nav pill and the menu are
+     the same material instead of two nearly-equal mixes. */
+  --ink-surface: color-mix(in srgb, var(--color-ink) 97%, transparent);
+
   /* --- motion, layer 3 (§14.1, §14.7 S2c) -------------------------------
      One ramp, read by both sides: every `transition`/`animation` below asks
      for one of these, and `src/motion/config.js` resolves the same properties
@@ -484,10 +489,24 @@
     border-color var(--duration-slow) var(--ease-out-field),
     box-shadow var(--duration-slow) var(--ease-out-field);
 
+  /*
+   * Scrolled, the pill is solid ink — not glass, and not a near-opaque mix.
+   *
+   * It is the one surface in the system that floats over arbitrary content: a
+   * project cover is a light screenshot, and `blur(26px) saturate(150%)` over it
+   * amplified that into a flash. Measured on a phone-sized viewport, the same pill
+   * renders dark navy at one scroll offset, a light blue gradient at the next and
+   * near-white over a card — inside 60 ms of scrolling. It also cost the phone a
+   * full-width backdrop filter on every frame.
+   *
+   * A near-opaque ink was not enough either: at 97 % the white headline passing
+   * behind it still read through the fill. Everything else in the page stands on
+   * solid ink with a hairline, so the pill now does the same and keeps only the
+   * hairline, the shadow and the geometry.
+   */
   .site-header.is-scrolled & {
-    background-color: var(--glass);
+    background-color: var(--color-ink);
     border-color: var(--line);
-    backdrop-filter: blur(var(--blur-glass)) saturate(150%);
     box-shadow: var(--shadow-nav);
   }
 }
@@ -2405,7 +2424,7 @@
 
   .mobile-menu-panel {
     border-radius: 0;
-    background-color: color-mix(in srgb, var(--color-ink) 97%, transparent);
+    background-color: var(--ink-surface);
     backdrop-filter: blur(var(--blur-panel));
   }
 
@@ -2622,9 +2641,9 @@
    the top level is the four conditions Tailwind has no variant for. */
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
   /* The glass recipe and the two surfaces that repeat it, on an engine that
-     cannot blur: they fall back to a near-opaque ink. */
+     cannot blur: they fall back to a near-opaque ink. The nav pill is not here: it
+     is ink already, with or without a blur. */
   .glass,
-  .site-header.is-scrolled .nav-pill,
   .mobile-menu-panel,
   .work-preview-tag {
     background-color: color-mix(in srgb, var(--color-ink) 94%, transparent);
@@ -2634,11 +2653,10 @@
 
 @media (prefers-reduced-transparency: reduce) {
   .glass,
-  .site-header.is-scrolled .nav-pill,
   .mobile-menu-panel,
   .work-preview-tag {
     backdrop-filter: none;
-    background-color: color-mix(in srgb, var(--color-ink) 96%, transparent);
+    background-color: var(--ink-surface);
   }
 
   .orn-orb {
