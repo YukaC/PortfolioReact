@@ -166,8 +166,7 @@
     field: { layers: [], pass: 0, resolvedAt: -1000 },
     /** One row per long-task owner: the script or container the browser named. */
     longTaskOwners: new Map(),
-    /** One entry per finished phase of an automatic layer run. */
-    phases: [],
+
   };
 
   /* The badge host exists from the first line of state so the detectors can ask
@@ -1220,8 +1219,6 @@
         panelOn,
       },
       surfaces: surfaceStats(),
-      /* Present only when an automatic layer run happened: one row per phase. */
-      phases: S.phases.length ? S.phases : undefined,
       /* Always live, so it reports even when the window was never opened. */
       field: fieldReport(),
     };
@@ -1836,7 +1833,8 @@
     }
   };
 
-  const postPhases = async () => {
+  /** `collected` belongs to one run: no window can inherit somebody else's rows. */
+  const postPhases = async (collected) => {
     let base = null;
     try {
       base = buildReport();
@@ -1844,10 +1842,10 @@
       base = null;
     }
     if (!base) return null;
-    const ordered = [...S.phases].sort((a, b) => (b.frames.p95 || 0) - (a.frames.p95 || 0));
+    const ordered = [...collected].sort((a, b) => (b.frames.p95 || 0) - (a.frames.p95 || 0));
     const worst = ordered[0];
     const best = ordered[ordered.length - 1];
-    const payload = { ...base, phases: S.phases };
+    const payload = { ...base, phases: collected };
     const ok = await postReport(payload);
     const label = `fases · mejor ${(best && (best.ablate || "todas")) || "?"} · peor ${(worst && (worst.ablate || "todas")) || "?"}`;
     paint(ok ? label : `${label} · no se pudo enviar`);
@@ -1856,8 +1854,11 @@
 
   const runPhases = async () => {
     if (phaseRun) return null;
-    S.phases = [];
     phaseRun = true;
+    /* The rows live here and nowhere else: `start()` resets the window between
+       phases, and a shared array would both lose them and leak them into the next
+       ordinary measurement. */
+    const collected = [];
     try {
       for (let i = 0; i < PHASES.length; i += 1) {
         setAblate(PHASES[i]);
@@ -1869,7 +1870,7 @@
         await sleep(PHASE_MS);
         const report = await stop({ post: false });
         if (report) {
-          S.phases.push({
+          collected.push({
             ablate: PHASES[i] || null,
             frames: report.frames,
             longtasks: report.longtasks,
@@ -1878,7 +1879,7 @@
         }
       }
       setAblate("");
-      return await postPhases();
+      return await postPhases(collected);
     } finally {
       phaseRun = null;
       S.state = "done";
