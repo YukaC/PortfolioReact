@@ -37,9 +37,38 @@
 
   /* -------------------------------------------------------------- constants */
 
-  const SAMPLE_MS = 100;
+  /**
+   * The phone pays twice for every pass the meter schedules: in the frame it steals
+   * and in the long task it joins.
+   *
+   * Measured on a real one — 5 cores, 352x781 at DPR 3.075, Brave on Android 10,
+   * 2 nov 2026 — the meter charged itself 63.2 and 116.7 ms/s, that is 6.3 % and
+   * 11.7 % of the measured window, with single passes of up to 41 ms. Ten to
+   * fourteen field passes and ten samples per second at ~5.7 ms each is more than
+   * two frames of jank per second that the site never asked for; an instrument that
+   * expensive changes what it measures.
+   *
+   * So the schedule follows the pointer rather than one constant:
+   *
+   *   • fine pointer (a desktop): unchanged — 100 ms sampler, one field pass in
+   *     three frames. There is budget to spare and the numbers stay comparable to
+   *     the artifacts already stored;
+   *   • coarse pointer (the phone being diagnosed): a 250 ms sampler, one field
+   *     pass in twelve frames, and a quarter of the watchlist. The verdicts keep
+   *     their meaning — the field history is still 90 samples, it simply covers
+   *     more scroll — and the probe stops being the loudest thing in the report.
+   */
+  const COARSE_POINTER = (() => {
+    try {
+      return matchMedia("(pointer: coarse)").matches;
+    } catch {
+      return false;
+    }
+  })();
+
+  const SAMPLE_MS = COARSE_POINTER ? 250 : 100;
   /** The phone has to survive this scan, so the watchlist is bounded on purpose. */
-  const NODE_CAP = 400;
+  const NODE_CAP = COARSE_POINTER ? 160 : 400;
   const MAX_ITEMS = 40;
   const TAP_SETTLE_MS = 400;
   /** One-time full-document style scans (will-change, blur) are capped too. */
@@ -57,8 +86,9 @@
     [".bocanada-flares", "flares"],
     ["canvas", "canvas"],
   ];
-  /** 90 samples at 20 Hz is the last four and a half seconds of scroll: long enough
-      to see a drift, short enough that the verdict follows the finger. */
+  /** 90 samples at ~5 Hz on a phone is the last eighteen seconds of scroll, and at
+      20 Hz on a desktop the last four; either is long enough to see a drift and short
+      enough that the verdict follows the finger. */
   const FIELD_HISTORY = 90;
   const PINNED_PX = 2;
   const DRIFT_PX = 50;
@@ -71,10 +101,10 @@
   const SPARK_W = 96;
   const SPARK_H = 22;
   const SPARK_DPR = Math.min(typeof devicePixelRatio === "number" ? devicePixelRatio : 1, 2);
-  /** The field pass runs on every third frame — ~20 Hz at 60 Hz. A drift still
-      resolves over the 90-sample history, and one pass in three costs a third less
-      than the 30 Hz it used to run at, which matters on the phone being measured. */
-  const FIELD_FRAME_STRIDE = 3;
+  /** The field pass: one frame in three on a fine pointer (~20 Hz at 60 Hz), one in
+      twelve on a coarse one (~5 Hz). One pass is a forced layout read of nine nodes,
+      and on the phone that read cost up to 41 ms — see the constants block. */
+  const FIELD_FRAME_STRIDE = COARSE_POINTER ? 12 : 3;
 
   const INTERACTIVE =
     'a, button, [role="button"], input, select, textarea, [tabindex]:not([tabindex="-1"])';
@@ -237,11 +267,11 @@
   const tick = (t) => {
     if (S.state === "recording" && lastFrame) S.frames.push(+(t - lastFrame).toFixed(1));
     lastFrame = t;
-    /* Every third frame the field panel takes a sample — ~20 Hz at 60 Hz. That is
-       still a forced layout read of nine nodes, and it is deliberate: a jump is a
-       one-frame event, and a 100 ms sampler would miss exactly the thing being
-       looked for. It is the meter's own cost, it is charged to the report's `meter`
-       block, and the panel toggle switches it off entirely. */
+    /* One frame in FIELD_FRAME_STRIDE the field panel takes a sample — ~20 Hz on a
+       fine pointer, ~5 Hz on a phone. It is a forced layout read of nine nodes and it
+       is deliberate either way: a jump is a one-frame event, and a 100 ms sampler
+       would miss exactly the thing being looked for. It is the meter's own cost, it is
+       charged to the report's `meter` block, and the panel toggle switches it off. */
     if (panelOn && frameParity % FIELD_FRAME_STRIDE === 0) sampleField();
     frameParity += 1;
     requestAnimationFrame(tick);
@@ -673,7 +703,7 @@
         /* one unreadable layer is skipped, the rest still answers */
       }
     }
-    /* The panel is a readout, not a measurement: four passes (≈5 Hz) is enough to
+    /* The panel is a readout, not a measurement: one field pass in four is enough to
        watch it while scrolling and cheap enough to leave running. */
     if (pass % 4 === 0) paintField();
   };
