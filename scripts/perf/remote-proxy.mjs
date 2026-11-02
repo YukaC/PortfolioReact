@@ -30,6 +30,7 @@ import http from "node:http";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { request as httpRequest } from "node:http";
 import { request as httpsRequest } from "node:https";
+import { brotliCompressSync, gzipSync } from "node:zlib";
 import { parseArgs, fail } from "./lib.mjs";
 
 const args = parseArgs(
@@ -132,12 +133,33 @@ const summarize = (r) => {
 
 const proxy = http.createServer(async (req, res) => {
   if (req.url.startsWith("/__perf/meter.js")) {
-    res.writeHead(200, {
+    /* The meter is 66 KB of source and it is served on every navigation, so it is
+       compressed like anything else here: an instrument that adds 66 KB to the
+       page it measures is measuring a heavier page. */
+    const accepts = String(req.headers["accept-encoding"] || "");
+    const plain = Buffer.from(METER, "utf8");
+    let body = plain;
+    const headers = {
       "content-type": "text/javascript; charset=utf-8",
       "cache-control": "no-store",
       "service-worker-allowed": "/",
-    });
-    res.end(METER);
+    };
+    if (/\bbr\b/.test(accepts)) {
+      const compressed = brotliCompressSync(plain);
+      if (compressed.length < plain.length) {
+        body = compressed;
+        headers["content-encoding"] = "br";
+      }
+    } else if (/\bgzip\b/.test(accepts)) {
+      const compressed = gzipSync(plain);
+      if (compressed.length < plain.length) {
+        body = compressed;
+        headers["content-encoding"] = "gzip";
+      }
+    }
+    headers["content-length"] = body.length;
+    res.writeHead(200, headers);
+    res.end(body);
     return;
   }
 
@@ -161,14 +183,43 @@ const proxy = http.createServer(async (req, res) => {
     return;
   }
 
+  /**
+   * Only the document is asked for uncompressed, because an HTML body has to be
+   * rewritten to inject the meter.
+   *
+   * This used to be `identity` for every request, and it was the most expensive bug
+   * the proxy had: every script, stylesheet and font crossed the wire raw. Measured
+   * against the same build (2 nov 2026): the page weighed 861 KB through the proxy
+   * and 293 KB served directly, and one HTML document 153 KB instead of 25 KB. Every
+   * phone report taken through it measured a site 2.9x heavier than the one people
+   * open — FCP 1672 ms on a phone against 108 ms on the same build in a lab, with the
+   * tail of the frame distribution inflated by the extra bytes and their decode.
+   *
+   * So the request keeps the browser's `accept-encoding` unless the browser says it
+   * is asking for a document (`sec-fetch-dest: document`, or `accept: text/html` for
+   * clients that do not send the hint). Assets then stream compressed, untouched.
+   */
+  const wantsDocument = () => {
+    try {
+      const dest = String(req.headers["sec-fetch-dest"] || "").toLowerCase();
+      if (dest) return dest === "document";
+      return String(req.headers.accept || "").includes("text/html");
+    } catch {
+      return true;
+    }
+  };
+
   const upstream = send(
     {
       hostname: target.hostname,
       port: target.port || (target.protocol === "https:" ? 443 : 80),
       path: req.url,
       method: req.method,
-      /* Identity encoding, because an HTML body has to be rewritten to inject. */
-      headers: { ...req.headers, host: target.host, "accept-encoding": "identity" },
+      headers: {
+        ...req.headers,
+        host: target.host,
+        ...(wantsDocument() ? { "accept-encoding": "identity" } : {}),
+      },
     },
     (upstreamRes) => {
       const type = upstreamRes.headers["content-type"] || "";
@@ -191,9 +242,31 @@ const proxy = http.createServer(async (req, res) => {
         delete headers["content-encoding"];
         delete headers["content-length"];
         delete headers["transfer-encoding"];
-        headers["content-length"] = Buffer.byteLength(html);
+
+        /* It goes back out compressed, because the body had to be *un*compressed only
+           to carry the injected script: served raw, this document was 153 KB against
+           the 25 KB the target hands a browser, and a phone parsed the difference on
+           every navigation. The client's own `accept-encoding` decides, so a client
+           that asks for nothing still gets plain text. */
+        const accepts = String(req.headers["accept-encoding"] || "");
+        const plain = Buffer.byteLength(html);
+        let body = Buffer.from(html, "utf8");
+        if (/\bbr\b/.test(accepts)) {
+          const compressed = brotliCompressSync(body);
+          if (compressed.length < plain) {
+            body = compressed;
+            headers["content-encoding"] = "br";
+          }
+        } else if (/\bgzip\b/.test(accepts)) {
+          const compressed = gzipSync(body);
+          if (compressed.length < plain) {
+            body = compressed;
+            headers["content-encoding"] = "gzip";
+          }
+        }
+        headers["content-length"] = body.length;
         res.writeHead(upstreamRes.statusCode || 200, headers);
-        res.end(html);
+        res.end(body);
       });
     },
   );
