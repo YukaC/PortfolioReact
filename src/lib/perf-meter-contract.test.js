@@ -1,0 +1,72 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import path from "node:path";
+import { createRequire } from "node:module";
+import vm from "node:vm";
+import { fileURLToPath } from "node:url";
+
+/**
+ * The meter is a single browser file that nothing compiles before it reaches a
+ * phone, and its whole interface lives inside one template literal. A stray
+ * backtick in a comment there is invisible to `eslint` (the file is not a module
+ * with imports, and the comment is inside a string) and fatal in the browser:
+ * `next dev` answered `Expected ';', '}' or <eof>` and `window.__perfMeterStart`
+ * never existed, so the overlay looked dead instead of broken.
+ *
+ * These tests are the parse gate that was missing. They run in milliseconds and
+ * pin the two properties a serving path depends on:
+ *
+ *   1. the file is a syntactically valid script (S6/S7 — it must run at all);
+ *   2. it reads the report endpoint from `window.__perfReportEndpoint`, which is
+ *      how `next dev` sends the report to `/api/perf-report` while the phone
+ *      proxy keeps owning `/__perf/report` (S8);
+ *   3. the proxy serves this exact file, so the phone and the dev route can never
+ *      drift into two different meters (S7).
+ */
+
+const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
+const METER = path.join(ROOT, "src/perf/meter.js");
+const require = createRequire(import.meta.url);
+
+test("S6: the meter is a valid script, template literal and all", () => {
+  const source = readFileSync(METER, "utf8");
+
+  assert.doesNotThrow(
+    () => new vm.Script(source, { filename: METER }),
+    "meter.js must parse on its own: it reaches the browser unbuilt",
+  );
+});
+
+test("S8: the meter takes its report endpoint from the page", () => {
+  const source = readFileSync(METER, "utf8");
+
+  assert.match(
+    source,
+    /window\.__perfReportEndpoint \|\| "\/__perf\/report"/,
+    "the phone proxy path stays the default, and the dev overlay overrides it",
+  );
+});
+
+test("S7: the phone proxy serves this file and not a copy of it", () => {
+  const proxy = readFileSync(path.join(ROOT, "scripts/perf/remote-proxy.mjs"), "utf8");
+  const meterPath = /const METER_PATH = new URL\("([^"]+)"/.exec(proxy);
+
+  assert.ok(meterPath, "remote-proxy.mjs must declare METER_PATH");
+  assert.equal(
+    path.resolve(ROOT, "scripts/perf", meterPath[1]),
+    METER,
+    "the proxy reads the meter this repository tests, so there is one meter",
+  );
+});
+
+test("S7: the proxy still posts to its own report path", () => {
+  const proxy = readFileSync(path.join(ROOT, "scripts/perf/remote-proxy.mjs"), "utf8");
+
+  assert.match(proxy, /\/__perf\/report/, "the proxy owns /__perf/report");
+  assert.doesNotMatch(
+    proxy,
+    /__perfReportEndpoint/,
+    "the proxy must not set the dev override; that belongs to the overlay",
+  );
+});
