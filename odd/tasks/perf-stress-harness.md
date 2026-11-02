@@ -70,6 +70,39 @@ flags de Chromium por su cuenta.
 
 > armame un script que sea un .sh para hacer todos los tests posibles de rendimiento y stress para optimizar la web
 
+**L5 — medir en el teléfono real (proxy inyector, T6).** `scripts/perf/remote-proxy.mjs`
++ `scripts/perf/meter.js`: un reverse proxy al build de producción que inyecta un
+medidor y recibe el reporte por POST. Un Moto G82 5G (352×781 @DPR 3.08, 5 cores,
+120 Hz de panel pero 60 Hz efectivos en la página) entregó dos pasadas:
+
+| | sin scroll (31 s) | con scroll 0→3810 px (21 s) |
+|---|---|---|
+| frames | 905 | 393 |
+| p50 | 16.7 ms | 16.7 ms |
+| p95 | 116.8 ms | **233.9 ms** |
+| p99 | 350.8 ms | 501.1 ms |
+| peor frame | 518 ms | **952 ms** |
+| fuera de presupuesto | 23.6 % | 26.7 % |
+| long tasks | 2166 ms | 2551 ms |
+
+Lectura: el teléfono no es lento de forma pareja (p50 en 60 fps) — se congela a
+golpes, y scrollear duplica el p95. El fondo desliza medido: los tres blobs
+derivan −224 / −411 / −524 px sobre 3810 px de recorrido (parallax de `--p`, es
+diseño, no un `fixed` roto). El reporte trae `blurred: 11 superficies · 1.32 Mpx`;
+a DPR 3.08 son ~12.5 Mpx de superficie con blur por frame con un radio efectivo de
+~340 px físicos: la cuenta que explica los 952 ms en un Adreno 619.
+
+Lección de instrumentación: el panel del fondo corría a 30 Hz sin medir su costo
+(~136 ms/s con CPU 6×). Por eso el medidor ahora se cronometra (`meter.costMsPerSecond`),
+tiene toggle `Panel fondo: ON/OFF`, muestrea a 20 Hz y difiere los sparklines al
+estado `done`. Ningún número de teléfono se reporta sin descontar el instrumento.
+
+**L6 — límites conocidos.** `/* eslint-env browser */` en `meter.js` pasa hoy pero
+será error en ESLint v10 (reemplazar por `/* global */` o `languageOptions.globals`).
+El proxy lee `meter.js` una vez al arrancar: editar el medidor exige reiniciarlo.
+No se leyó el compositor del teléfono (requiere `adb`), así que las capas y el
+overdraw siguen siendo una inferencia, no una medición.
+
 **L2 — contexto medido que motiva L1.** El análisis previo (video + Playwright,
 390×844 DPR2 CPU×4) dejó tres hechos que la suite tiene que poder reproducir sola:
 el scroll es idéntico en dev y en prod; el costo dominante en mobile es
