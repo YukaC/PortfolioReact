@@ -33,7 +33,10 @@ import {
 //     AMBIENT_INTERVAL_MS with a faint inflow, so the plume is still being born
 //     and still drifting down at rest. It is a cadence, not a loop: no rAF runs
 //     between presents, so a resting tab is idle for the same reason the frozen
-//     build was.
+//     build was, and no timer is armed while the document is hidden. Because the
+//     phase is a cadence the cost is per present, and the one knob that makes a
+//     present cheap is `AMBIENT_ITERATIONS_CAP` — the phase changes nothing else
+//     about the step it runs.
 //   • `frozen` (everything else: `lite`, `static`, reduced motion, a coarse
 //     pointer, a narrow viewport): the loop is cancelled outright and the canvas
 //     keeps its last frame.
@@ -76,6 +79,37 @@ const AMBIENT_DRIFT_SPEED = 0.28;
 // the top edge reads as a light leak over the headline, not as mist.
 const AMBIENT_Y_MIN = -0.95;
 const AMBIENT_Y_MAX = 0.1;
+// The ceiling the ambient step puts on every iteration loop it runs, so a
+// cheaper present is bought where the draws actually are. The projection
+// (`Poisson`) is the only pass that loops in this field: the `full` tier runs 12
+// iterations there and that is 12 of the 18 draw calls one present costs, the
+// other six being single passes (advection, force, divergence, pressure, dye,
+// output). The viscous pass is off in the Bocanada build and gets the same
+// ceiling if a design ever turns it on.
+//
+// Why 4: a present every 190 ms lets the dye travel a third as far as a
+// display-rate frame, and the ambient inflow is a slow local stir, so the extra
+// Gauss–Seidel sweeps only make a velocity field that is re-advected 190 ms
+// later *less* compressible than the eye can resolve at 5.3 presents per second.
+//
+// Cost, measured with `measure:idle` on the RX 570 at 1440x900: the field's 10 s
+// of repose goes from 954 draw calls (18 per present) to 530 (10 per present) at
+// the same 5.3 presents/s. What that buys on *this* host's `TaskDuration` is
+// small — 318 ms before, 314 ms after, both red — and the reason is worth
+// keeping here, because the next reader will otherwise look for the saving in
+// the wrong place: that window is dominated by the 22 identity flare animations,
+// not by the field. With the flares simply not painted the same window reads
+// 134 ms; with the field pinned to `frozen` (0 draws) and the flares alive it
+// still reads 293 ms; with reduced motion, where there are neither flares nor a
+// canvas, it reads 48 ms. The cut is for the GPUs that do feel the projection,
+// not for that number.
+//
+// Do not take it to 1–2 to buy a few more milliseconds: the projection is what
+// stops the dye from pumping in and out of the moving source instead of flowing
+// away from it, and that reads in a screenshot even though no number here sees
+// it. Do not remove the cap either: without it an ambient present is the full
+// display-rate step, 5.3 times a second, for a field that has 190 ms to move.
+const AMBIENT_ITERATIONS_CAP = 4;
 
 export default function LiquidEther({
   mouseForce = 20,
@@ -1209,7 +1243,18 @@ export default function LiquidEther({
           this.fbos[key].setSize(this.fboSize.x, this.fboSize.y);
         }
       }
-      update() {
+      /**
+       * One simulation step.
+       *
+       * `ambient` is the only phase knowledge a step gets, and it is a cost cap,
+       * never a behaviour switch: the same passes run in the same order with the
+       * same parameters, only the iteration loops are shortened
+       * (`AMBIENT_ITERATIONS_CAP`). `Math.min` and not the constant alone, so a
+       * tier that is already cheaper than the ceiling keeps its own value.
+       */
+      update(ambient = false) {
+        const iterations = (count) =>
+          ambient ? Math.min(count, AMBIENT_ITERATIONS_CAP) : count;
         if (this.options.isBounce) {
           this.boundarySpace.set(0, 0);
         } else {
@@ -1232,13 +1277,13 @@ export default function LiquidEther({
         if (this.options.isViscous) {
           vel = this.viscous.update({
             viscous: this.options.viscous,
-            iterations: this.options.iterations_viscous,
+            iterations: iterations(this.options.iterations_viscous),
             dt: this.options.dt
           });
         }
         this.divergence.update({ vel });
         const pressure = this.poisson.update({
-          iterations: this.options.iterations_poisson
+          iterations: iterations(this.options.iterations_poisson)
         });
         this.pressure.update({ vel, pressure });
         this.dyeAdvection.update({
@@ -1317,8 +1362,8 @@ export default function LiquidEther({
         Common.renderer.setRenderTarget(null);
         Common.renderer.render(this.scene, this.camera);
       }
-      update(shouldSimulate = true, shouldPresent = true) {
-        if (shouldSimulate) this.simulation.update();
+      update(shouldSimulate = true, shouldPresent = true, ambientStep = false) {
+        if (shouldSimulate) this.simulation.update(ambientStep);
         if (!shouldPresent) return;
         const uniforms = this.output.material.uniforms;
         uniforms.dye.value = this.simulation.dyeRead.texture;
@@ -1496,7 +1541,10 @@ export default function LiquidEther({
         }
         Mouse.update();
         Common.update();
-        this.output.update(shouldSimulate, shouldPresent);
+        // The phase is the only place that knows an ambient present is a cheap
+        // one; the step itself is told, so no option has to be written and
+        // restored around the phase machine.
+        this.output.update(shouldSimulate, shouldPresent, this.phase === PHASE_AMBIENT);
       }
       loop() {
         if (!this.running) return;
@@ -1569,8 +1617,15 @@ export default function LiquidEther({
       ambientTick() {
         if (!this.running || !this.ambient) return;
         // Belt and braces on top of `pause()`: a timer that fires while the tab
-        // is hidden or the canvas is off-screen must not touch the GPU.
-        if (document.hidden || !isVisibleRef.current) return;
+        // is hidden or the canvas is off-screen must not touch the GPU — and it
+        // must not leave the manager half-running either. Pausing here is the
+        // same state `visibilitychange` leaves behind (no timer, `running`
+        // false, phase untouched), so the resume path is the one `wake()` owns
+        // and there is no second way back into the cadence.
+        if (document.hidden || !isVisibleRef.current) {
+          this.pause();
+          return;
+        }
         const idleMs = performance.now() - this.lastUserInteraction;
         const phase = this.phaseFor(idleMs);
         if (phase !== PHASE_AMBIENT) {
