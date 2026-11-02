@@ -35,6 +35,34 @@ bash scripts/perf-suite.sh --help          # stages, flags, exit codes
 stage except `e2e`; `--all` is everything; `--only <list>` takes any subset, in
 any order, and runs it in canonical order.
 
+## Measuring a real phone
+
+A phone cannot be driven by Playwright without a cable, and the number that
+matters most is the one only a real phone has: its DPR and its GPU. So there is a
+second entry point, outside the stage list:
+
+```bash
+node scripts/perf/remote-proxy.mjs --target http://127.0.0.1:4173 --port 4300
+```
+
+It reverse-proxies the site and injects `meter.js` into the HTML it serves. Open
+`http://<this-machine>:4300/es` on the phone and a badge appears: press
+**Empezar**, scroll, press **Terminar y enviar**. The report is POSTed back and
+printed here.
+
+What the badge reports: frame pacing at the phone's real refresh rate, long
+tasks, LCP/CLS, stranded reveals, and the meter's **own** cost (`ms/s`), so a slow
+probe is never read as a slow phone. It also runs an anomaly scan — flicker,
+vanished, jitter, resized, covered, overflow, outsider, classThrash, deadTap —
+and a per-layer field panel that answers whether the background stays put,
+drifts with the scroll, jumps or flickers, with a sparkline per layer.
+
+Limits: it cannot read the compositor (layers, overdraw) — that needs `adb` and
+`--remote-debugging-port` — and it reads `meter.js` once at startup, so editing
+the meter needs a proxy restart. The proxy refuses to start if the meter does not
+parse, which is the guard that keeps a broken meter from silently measuring
+nothing.
+
 ## Server lifecycle
 
 - `--url <u>` measures that server and never starts, stops or restarts anything.
