@@ -599,6 +599,14 @@
   @variant max-wide {
     padding: 0.5rem 0.8125rem;
   }
+
+  /* S1: five filters have to read complete on a 390px phone. At 13px of side
+     padding the row measured 370px inside a 344px track, so the last one was
+     clipped; 8px brings the five tabs to 320px. Vertical padding stays, so the
+     tap height does not move. */
+  @variant max-xs {
+    padding-inline: 0.5rem;
+  }
 }
 
 @utility work-tab-ind {
@@ -788,8 +796,8 @@
   border-top: 1px solid var(--line);
 }
 
-/* The filter row on the narrowest phones cannot shrink to the shell: let it
-   scroll instead of losing the last filter behind the section's clip. */
+/* The filter row. `overflow-x` is the fallback for a locale whose labels outgrow
+   the track, not the design: at 390px the tabs fit (S1), so nothing scrolls. */
 @utility work-tabs {
   position: relative;
   display: flex;
@@ -807,6 +815,14 @@
 
   &::-webkit-scrollbar {
     display: none;
+  }
+
+  /* Under 560px the tabs are narrower than the shell, so the row keeps the
+     shell's width by spreading them instead of shrinking the pill: the row's
+     right edge stays on the section's column (S3 — nothing else moves). */
+  @variant max-xs {
+    width: 100%;
+    justify-content: space-between;
   }
 }
 
@@ -1682,6 +1698,15 @@
     padding: 0.5rem 0;
     /* literal: a mask stencil — black means "keep", not a colour. */
     mask-image: linear-gradient(90deg, transparent, #000 14%, #000 86%, transparent);
+
+    /* S2: the token's floor (54px) only leaves ~1.2 clipped words on a phone.
+       Measured at 390px, the stencil's solid band is 281px and "PostgreSQL",
+       the longest name, is 306px at 54px; at 48px it plus its separator is
+       272px, so the band reads. The clamp stays the single source — only the
+       band overrides it, and only under 560px (S3). */
+    @variant max-xs {
+      --text-marquee: clamp(2.5rem, 12vw, 3rem);
+    }
   }
 
   .marquee-inner {
