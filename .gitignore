@@ -16,8 +16,6 @@ build/
 .swc/
 # `pnpm perf` artifacts (scripts/perf-suite.sh --out)
 .perf/
-# Local SSD worktree marker (pnpm setup:ssd)
-.ssd-cache
 
 # ============================================
 # Testing
