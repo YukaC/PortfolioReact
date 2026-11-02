@@ -1796,7 +1796,15 @@
     padding: 2.125rem 0.375rem;
     border-bottom: 1px solid var(--line);
     position: relative;
-    will-change: opacity, transform;
+
+    /* Promoted only where a pointer can actually dim the row. On a phone these five
+       rows never animate opacity or transform, and a hint that outlives its
+       transition is a permanently promoted layer — five of them, each about a
+       megapixel at DPR 3, sitting in the compositor for the whole visit (audit S4:
+       the same rule that took `will-change` off the reveal). */
+    @variant pointer-fine {
+      will-change: opacity, transform;
+    }
 
     /* Under 56.25rem (the `wide` breakpoint, S9) the row keeps three columns
        but narrows them: the number and the disc shrink and the copy takes the
