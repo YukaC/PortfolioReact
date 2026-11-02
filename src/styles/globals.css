@@ -398,10 +398,11 @@
    turns on, instead of losing to the utility it is meant to modify.
    ======================================================================== */
 
-/* The one surface of the system. The three nodes that sit on it (the work
-   preview, its tag, the scrolled pill) each carry their own hairline and
-   depth, and they override them through `--glass-line`/`--glass-shadow`
-   instead of re-declaring the surface — one definition, no copy. */
+/* The one surface of the system. The nodes that sit on it (the work preview and
+   its tag) each carry their own hairline and depth, and they override them through
+   `--glass-line`/`--glass-shadow` instead of re-declaring the surface — one
+   definition, no copy. The scrolled nav pill used to be a third consumer: it is
+   solid ink now, because a blur over arbitrary content flashes (see `nav-pill`). */
 @utility glass {
   background-color: var(--glass);
   border: 1px solid var(--glass-line, var(--line));
@@ -471,7 +472,7 @@
   background-color: color-mix(in srgb, var(--color-live) 10%, transparent);
 }
 
-/* The floating nav pill: transparent at rest, glass once the page moves. The
+/* The floating nav pill: transparent at rest, solid ink once the page moves. The
    scrolled state belongs to the header, so it is nested here — a rule in the
    components layer would lose to this utility's `border` shorthand. */
 @utility nav-pill {
