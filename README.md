@@ -143,6 +143,33 @@ Tailscale: if that matters, bind the tailnet address alone with `pnpm dev -- -H 
 Re-check the hosts after a tailnet rename or an IP change (`tailscale ip -4`,
 `tailscale status --json`).
 
+### Measuring in development (`/test`)
+
+`next dev` serves the site through `/test` — `/test/es`, `/test/pt` and `/test/work/<slug>`
+included — and mounts the meter (`src/perf/meter.js`) as a floating bubble in the bottom-right
+corner. It measures the page it is running on: frame pacing and p95 against the display's own
+refresh rate, long tasks, LCP/CLS, the anomaly scan (flicker, vanished, jitter, covered,
+overflow, dead taps) and the field layers, and it reports its own cost in `ms/s` so a slow
+probe is never read as a slow site.
+
+The bubble is off until you visit `/test`; from there it follows client-side navigation for
+the rest of the session, and the `×` closes the panel without unloading the meter. The panel
+is three foldable sections — Fondo, Ventana, Anomalías — with its own scroll, capped at 344 px
+wide and `min(68vh, 560px)` tall, so it never covers the page the way a full-width bar would.
+**Empezar**, scroll, **Terminar y enviar**: the summary prints in the `next dev` terminal and
+the full JSON lands in `.perf/browser/` (gitignored).
+
+`/test` does not exist in a build. It is a rewrite declared only while `NODE_ENV` is
+`development` (`next.config.js`), there is no App Router page behind it, and
+`src/lib/test-route-contract.test.js` pins both facts — a production request for `/test` gets
+the site's own 404. There is nothing to disable at deploy time, which is the point.
+
+A real phone still measures through the proxy, because only the phone has its DPR and its
+GPU: `node scripts/perf/remote-proxy.mjs --target http://127.0.0.1:4173 --port 4300`, then
+open `http://<this-machine>:4300/es` and press the same bubble. Same meter, same bubble; the
+proxy owns `/__perf/report` and the dev route owns `/api/perf-report`, which is the one line
+the meter reads to know which of the two is asking.
+
 ## 🔄 Project data
 
 The work list is served from one file, `src/data/pinned-projects.json`, which is validated
