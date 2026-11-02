@@ -30,7 +30,7 @@ import http from "node:http";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { request as httpRequest } from "node:http";
 import { request as httpsRequest } from "node:https";
-import { brotliCompressSync, gzipSync } from "node:zlib";
+import { brotliCompressSync, brotliDecompressSync, gunzipSync, gzipSync, inflateSync } from "node:zlib";
 import { parseArgs, fail } from "./lib.mjs";
 
 const args = parseArgs(
@@ -131,12 +131,41 @@ const summarize = (r) => {
 
 /* --------------------------------------------------------------------- server */
 
+/**
+ * The client's own choice of encoding, honouring q-values.
+ *
+ * `br;q=0` and `gzip;q=0` are refusals, not requests: matching the token with a bare
+ * regular expression served brotli to clients that had explicitly excluded it, and a
+ * 200 they cannot decode is worse than no compression at all. Anything unknown, or
+ * every token refused, answers identity.
+ */
+const acceptedEncoding = (header) => {
+  const weights = {};
+  for (const part of String(header || "").toLowerCase().split(",")) {
+    const [name, ...params] = part.trim().split(";");
+    const q = params.map((p) => p.trim()).find((p) => p.startsWith("q="));
+    weights[name.trim()] = q ? Number(q.slice(2)) : 1;
+  }
+  if (weights.br > 0) return "br";
+  if (weights.gzip > 0 || weights["x-gzip"] > 0) return "gzip";
+  return "identity";
+};
+
+/** Whatever the upstream sent, as text: the injector rewrites characters, not bytes. */
+const decodeBody = (buffer, encoding) => {
+  const name = String(encoding || "").toLowerCase();
+  if (name === "br") return brotliDecompressSync(buffer).toString("utf8");
+  if (name === "gzip" || name === "x-gzip") return gunzipSync(buffer).toString("utf8");
+  if (name === "deflate") return inflateSync(buffer).toString("utf8");
+  return buffer.toString("utf8");
+};
+
 const proxy = http.createServer(async (req, res) => {
   if (req.url.startsWith("/__perf/meter.js")) {
     /* The meter is 66 KB of source and it is served on every navigation, so it is
        compressed like anything else here: an instrument that adds 66 KB to the
        page it measures is measuring a heavier page. */
-    const accepts = String(req.headers["accept-encoding"] || "");
+    const accepts = acceptedEncoding(req.headers["accept-encoding"]);
     const plain = Buffer.from(METER, "utf8");
     let body = plain;
     const headers = {
@@ -144,13 +173,13 @@ const proxy = http.createServer(async (req, res) => {
       "cache-control": "no-store",
       "service-worker-allowed": "/",
     };
-    if (/\bbr\b/.test(accepts)) {
+    if (accepts === "br") {
       const compressed = brotliCompressSync(plain);
       if (compressed.length < plain.length) {
         body = compressed;
         headers["content-encoding"] = "br";
       }
-    } else if (/\bgzip\b/.test(accepts)) {
+    } else if (accepts === "gzip") {
       const compressed = gzipSync(plain);
       if (compressed.length < plain.length) {
         body = compressed;
@@ -234,7 +263,19 @@ const proxy = http.createServer(async (req, res) => {
       const chunks = [];
       upstreamRes.on("data", (c) => chunks.push(c));
       upstreamRes.on("end", () => {
-        let html = Buffer.concat(chunks).toString("utf8");
+        const raw = Buffer.concat(chunks);
+        let html;
+        try {
+          /* Decoded, never assumed: the upstream body is whatever the client asked
+             for, and rewriting encoded bytes as text handed the client a 200 whose
+             body was gzip declared as html. A body that will not decode is forwarded
+             untouched instead of corrupted. */
+          html = decodeBody(raw, upstreamRes.headers["content-encoding"]);
+        } catch {
+          res.writeHead(upstreamRes.statusCode || 502, upstreamRes.headers);
+          res.end(raw);
+          return;
+        }
         html = html.includes("</body>")
           ? html.replace("</body>", `${HTML_INJECT}</body>`)
           : html + HTML_INJECT;
@@ -248,16 +289,16 @@ const proxy = http.createServer(async (req, res) => {
            the 25 KB the target hands a browser, and a phone parsed the difference on
            every navigation. The client's own `accept-encoding` decides, so a client
            that asks for nothing still gets plain text. */
-        const accepts = String(req.headers["accept-encoding"] || "");
+        const accepts = acceptedEncoding(req.headers["accept-encoding"]);
         const plain = Buffer.byteLength(html);
         let body = Buffer.from(html, "utf8");
-        if (/\bbr\b/.test(accepts)) {
+        if (accepts === "br") {
           const compressed = brotliCompressSync(body);
           if (compressed.length < plain) {
             body = compressed;
             headers["content-encoding"] = "br";
           }
-        } else if (/\bgzip\b/.test(accepts)) {
+        } else if (accepts === "gzip") {
           const compressed = gzipSync(body);
           if (compressed.length < plain) {
             body = compressed;
