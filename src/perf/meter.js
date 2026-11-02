@@ -1810,7 +1810,10 @@
    * the next, and each row records its own `ablate`, so no row can be read as if it
    * were the baseline.
    */
-  const PHASE_MS = 7000;
+  /* Long enough for one full pass down the page and back, because a phase that only
+     sees the footer measures the footer: 7 s could be spent entirely in a section
+     with no field and no flares, and the table would blame the layer that was off. */
+  const PHASE_MS = 11000;
   const PHASES = ["", "marquee", "field", "flares", "reveal", "blur"];
   let phaseRun = null;
 
@@ -1828,6 +1831,11 @@
       const label = `${index}/${total}`;
       if (ui.bub.textContent !== label) ui.bub.textContent = label;
       if (ui.phases) ui.phases.disabled = true;
+      if (ui.hint) {
+        ui.hint.hidden = false;
+        const hint = `Recorrido completo: de arriba abajo y de vuelta (${index}/${total})`;
+        if (ui.hint.textContent !== hint) ui.hint.textContent = hint;
+      }
     } catch {
       /* the run must survive a stubborn badge */
     }
