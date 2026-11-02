@@ -1,8 +1,8 @@
 {
   "note": "Baseline of the compiled stylesheet for `pnpm check:css`. The number is measured from the source, not from a build: src/styles/globals.css compiled in-process with @tailwindcss/postcss (the plugin the app itself uses), so any machine and any CI job gets the same byte count. The guard fails when the compiled sheet grows more than `growthAllowance` over `compiledBytes` (audit.md §13.3 S7 / §21.3), and when `@layer components` exceeds `componentsCeiling` (§14.3, spec S14). Raising either number is a decision that belongs in the same commit as the CSS that makes it grow, with the reason in the feature doc.",
   "compiledBytes": 74149,
-  "componentsBytes": 28476,
-  "componentsCeiling": 28672,
+  "componentsBytes": 29173,
+  "componentsCeiling": 29440,
   "growthAllowance": 0.05,
   "history": [
     {
@@ -47,6 +47,13 @@
       "bytes": 76580,
       "deltaPct": 3.28,
       "source": "`pnpm check:css` now compares `@layer components` against `componentsCeiling` (28 672 B = §14.3's 28 KB) instead of only reporting it, and the layer is measured at 28 476 B: `.contact-actions` (no consumer), the `narrow-or-touch` reveal variant and the blur variant of `r-paint` left, and `.timeline-org`/`.timeline-desc`/`.about-portrait-role` moved to `@utility` because §13.2 keeps box and type out of the layer. The comment prose inside kept blocks does not reach this number: Tailwind strips comments before the layer is compiled (measured — moving ~1 kB of prose out changed the byte count by 0), which is why the 28 KB had to be earned with declarations. The sheet itself grew to 76 580 B (+3.28 %, still under the 5 % allowance) with the four flare keyframes (`flare`, `flare-22`, `flare-12`, `flare-6`), the `--ease-in-out-field` curve and the new 36-entry flare table's durations."
+    },
+    {
+      "stage": "perf-stress-harness — the plume is one element on narrow",
+      "bytes": 77418,
+      "componentsBytes": 29173,
+      "deltaPct": 4.41,
+      "source": "odd/tasks/perf-stress-harness.md L7: the six promoted .field-blob layers become one stacked background-image under max-wide, because the compositor isolated the field every frame (p95 33.4 -> 16.8 ms on the phone profile). @layer components grows 697 B for the narrow block; the ceiling moves to 29440 B with the reason recorded here."
     }
   ]
 }

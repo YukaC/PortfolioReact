@@ -692,7 +692,37 @@ const ABLATIONS = [
   { id: "baseline", css: "" },
   { id: "no-blur", css: ".field-blob-layer{filter:none !important}" },
   { id: "no-blend", css: ".field-blob-layer{mix-blend-mode:normal !important}" },
+  /* The candidate fix: no blur, no blend group, and no promotion, so the six
+     blob elements stop being compositor layers at all. If this lands on the
+     no-blobs number, the fix costs nothing visually structural. */
+  {
+    id: "flat-field",
+    css:
+      ".field-blob-layer{filter:none !important;mix-blend-mode:normal !important;will-change:auto !important}" +
+      ".field-blob{will-change:auto !important}",
+  },
   { id: "no-blobs", css: ".field-blob{display:none !important}" },
+  /* Does the cost scale with the number of layers? Each blob is two stacked
+     elements (start/end) that cross-fade with --p, so this goes from six to
+     three without touching the gradients themselves. */
+  { id: "blobs-half", css: ".field-blob-end{display:none !important}" },
+  { id: "blobs-one", css: ".field-blob-2,.field-blob-3{display:none !important}" },
+  /* The implementation candidate: the plume as one element. The six blob nodes
+     are gone and their light is stacked as background-image layers on the field
+     itself, so there is no blend group and no nested stacking context. */
+  {
+    id: "plume-flat",
+    css:
+      ".field-blob{display:none !important}" +
+      ".bocanada-field{background-image:" +
+      "radial-gradient(circle at 18% 8%, hsl(212 88% 52% / .34), transparent 58%)," +
+      "radial-gradient(circle at 82% 38%, hsl(222 78% 58% / .22), transparent 60%)," +
+      "radial-gradient(circle at 44% 78%, hsl(204 90% 62% / .1), transparent 62%)," +
+      "radial-gradient(ellipse 70% 48% at 50% 6%, rgb(150 210 255 / .15), transparent 58%)," +
+      "radial-gradient(ellipse 88% 66% at 72% 40%, rgb(2 60 140 / .55), transparent 64%)," +
+      "linear-gradient(180deg,#081430 0%,#050d20 54%,#04091a 100%) !important}" +
+      ".bocanada-field{will-change:auto !important}",
+  },
   { id: "no-marquee", css: ".marquee{display:none !important}" },
 ];
 

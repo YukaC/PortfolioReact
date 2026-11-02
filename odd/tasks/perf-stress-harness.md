@@ -103,6 +103,31 @@ El proxy lee `meter.js` una vez al arrancar: editar el medidor exige reiniciarlo
 No se leyó el compositor del teléfono (requiere `adb`), así que las capas y el
 overdraw siguen siendo una inferencia, no una medición.
 
+**L7 — la optimización, medida antes y después.** El experimento de ablación dejó
+una conclusión que contradecía la hipótesis inicial: **apagar propiedades no
+alcanza**. Con `filter: none` + `mix-blend-mode: normal` + `will-change: auto`
+juntos el p95 seguía en 33.4 ms; con la mitad de los blobs, o con uno solo,
+también. Lo único que lo movía era **eliminar los seis elementos**, porque su
+presencia fuerza al compositor a aislar el campo entero en un buffer propio en
+cada frame. Implementado en `globals.css`: bajo `max-wide` los `.field-blob` no se
+renderizan y su luz se apila como `background-image` sobre `.bocanada-field` (los
+stops pre-blureados que el bloque `wide` ya tenía), con la base extraída a
+`--field-base` para no duplicarla. `@layer components` crece 697 B y el techo de
+`scripts/css-budget.json` sube a 29440 B con esta razón registrada.
+
+Medición sobre el sitio real (dev server, 430×932 DPR 3, raster por software):
+
+| | antes | después |
+|---|---|---|
+| p95 | 33.4 ms (falla el budget de 24) | **16.8 ms (pasa)** |
+| frames lentos | 51 | 12 |
+| jank | 0.85 % | 0 % |
+
+Lo que narrow pierde: el drift por blob (los tres derivaban distinto con `--p`).
+Recuperarlo con `background-position` animado repinta el field en cada frame, o
+sea exactamente el costo que este cambio elimina; esa variante se mide antes de
+embarcarla, no se asume.
+
 **L2 — contexto medido que motiva L1.** El análisis previo (video + Playwright,
 390×844 DPR2 CPU×4) dejó tres hechos que la suite tiene que poder reproducir sola:
 el scroll es idéntico en dev y en prod; el costo dominante en mobile es
@@ -123,6 +148,7 @@ commit, y la PR se revisa por modo del probe. Límites registrados:
 | 2 | `scripts/perf/probe.mjs` (5 modos; se revisa modo por modo) | 1082 |
 | 3 | `scripts/perf-suite.sh` + `package.json` | 885 |
 | 4 | `scripts/perf/README.md` + este doc + `.gitignore` | 130 |
+| 5 | `scripts/perf/meter.js` + `scripts/perf/remote-proxy.mjs` (medir en teléfono real) | 1486 |
 
 **L4 — verificación (T4).** `--quick` con servidor propio en 4173: `budget ok`,
 `vitals ok` (worst LCP 236 ms), `scroll ok` (desktop p95 16.7 / mobile-4x 16.8),
