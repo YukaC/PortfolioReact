@@ -70,3 +70,35 @@ que dejó escrito "the budget is **not** relaxed" y por lo tanto dejó el gate e
 rojo. Es un conflicto entre una decisión de diseño y un presupuesto, no una
 regresión: la decisión es del dueño (relajar el budget, o pausar `ambient` cuando
 la pestaña no está visible).
+
+**L4 — la opción 3 no cierra el gate, y el motivo es otro.** Se implementó lo
+recomendado en `LiquidEther`: pausa en `document.hidden` y un tope de iteraciones
+por present ambient (18 draws → 10 por frame, cadencia intacta, `settling`/
+`frozen`/`active` verificados sin cambios). Ambientes verdes, pero `idle/task`
+siguió en ~313 ms.
+
+Descomposición medida (1440×900, GPU real, ventana de 10 s, dos corridas por fila):
+
+| escenario | TaskDuration |
+|---|---|
+| baseline | 301 / 299 ms |
+| sin flares (`.flare{display:none}`) | **138 / 139 ms** |
+| sin flares ni canvas | 131 ms |
+| `--reduced-motion` (todo quieto) | 48 ms |
+
+Dos conclusiones que el presupuesto no contempla:
+
+1. **Los 22 destellos de la retícula son 163 ms**, no el plume (7 ms). Ni
+   `will-change: opacity, transform` (312 vs 313) ni precalcular los dos
+   `color-mix()` del gradiente (300 vs 301) los abaratan: es el costo de 22
+   animaciones perpetuas, no de cómo están escritas.
+2. **El piso de la página es ~131 ms** con el JS normal corriendo, ya por encima
+   del budget de 100. O sea: `idle/task ≤ 100 ms` es inalcanzable **aunque se
+   borre la identidad**. El 48 ms solo aparece con `prefers-reduced-motion`, que
+   apaga también Lenis, los scrubs y los rAF.
+
+El budget de 100 ms se escribió cuando el smoke se congelaba en reposo y la
+página quedaba muda; con la identidad viva nunca fue alcanzable. La decisión
+(relajarlo con esta descomposición, o reducir la densidad de flares) es del dueño:
+bajar la cantidad de destellos es cambiar la identidad, y eso no se hace por un
+número de gate.
