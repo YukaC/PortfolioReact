@@ -971,10 +971,14 @@
           );
         }
 
-        /* classThrash: eight class writes inside one gesture is a JS loop rendering
-           the same node, which is a frame cost with no visual result. */
+        /* classThrash: twenty class writes inside one gesture is a JS loop
+           rendering the same node, which is a frame cost with no visual result.
+           The floor was eight, and a live report proved it too low: the site
+           header and its nav links legitimately rewrite `is-scrolled` and
+           `is-nav-active` eight or nine times across a 30 s scroll, so every run
+           reported a "thrash" that was the scroll handler doing its job. */
         const hits = S.classHits.get(i) || 0;
-        if (hits >= 8) {
+        if (hits >= 20) {
           /* With the values beside the count the reader can tell a scroll handler
              toggling one class from a loop rewriting the whole attribute. */
           const seen = S.classSeen.get(i) || [];
