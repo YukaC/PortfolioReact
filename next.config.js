@@ -1,6 +1,6 @@
 /**
- * Keep default distDir `.next`. For HDD checkouts use `pnpm setup:ssd` (NVMe
- * git worktree) — do not symlink node_modules/.next across filesystems (Turbopack).
+ * Keep default distDir `.next`. The tree lives on NVMe; do not symlink
+ * node_modules/.next across filesystems (Turbopack rejects it).
  */
 /** @type {import('next').NextConfig} */
 const nextConfig = {

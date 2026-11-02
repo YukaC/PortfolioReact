@@ -253,28 +253,23 @@ Works with Netlify, Railway, and [Next.js Docker](https://nextjs.org/docs/deploy
 - **Node.js** 22+ (see `engines` in `package.json`, `.nvmrc`, and CI — local Node 26 OK)
 - **pnpm** 11+ (see `packageManager` in `package.json`)
 
-## 🐢 Local development on a slow disk (HDD)
+## ⚡ Local development: the tree lives on NVMe
 
-Stay on **Next.js** (Vercel, ISR pins, Bebop). The slow part is not “Next vs Vite” in the abstract: this app pulls **three / R3F / drei / postprocessing / gsap**, and Turbopack is I/O-heavy. On a spinning HDD (e.g. `/mnt/JuegosHDD`) cold compile hurts; the same tree on NVMe is fine.
+This repository lives on the NVMe drive (`/home/yuka/Proyectos/PortfolioReact`); the
+old path under `/mnt/JuegosHDD/Proyectos/PortfolioReact` is a symlink to it, so every
+existing command, script and editor session keeps working unchanged.
 
-**Do not** symlink `.next` or `node_modules` across disks — Turbopack rejects out-of-root `node_modules` symlinks, and a cross-device `.next` breaks PostCSS.
+That matters because this app pulls **three / R3F / drei / postprocessing / gsap** and
+Turbopack is I/O-heavy: on a spinning disk the cold compile hurts, and `next dev`
+reports it directly — `⚠ Slow filesystem detected. The benchmark took Nms`. On NVMe
+that warning is gone and `pnpm dev` / `pnpm dev:mobile` run from this tree with no
+indirection.
 
-**Recommended: NVMe git worktree**
-
-```bash
-# From the HDD checkout (stop any next first)
-pnpm setup:ssd         # creates ~/ssd-cache/PortfolioReact/wt
-pnpm setup:ssd:store   # optional: pnpm store-dir on NVMe inside the worktree
-# Open that folder in Cursor, then:
-cd ~/ssd-cache/PortfolioReact/wt && pnpm dev
-```
-
-Convenience from the HDD tree (runs inside the worktree — use after the worktree has your commits):
-
-```bash
-pnpm dev:nvme
-pnpm build:nvme
-```
+**Do not** reintroduce symlinked `.next` or `node_modules` across disks, and do not
+create a second worktree of this repo to "get speed": Turbopack rejects out-of-root
+`node_modules` symlinks, a cross-device `.next` breaks PostCSS, and a second tree
+means the code you edit is not the code you serve. One tree, on NVMe, is the whole
+fix.
 
 Prefer **pnpm** (`packageManager`); `npm run …` works but locks/CI use pnpm.
 
