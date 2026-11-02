@@ -102,3 +102,30 @@ promueven capas en un teléfono (`@variant pointer-fine`): de 8 capas renderizad
 (`MarqueeMotion.jsx:82`), así que el próximo instrumento que falta es **atribución de
 long tasks** en el medidor (`entry.attribution`: script/container), que diría qué
 bloquea el hilo en vez de sólo cuánto.
+
+**L9 — el medidor nombra al culpable y mide todas las capas de una pasada
+(`9458fca`).** Los long tasks llevan ahora `entry.attribution` agregada por dueño
+(`longtasks.owners`, ordenada por tiempo) y el resto sin atribuir queda como fila
+propia. El panel gana **Fases**: una ventana igual por capa (todas, marquee, fondo,
+destellos, reveal, filtros), la capa se apaga y se restaura sola, y al final postea un
+único artefacto con las seis filas. Los estilos de ablación los inyecta el medidor, nunca
+el CSS de producción; `window.__perfAblate(name)` y `window.__perfPhases()` quedan para
+automatización. Verificado por el proxy: seis fases con sus frames, long tasks y costo, y
+un bloqueo sintético de 140 ms atribuido como `window (unnamed) [window]`.
+
+**L10 — review del instrumento: un CRITICAL real, corregido (`29cd9b3`).** El refuter
+encontró que `S.phases` no se reseteaba con la ventana: después de una corrida por fases,
+cualquier medición normal volvía a incrustar filas viejas, así que un artefacto de una
+sola ventana presentaba datos tomados bajo otras ablaciones como propios. Plan de
+corrección aceptado (21 líneas, presupuesto 143) y aplicado: el arreglo mueve las filas a
+una lista local de la corrida y elimina el campo del estado compartido, así que ninguna
+ventana puede heredarlas.
+
+**L11 — el slot de validación dirigida vuelve a trabarse (segunda vez).** Después de la
+corrección, el provider emite el mismo binding de `provider_targeted_validator` y el facade
+lo rechaza dos veces con `collectBinding is missing or stale for current STATUS` (formas
+objeto y serializada). Es el mismo desajuste que `odd/tasks/dev-test-meter.md` L13: el
+binding apunta al target de corrección (`cbbf2737`) mientras el STATUS expone el snapshot
+actual (`5ccdabe7`). Sin verdicto del validador no hay cierre; por decisión previa del dueño
+se deja así y se sigue. Dos lineages con el mismo síntoma son evidencia suficiente para
+reportarlo como defecto del arnés, no del candidato.
