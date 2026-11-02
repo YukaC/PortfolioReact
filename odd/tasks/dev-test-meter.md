@@ -65,11 +65,18 @@ renderiza nada fuera de dev y su import del medidor es dinámico.
 
 | ID | Specs | Ruta | Commit |
 |---|---|---|---|
-| T1 | S1 | parent (commit de `audit.md`, archive de briefs, ramas) | pendiente |
-| T2 | S2, S3, S9 | parent (rewrites dev-only + gate de contrato) | pendiente |
-| T3 | S4, S5, S6, S7 | worker `meter-ui` (burbuja + panel plegable en `src/perf/meter.js`) | pendiente |
-| T4 | S8, S9 | worker `meter-ui` (overlay de dev + `/api/perf-report`) | pendiente |
-| T5 | S2, S4, S8 | parent (docs + verificación en navegador y build) | pendiente |
+| T1 | S1 | parent (commit de `audit.md`, archive de briefs, ramas) | `cec43b9`, `0a815b9` |
+| T2 | S2, S3, S9 | parent (rewrites dev-only + gate de contrato) | `f3e9869` |
+| T3 | S4, S5, S6, S7 | parent `meter-ui` (burbuja + panel plegable en `src/perf/meter.js`) | `abd788d` |
+| T4 | S8, S9 | worker `meter-ui` (overlay de dev + `/api/perf-report`) | `fb1e6d1` |
+| T5 | S2, S4, S8 | parent (docs + verificación en navegador, build y producción) | `fb1e6d1` |
+
+**Corte de slice (para el revisor):** `cec43b9..fb1e6d1`, cinco commits. El rename
+`scripts/perf/meter.js` → `src/perf/meter.js` viaja en `abd788d` porque es el que
+habilita el import dinámico del overlay: sin eso no hay ruta que medir. Los dos
+archivos nuevos de `fb1e6d1` (overlay + endpoint) son la mitad que `abd788d` no
+puede tener sola. Ninguno de los cinco toca `globals.css`, el diseño del sitio ni
+las rutas públicas.
 
 ## Log
 
@@ -104,3 +111,48 @@ rewrites que sólo existen en dev: `/test` → `/`, `/test/:path*` → `/:path*`
 overlay se monta desde las dos raíces cuando la ruta es `/test` — y a partir de
 ahí sigue al lector durante la sesión de dev (sessionStorage), con un botón para
 cerrarlo. Sin `/test` visitado no aparece en ninguna parte.
+
+**L6 — T1 cerrado.** `cec43b9` commitea la consolidación de `audit.md` (+1392/−47).
+`0a815b9` archiva los 15 briefs cerrados a `odd/tasks/archive/` (52 briefs ahí, el
+directorio ya estaba gitignoreado), reescribe las 9 citas que apuntaban a las rutas
+viejas (`README`, `CHANGELOG`, dos `source` de `scripts/css-budget.json`, dos
+comentarios de código), borra `handoff.md` (nunca trackeado: estaba en
+`.git/info/exclude`) y suma `.pi-glla/` al `.gitignore`. Ramas `feat/prod-polish`
+(`cfc094e`) y `nvme/feat-agency-rebrand` (`136a3de`) borradas con `-d`: las dos
+estaban 100% contenidas en `HEAD`. Worktree único, sin stashes.
+
+**L7 — T2 cerrado.** `f3e9869`. `next.config.js` gana `rewrites()` que devuelve `[]`
+fuera de `NODE_ENV=development`. `src/lib/test-route-contract.test.js` escribió
+primero (RED: `rewrites` no existía), 4/4 en verde después.
+
+**L8 — T3 cerrado.** `abd788d`. El bloque badge se reescribió entero: burbuja de
+52 px, panel de `min(344px, 100vw - 32px)` × `min(68vh, 560px)` con scroll propio y
+tres `<details>` (Fondo / Ventana / Anomalías). Medido en el navegador, 390×844:
+panel abierto ≈ 380 px de alto (45 % de la pantalla) contra el 100 % de ancho × 34vh
+que ocupaba la barra anterior; las 8 capas del fondo pintan su sparkline
+(`window.__perfMeterField()` → 8/8 `drawn`), el veredicto entra completo en la fila
+(`pinned ✓ · Δview 0.0px`) y la burbuja cerrada es un círculo de 52 px. La medición
+no cambió: el reporte sigue con las mismas claves (`frames`, `longtasks`, `vitals`,
+`anomalies`, `meter`, `field`, `window.panelOn`).
+
+**L9 — incidente y gate que faltaba.** Al ajustar la grilla de las filas escribí un
+comentario con backticks **dentro** del template literal del `<style>`: `next dev`
+quedó en `Expected ';', '}' or <eof>` y el overlay parecía muerto
+(`window.__perfMeterStart` no existía). Ningún gate lo veía: el archivo llega al
+navegador sin compilar. `src/lib/perf-meter-contract.test.js` lo pina ahora con
+`vm.Script` (parse sin ejecutar, 4/4), más las dos propiedades que sostienen S7/S8:
+el proxy sirve este mismo archivo y el medidor lee su endpoint de
+`window.__perfReportEndpoint`.
+
+**L10 — T4/T5 cerrados.** `fb1e6d1`. Overlay `PerfTestMeter` (dinámico, dev-only,
+sesión recordada en `sessionStorage`), `/api/perf-report` (404 en producción para
+todos los métodos, 405 fuera de `POST`, 400 en body >256 KB o JSON inválido,
+artefacto en `.perf/browser/`), mounts en las dos raíces. Verificación observada:
+`pnpm test:all` exit 0 (lint + `node --test src/lib` + `check:css` + `check:motion` +
+`validate:bebop`); `pnpm build` exit 0 con `/` `○`, `/es` `●`, `/pt` `●` y **cero**
+menciones de `/test` en la tabla de rutas; `next start` en 3211 → `GET /test` 404,
+`GET /test/es` 404, `POST /api/perf-report` 404, `GET /` 200; en `next dev` (3000,
+server del dueño, que tomó el `next.config` nuevo) `/test` 200 con el sitio real, el
+reporte llegó a la terminal (`[perf] /test … frames 9 · p95 …`, `anomalies 14`) y a
+`.perf/browser/2026-11-02T11-51-21.826Z.json`, y una pestaña nueva en `/` no carga
+el medidor (`__perfMeterStart` ausente).
