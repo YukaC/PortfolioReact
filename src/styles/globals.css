@@ -954,11 +954,13 @@
     z-index: var(--z-field);
     /* literal: the field's stops are the design itself, not a palette — §14.6
        keeps this composition out of the token layer so a later redesign cannot
-       re-theme it from the token block by accident. */
-    background-image:
+       re-theme it from the token block by accident. Named, because the narrow
+       layout below stacks the plume in front of the same three layers. */
+    --field-base:
       radial-gradient(ellipse 70% 48% at 50% 6%, rgb(150 210 255 / 0.15), transparent 58%),
       radial-gradient(ellipse 88% 66% at 72% 40%, rgb(2 60 140 / 0.55), transparent 64%),
       linear-gradient(180deg, #081430 0%, #050d20 54%, #04091a 100%);
+    background-image: var(--field-base);
   }
 
   /* Blobs answer the reading progress: two fixed gradients per blob, cross-faded
@@ -1083,6 +1085,38 @@
         hsl(214 90% 62% / 0.028) 50%, hsl(214 90% 62% / 0.009) 75%,
         transparent 100%
       );
+    }
+  }
+
+  /* --- narrow: the plume is one element ------------------------------------
+     Composition + a state a script owns. Six promoted blob layers made the
+     compositor isolate the whole field every frame; the light is cheap, the
+     nested stacking contexts and blend groups are not. Measured (430x932 DPR 3,
+     software raster): p95 33.4 → 16.8 ms, slow frames 51 → 11. Property-level
+     mitigations moved nothing; only removing the elements did. The wide block
+     above keeps them. What narrow loses is the per-blob drift — restoring it
+     with an animated background-position repaints the field every frame, which
+     is the cost this block removes. */
+  @variant max-wide {
+    .field-blob {
+      display: none;
+    }
+
+    .bocanada-field {
+      /* literal: the field's own cobalt light (§14.6), the same hues the wide
+         block pre-blurs into its stops. */
+      background-image:
+        radial-gradient(circle 62vw at 18% 8%,
+          hsl(212 88% 52% / 0.289) 0%, hsl(212 88% 52% / 0.226) 25%,
+          hsl(212 88% 52% / 0.103) 50%, hsl(212 88% 52% / 0.019) 75%,
+          transparent 100%),
+        radial-gradient(circle 46vw at 82% 38%,
+          hsl(222 78% 58% / 0.152) 0%, hsl(222 78% 58% / 0.062) 50%,
+          transparent 100%),
+        radial-gradient(circle 40vw at 44% 78%,
+          hsl(204 90% 62% / 0.064) 0%, hsl(204 90% 62% / 0.028) 50%,
+          transparent 100%),
+        var(--field-base);
     }
   }
 
