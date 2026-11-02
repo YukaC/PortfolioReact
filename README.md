@@ -199,7 +199,7 @@ The decisions live in one pure module (`src/i18n/locale.js`) shared by the edge 
 the document shell and React; the dictionaries are in `src/i18n/messages/` and fall back to
 English key by key, because translation lag is expected and a blank string is not. Project
 cards translate per field from the `i18n` block that already owns the slug in
-`src/data/projects.js`. Task notes: `odd/tasks/auto-locale.md`.
+`src/data/projects.js`. Task notes: `odd/tasks/archive/auto-locale.md`.
 
 ## 📁 Project Structure
 
@@ -300,7 +300,7 @@ used only where a surface has a job — the scrolled nav pill, the work preview
 and its tag. One ramp feeds both motion layers: `src/motion/config.js` keeps the
 GSAP springs and reads every duration, stagger and curve from the
 `--duration-*` / `--stagger-*` / `--ease-*` tokens in `globals.css`. Task notes:
-`odd/tasks/glass-motion-rebrand.md`.
+`odd/tasks/archive/glass-motion-rebrand.md`.
 
 ### Field quality on a phone
 
@@ -321,12 +321,12 @@ scroll) and cost the smoke its detail. The canvas itself runs at `pixelRatio = 1
 Two consequences worth knowing before touching the constants: the dye's *fluidity* is the
 render-target grid, not the pointer, and the touch drag is part of the design — `touchstart` /
 `touchmove` drive the same field the desktop pointer does. Task notes:
-`odd/tasks/mobile-field-parity.md`.
+`odd/tasks/archive/mobile-field-parity.md`.
 
 ### What a 3G phone pays
 
 Measured at 390x844, DPR 3, CPU 4x throttle, on three network profiles
-(`odd/tasks/mobile-load-budget.md`):
+(`odd/tasks/archive/mobile-load-budget.md`):
 
 | network | load | FCP | LCP | canvas | JS |
 | --- | --- | --- | --- | --- | --- |

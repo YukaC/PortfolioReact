@@ -37,7 +37,7 @@
   for a slug or locale without a block, and that localizing a list does not mutate the
   input. It needs no `@/` resolver, which is why that module imports its data relatively.
 - Also fixed in passing: the work-list aria labels were hardcoded Spanish
-  (`"… en GitHub"`, `"ver demo"`) on an English page. Task notes: `odd/tasks/auto-locale.md`.
+  (`"… en GitHub"`, `"ver demo"`) on an English page. Task notes: `odd/tasks/archive/auto-locale.md`.
 
 ### The hero paints before it is hydrated
 
@@ -75,7 +75,7 @@
 - Why not bake the animation instead: removing the WebGL layer entirely saves
   ≈0 idle CPU (2490 ms against 2480 ms over 6 s) and would delete the touch
   response, which is half of what felt broken on a phone. Task notes:
-  `odd/tasks/mobile-field-parity.md`, numbers in `odd/tasks/scroll-perf-pass.md`.
+  `odd/tasks/archive/mobile-field-parity.md`, numbers in `odd/tasks/archive/scroll-perf-pass.md`.
 
 ### Back to the Bocanada accent
 

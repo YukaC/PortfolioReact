@@ -53,14 +53,14 @@
       "bytes": 77418,
       "componentsBytes": 29173,
       "deltaPct": 4.41,
-      "source": "odd/tasks/perf-stress-harness.md L7: the six promoted .field-blob layers become one stacked background-image under max-wide, because the compositor isolated the field every frame (p95 33.4 -> 16.8 ms on the phone profile). @layer components grows 697 B for the narrow block; the ceiling moves to 29440 B with the reason recorded here."
+      "source": "odd/tasks/archive/perf-stress-harness.md L7: the six promoted .field-blob layers become one stacked background-image under max-wide, because the compositor isolated the field every frame (p95 33.4 -> 16.8 ms on the phone profile). @layer components grows 697 B for the narrow block; the ceiling moves to 29440 B with the reason recorded here."
     },
     {
       "stage": "about-perf — the coarse-pointer finished state",
       "bytes": 77888,
       "componentsBytes": 29645,
       "deltaPct": 5.04,
-      "source": "odd/tasks/about-perf.md: AboutScroll no longer runs on a coarse pointer (the statement scrub and the drawn rail were the section's whole frame bill), so the stylesheet owes the finished state — lit statement, drawn rail, lit dots — the same one the (scripting: none) block already promised. 472 B in @layer components; ceiling 29900 B and baseline re-registered here with the reason."
+      "source": "odd/tasks/archive/about-perf.md: AboutScroll no longer runs on a coarse pointer (the statement scrub and the drawn rail were the section's whole frame bill), so the stylesheet owes the finished state — lit statement, drawn rail, lit dots — the same one the (scripting: none) block already promised. 472 B in @layer components; ceiling 29900 B and baseline re-registered here with the reason."
     }
   ]
 }
