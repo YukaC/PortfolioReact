@@ -164,6 +164,10 @@
     /* The field panel is not windowed: it starts empty and fills as the reader
        scrolls, recording or not. */
     field: { layers: [], pass: 0, resolvedAt: -1000 },
+    /** One row per long-task owner: the script or container the browser named. */
+    longTaskOwners: new Map(),
+    /** One entry per finished phase of an automatic layer run. */
+    phases: [],
   };
 
   /* The badge host exists from the first line of state so the detectors can ask
@@ -250,7 +254,24 @@
      was still loading belongs to the load, not to the gesture being measured. */
   observe("longtask", (entries) => {
     if (S.state !== "recording") return;
-    for (const e of entries) S.longtasks.push(+e.duration.toFixed(1));
+    for (const e of entries) {
+      S.longtasks.push(+e.duration.toFixed(1));
+      /* Who blocked the thread, not only for how long. A duration alone cannot be
+         acted on: `long tasks 31 · 2644 ms` says the phone stuttered, while
+         `setTimeout@chunk.js 11 × 1.2 s` says what to open. The attribution the
+         browser offers is coarse — a container type plus the script URL it came
+         from, and often neither — so the unlabelled remainder is kept as its own
+         row instead of being dropped. */
+      const at = (e.attribution && e.attribution[0]) || {};
+      const src = String(at.containerSrc || "");
+      const name = String(at.containerName || "");
+      const type = String(at.containerType || "");
+      const key = src || name || (type ? `${type} (unnamed)` : "unattributed");
+      const row = S.longTaskOwners.get(key) || { key, type, count: 0, ms: 0 };
+      row.count += 1;
+      row.ms += +e.duration.toFixed(1);
+      S.longTaskOwners.set(key, row);
+    }
   });
   observe("layout-shift", (entries) => {
     if (S.state !== "recording") return;
@@ -1156,6 +1177,11 @@
         count: S.longtasks.length,
         totalMs: +S.longtasks.reduce((a, b) => a + b, 0).toFixed(0),
         maxMs: S.longtasks.length ? +Math.max(...S.longtasks).toFixed(0) : 0,
+        /* Sorted by the time they cost, so the first row is the one worth opening. */
+        owners: [...S.longTaskOwners.values()]
+          .sort((a, b) => b.ms - a.ms)
+          .slice(0, 6)
+          .map((row) => ({ owner: row.key, type: row.type || null, count: row.count, ms: +row.ms.toFixed(0) })),
       },
       vitals: { fcp: S.fcp, lcp: S.lcp, cls: +S.cls.toFixed(4) },
       reveals: {
@@ -1188,13 +1214,78 @@
         durationMs: S.durationMs,
         taps: S.taps.length,
         samples: S.samples,
+        /* Which layer was switched off while these frames were measured, if any. */
+        ablate: ablate || null,
         /* A field block cannot be interpreted without it: `disabled` is not `pinned`. */
         panelOn,
       },
       surfaces: surfaceStats(),
+      /* Present only when an automatic layer run happened: one row per phase. */
+      phases: S.phases.length ? S.phases : undefined,
       /* Always live, so it reports even when the window was never opened. */
       field: fieldReport(),
     };
+  };
+
+  /* ---------------------------------------------------------------- ablation */
+
+  /**
+   * Turn one layer of the page off — from the phone — and put it back.
+   *
+   * `pnpm perf --only ablate` already does this on the machine (`no-blur`,
+   * `no-blobs`, `no-marquee`), and its deltas landed on one-frame quantisation, so it
+   * could not say which layer is guilty. The device that stutters is the phone, and
+   * a finger on it is the only input that reproduces the jank — so the switch lives
+   * here, and the rules are injected by the meter instead of living in the sheet: an
+   * ablation is a diagnostic and must never ship in a production stylesheet.
+   *
+   * The report records `window.ablate`, so an artifact always says which layer was
+   * missing while those frames were measured.
+   */
+  const ABLATIONS = {
+    field:
+      ".bocanada-field, .field-blob, .bocanada-lattice, .bocanada-flares, .field-glow, .field-grain, .field-progress",
+    marquee: ".marquee",
+    flares: ".bocanada-flares",
+  };
+  const ABLATE_CSS = [
+    ...Object.entries(ABLATIONS).map(([name, selectors]) =>
+      selectors
+        .split(",")
+        .map((one) => `html[data-ablate="${name}"] ${one.trim()} { display: none !important; }`)
+        .join("\n"),
+    ),
+    /* The reveal, left permanently on: this keeps the entrance out of the window. */
+    'html[data-ablate="reveal"] [data-r], html[data-ablate="reveal"] [data-r] .w > span { opacity: 1 !important; transform: none !important; transition: none !important; animation: none !important; }',
+    /* Every filter and every blend at once: the whole compositing bill, in one row. */
+    'html[data-ablate="blur"] * { filter: none !important; backdrop-filter: none !important; mix-blend-mode: normal !important; }',
+  ].join("\n");
+
+  let ablate = "";
+  let ablateStyle = null;
+
+  /** `null` clears it. Anything unknown is treated as `null`, never as "leave it". */
+  const setAblate = (name) => {
+    const allowed = name === "reveal" || name === "blur" || Object.hasOwn(ABLATIONS, name);
+    const next = typeof name === "string" && allowed ? name : "";
+    try {
+      if (next && !ablateStyle) {
+        ablateStyle = document.createElement("style");
+        ablateStyle.id = "__perf-ablate";
+        ablateStyle.textContent = ABLATE_CSS;
+        document.head.appendChild(ablateStyle);
+      }
+      ablate = next;
+      if (next) document.documentElement.setAttribute("data-ablate", next);
+      else document.documentElement.removeAttribute("data-ablate");
+      /* Hiding a layer changes what the instance scan should sample. */
+      S.field.resolvedAt = -1000;
+      paintAblate();
+      paintField();
+    } catch {
+      /* a document that refuses the attribute still measures */
+    }
+    return ablate || null;
   };
 
   /* ------------------------------------------------------------------ badge */
@@ -1302,8 +1393,15 @@
         .an { display: grid; gap: 1px; font-size: 10.5px; padding: 1px 0; }
         .an .k { color: #e2727f; }
         .an .w { color: #9eabc4; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        /* Layer ablation, on the device that stutters: one button per layer. */
+        .abl { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; }
+        .abl button {
+          font: inherit; font-size: 10px; padding: 6px 4px; border-radius: 7px; cursor: pointer;
+          color: #c2cde4; background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.16);
+        }
+        .abl button.on { color: #07102a; background: #8fcbff; border-color: #8fcbff; font-weight: 600; }
         .ft {
-          display: grid; grid-template-columns: 1fr auto; gap: 8px;
+          display: grid; grid-template-columns: 1fr auto auto; gap: 8px;
           padding: 9px 12px; border-top: 1px solid rgba(255,255,255,.1);
         }
         button.pri, button.sec {
@@ -1338,9 +1436,14 @@
             <summary id="anomhead">ANOMALÍAS</summary>
             <div class="rows" id="anoms"></div>
           </details>
+          <details>
+            <summary id="ablhead">CAPAS  todas</summary>
+            <div class="rows abl" id="ablrows"></div>
+          </details>
         </div>
         <div class="ft">
           <button class="pri" id="go" type="button">Empezar</button>
+          <button class="sec" id="phases" type="button" title="Mide todas las capas seguidas">Fases</button>
           <button class="sec" id="panel" type="button">Fondo: ON</button>
         </div>
       </section>`;
@@ -1352,12 +1455,34 @@
     ui.verdict = root.getElementById("verdict");
     ui.go = root.getElementById("go");
     ui.panel = root.getElementById("panel");
+    ui.phases = root.getElementById("phases");
     ui.fieldHead = root.getElementById("fhead");
     ui.fieldRows = root.getElementById("frows");
     ui.win = root.getElementById("win");
     ui.anomHead = root.getElementById("anomhead");
     ui.anoms = root.getElementById("anoms");
+    ui.ablHead = root.getElementById("ablhead");
+    ui.ablRows = root.getElementById("ablrows");
     ui.fieldSignature = "";
+    /* One button per layer, plus `todas`. Built once, and the click is the ablation:
+       on a phone there is no console to call `__perfAblate` from. */
+    ui.ablButtons = new Map();
+    for (const [value, label] of [
+      ["", "todas"],
+      ["marquee", "marquee"],
+      ["field", "fondo"],
+      ["flares", "destellos"],
+      ["reveal", "reveal"],
+      ["blur", "filtros"],
+    ]) {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.textContent = label;
+      button.addEventListener("click", () => setAblate(value));
+      ui.ablRows.appendChild(button);
+      ui.ablButtons.set(value, button);
+    }
+    paintAblate();
     /* The numbers of the window, in one fixed order, built once: the passes then
        write a value into a span that already exists. */
     ui.kv = {};
@@ -1395,6 +1520,17 @@
   } catch {
     /* the badge is mounted once; a page that drops it loses the button */
   }
+
+  /** The current layer choice, on the buttons and on the section header. */
+  const paintAblate = () => {
+    for (const [value, button] of ui.ablButtons || []) {
+      button.classList.toggle("on", value === ablate);
+    }
+    if (ui.ablHead) {
+      const header = ablate ? `CAPAS  falta ${ablate}` : "CAPAS  todas";
+      if (ui.ablHead.textContent !== header) ui.ablHead.textContent = header;
+    }
+  };
 
   /** One value of the window panel, written only when it changed. */
   const setKv = (key, text) => {
@@ -1578,6 +1714,7 @@
     classChanges = 0;
     S.frames.length = 0;
     S.longtasks.length = 0;
+    S.longTaskOwners.clear();
     S.cls = 0;
     S.samples = 0;
     S.durationMs = 0;
@@ -1609,7 +1746,7 @@
     return S.state;
   };
 
-  const post = async (payload) => {
+  const postReport = async (payload) => {
     try {
       /* Two ways in. The phone proxy that injects this file receives the report at
          `/__perf/report`; inside `next dev` there is no proxy, so the overlay that
@@ -1628,7 +1765,8 @@
     }
   };
 
-  const stop = async () => {
+  const stop = async (options) => {
+    const post = !options || options.post !== false;
     if (S.state !== "recording") return null;
     S.state = "done";
     if (sampleTimer) {
@@ -1653,9 +1791,99 @@
       if (ui.verdict) ui.verdict.textContent = `${verdict} · no se pudo armar el reporte`;
       return null;
     }
-    const ok = await post(payload);
+    if (!post) return payload;
+    const ok = await postReport(payload);
     if (!ok && ui.verdict) ui.verdict.textContent = `${verdict} · no se pudo enviar, medí otra vez`;
     return payload;
+  };
+
+  /* ------------------------------------------------------------------ phases */
+
+  /**
+   * One automatic pass over every layer.
+   *
+   * The ablation switches exist so nobody has to guess which layer costs the frames,
+   * but tapping five buttons and repeating the same scroll five times is a
+   * measurement nobody finishes. So the meter does the tapping: it opens one window
+   * per layer, switches that layer off between windows, and posts a single artifact
+   * that holds every phase side by side. The finger keeps doing the one part a
+   * machine cannot fake — scrolling the real page on the real phone.
+   *
+   * Every phase is the same length, so one phase's `frames` block is comparable with
+   * the next, and each row records its own `ablate`, so no row can be read as if it
+   * were the baseline.
+   */
+  const PHASE_MS = 7000;
+  const PHASES = ["", "marquee", "field", "flares", "reveal", "blur"];
+  let phaseRun = null;
+
+  const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+  /** Progress on the bubble: `3/6`, or `PERF` again when the run is over. */
+  const paintPhase = (index, total) => {
+    try {
+      if (!ui.bub) return;
+      if (!total) {
+        paint(verdictText);
+        if (ui.phases) ui.phases.disabled = false;
+        return;
+      }
+      const label = `${index}/${total}`;
+      if (ui.bub.textContent !== label) ui.bub.textContent = label;
+      if (ui.phases) ui.phases.disabled = true;
+    } catch {
+      /* the run must survive a stubborn badge */
+    }
+  };
+
+  const postPhases = async () => {
+    let base = null;
+    try {
+      base = buildReport();
+    } catch {
+      base = null;
+    }
+    if (!base) return null;
+    const ordered = [...S.phases].sort((a, b) => (b.frames.p95 || 0) - (a.frames.p95 || 0));
+    const worst = ordered[0];
+    const best = ordered[ordered.length - 1];
+    const payload = { ...base, phases: S.phases };
+    const ok = await postReport(payload);
+    const label = `fases · mejor ${(best && (best.ablate || "todas")) || "?"} · peor ${(worst && (worst.ablate || "todas")) || "?"}`;
+    paint(ok ? label : `${label} · no se pudo enviar`);
+    return ok ? payload : null;
+  };
+
+  const runPhases = async () => {
+    if (phaseRun) return null;
+    S.phases = [];
+    phaseRun = true;
+    try {
+      for (let i = 0; i < PHASES.length; i += 1) {
+        setAblate(PHASES[i]);
+        paintPhase(i + 1, PHASES.length);
+        /* The layer settles before the window opens, so its absence is never charged
+           to the frames of the phase that follows it. */
+        await sleep(700);
+        start();
+        await sleep(PHASE_MS);
+        const report = await stop({ post: false });
+        if (report) {
+          S.phases.push({
+            ablate: PHASES[i] || null,
+            frames: report.frames,
+            longtasks: report.longtasks,
+            meter: report.meter,
+          });
+        }
+      }
+      setAblate("");
+      return await postPhases();
+    } finally {
+      phaseRun = null;
+      S.state = "done";
+      paintPhase(0, 0);
+    }
   };
 
   try {
@@ -1665,6 +1893,7 @@
         else start();
       });
     }
+    if (ui.phases) ui.phases.addEventListener("click", () => runPhases());
     if (ui.panel) ui.panel.addEventListener("click", () => setPanel(!panelOn));
     /* The shadow root is closed, so automation reaches the meter through this API
        instead of through the button. */
@@ -1677,6 +1906,12 @@
     /* The panel toggle lives in the closed shadow root too, so automation flips it
        and reads the meter's live counters through these instead of the DOM. */
     window.__perfMeterPanel = (on) => (typeof on === "boolean" ? setPanel(on) : panelOn);
+    /* Layer ablation from the device that stutters: `__perfAblate("marquee")`,
+       `__perfAblate("field")`, `("flares")`, `("reveal")`, `("blur")`, or
+       `__perfAblate(null)` to put everything back. */
+    window.__perfAblate = (name) => setAblate(name);
+    /* The whole automatic run, for automation and for a phone without a console. */
+    window.__perfPhases = () => runPhases();
     window.__perfMeterCost = () => meterBlock();
     /* The field panel lives in the closed shadow root, so this is how automation
        reads the same verdict the person on the phone is looking at — including

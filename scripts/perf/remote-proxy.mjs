@@ -121,6 +121,28 @@ const summarize = (r) => {
     `resources     ${r.resources.count} · ${r.resources.kb} KB (js ${r.resources.jsKb} KB)`,
     `canvas        ${r.canvas} · cores ${r.cores ?? "n/a"} · mem ${r.memoryGb ?? "n/a"} GB`,
   ];
+  /* Who blocked the thread. A duration says the phone stuttered; this says which
+     script to open, and `unattributed` keeps its own row instead of being hidden. */
+  for (const owner of r.longtasks.owners || []) {
+    lines.push(
+      `              ${owner.count}x ${owner.ms} ms · ${owner.owner}${owner.type ? ` [${owner.type}]` : ""}`,
+    );
+  }
+  /* An automatic layer run: the same scroll, once per layer, side by side. */
+  if (Array.isArray(r.phases) && r.phases.length) {
+    lines.push("phases        layer switched off · p95 · over budget · long tasks · meter");
+    for (const ph of r.phases) {
+      const f = ph.frames || {};
+      const lt = ph.longtasks || {};
+      const m = ph.meter || {};
+      lines.push(
+        `              ${String(ph.ablate || "todas").padEnd(9)} · p95 ${f.p95} ms · ${f.overBudget}/${f.n} over · long tasks ${lt.count} (${lt.totalMs} ms) · ${m.costMsPerSecond} ms/s`,
+      );
+    }
+  }
+  if (r.window && r.window.ablate) {
+    lines.push(`              with "${r.window.ablate}" switched off for this window`);
+  }
   /* Attribution: the frame numbers say how slow, this block says which object. */
   lines.push(`anomalies     ${anomalies.total ? byKind.join(" · ") : "none"}`);
   if (anomalies.total) lines.push(...items);

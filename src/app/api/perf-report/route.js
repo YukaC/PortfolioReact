@@ -79,6 +79,8 @@ function summary(report, file) {
   const anomalies = block(report.anomalies);
   const field = block(report.field);
   const meter = block(report.meter);
+  const owners = Array.isArray(longtasks.owners) ? longtasks.owners : [];
+  const ablate = typeof block(report.window).ablate === "string" ? report.window.ablate : "";
 
   return [
     `[perf] ${typeof report.url === "string" ? report.url : DASH}`,
@@ -94,7 +96,23 @@ function summary(report, file) {
       "long tasks",
       `${num(longtasks.count)} \u00b7 max ${num(longtasks.maxMs, " ms")} \u00b7 total ${num(longtasks.totalMs, " ms")}`,
     ),
+    ...owners.map((owner) =>
+      row(
+        "  blocked by",
+        `${num(owner.count)}\u00d7 ${num(owner.ms, " ms")} \u00b7 ${owner.owner}${owner.type ? ` [${owner.type}]` : ""}`,
+      ),
+    ),
+    row(
+      "ablation",
+      ablate ? `${ablate} switched off for this window` : "none",
+    ),
     row("vitals", `LCP ${num(vitals.lcp, " ms")} \u00b7 CLS ${num(vitals.cls)} \u00b7 FCP ${num(vitals.fcp, " ms")}`),
+    ...(Array.isArray(report.phases) ? report.phases : []).map((ph) =>
+      row(
+        `  ${ph.ablate || "todas"}`,
+        `p95 ${num(ph.frames && ph.frames.p95, " ms")} \u00b7 ${num(ph.frames && ph.frames.overBudget)}/${num(ph.frames && ph.frames.n)} over \u00b7 long tasks ${num(ph.longtasks && ph.longtasks.count)} \u00b7 ${num(ph.meter && ph.meter.costMsPerSecond, " ms/s")}`,
+      ),
+    ),
     row("anomalies", `${num(anomalies.total)} \u00b7 ${kinds(anomalies.byKind)}`),
     row("field", typeof field.verdict === "string" ? field.verdict : DASH),
     row(
