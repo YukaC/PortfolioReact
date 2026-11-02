@@ -68,7 +68,7 @@ const send = target.protocol === "https:" ? httpsRequest : httpRequest;
  * badge never appeared — no data and nothing in this terminal to say why. A file
  * can be parsed by `node --check`, by the guard in `main()`, and by the phone.
  */
-const METER_PATH = new URL("./meter.js", import.meta.url);
+const METER_PATH = new URL("../../src/perf/meter.js", import.meta.url);
 const METER = readFileSync(METER_PATH, "utf8");
 
 const HTML_INJECT = `<script src="/__perf/meter.js" defer></script>`;

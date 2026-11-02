@@ -1159,55 +1159,154 @@
 
   /* ------------------------------------------------------------------ badge */
 
+  /**
+   * The meter is a visitor on a page it does not own, so its interface is a
+   * bubble and nothing else.
+   *
+   * Closed — which is how it starts — it is one 52 px circle in the bottom-right
+   * corner: 52 px because that is the smallest circle a thumb still hits, and
+   * because the panel it opens used to be `left:10px; right:10px`, which on a
+   * phone is the bottom third of the site. The bubble carries the state by
+   * itself (`PERF` at rest, the live refresh rate while recording, `✓` when the
+   * window closed), so a person who never opens the panel still sees whether the
+   * meter is running.
+   *
+   * Open, the panel is at most 344 px wide and `min(68vh, 560px)` tall with its
+   * own scroll, and its readouts are three `<details>` sections — Fondo, Ventana,
+   * Anomalías. Folding one costs no JS and its state survives every paint,
+   * because the paints write text into rows that already exist instead of
+   * rebuilding the panel. Nothing at all is written into the panel while it is
+   * closed: the only DOM work a closed meter does is the bubble's own label.
+   */
   let root = null;
   const ui = {};
+
+  let open = false;
+  /** The last verdict, kept because the panel may be closed when it is produced. */
+  let verdictText = "";
+  /** The anomalies are rebuilt only when the scan actually added something. */
+  let anomaliesSignature = "";
+  const BUBBLE_IDLE = "PERF";
 
   try {
     root = host.attachShadow({ mode: "closed" });
     root.innerHTML = `
       <style>
         :host { all: initial; }
+        .b {
+          position: fixed; right: 16px; bottom: 16px; z-index: 2147483000;
+          width: 52px; height: 52px; padding: 0; border-radius: 50%;
+          display: grid; place-items: center;
+          font: 600 9.5px/1 ui-monospace, monospace; letter-spacing: .08em;
+          color: #c2cde4; background: rgba(6,11,26,.9);
+          border: 1px solid rgba(143,203,255,.4); cursor: pointer;
+          box-shadow: 0 8px 24px rgba(0,0,0,.45);
+          backdrop-filter: blur(10px) saturate(140%);
+          -webkit-backdrop-filter: blur(10px) saturate(140%);
+          transition: color .22s ease, border-color .22s ease, transform .22s ease;
+        }
+        .b:hover { transform: translateY(-1px); color: #eef2ff; }
+        .b.rec { color: #8fcbff; border-color: rgba(143,203,255,.85); }
+        .b.done { color: #4ade80; border-color: rgba(74,222,128,.65); }
+        .b:focus-visible { outline: 2px solid #8fcbff; outline-offset: 3px; }
         .p {
-          position: fixed; left: 10px; right: 10px; bottom: 10px; z-index: 2147483000;
+          position: fixed; right: 16px; bottom: 78px; z-index: 2147483000;
+          width: min(344px, calc(100vw - 32px));
+          max-height: min(68vh, 560px);
+          display: grid; grid-template-rows: auto auto minmax(0, 1fr) auto;
           font: 12px/1.35 ui-monospace, monospace; color: #eef2ff;
-          background: rgba(6,11,26,.94); border: 1px solid rgba(255,255,255,.18);
-          border-radius: 12px; padding: 10px 12px; display: grid; gap: 8px;
-          box-shadow: 0 12px 40px rgba(0,0,0,.55);
+          background: rgba(6,11,26,.96); border: 1px solid rgba(255,255,255,.16);
+          border-radius: 14px; overflow: hidden;
+          box-shadow: 0 18px 48px rgba(0,0,0,.6);
+          backdrop-filter: blur(16px) saturate(150%);
+          -webkit-backdrop-filter: blur(16px) saturate(150%);
         }
-        .r { display: flex; gap: 8px; align-items: center; justify-content: space-between; }
-        b { font-size: 13px; letter-spacing: .06em; color: #8fcbff; }
-        .s { color: #c2cde4; }
-        button {
-          font: inherit; padding: 8px 12px; border-radius: 9px; cursor: pointer;
-          background: rgba(255,255,255,.1); color: #fff; border: 1px solid rgba(255,255,255,.22);
+        .p[hidden] { display: none; }
+        .hd {
+          display: flex; align-items: center; justify-content: space-between; gap: 8px;
+          padding: 9px 12px; border-bottom: 1px solid rgba(255,255,255,.1);
         }
-        button.pri { background: #8fcbff; color: #07102a; border-color: #8fcbff; font-weight: 600; }
-        /* The live field panel. It is a readout, so it sits under the badge's own
-           rows and never replaces them. */
-        .f { display: grid; gap: 4px; border-top: 1px solid rgba(255,255,255,.14); padding-top: 7px; }
-        .fh { font-size: 11px; letter-spacing: .07em; color: #c2cde4; }
-        .fl { display: grid; gap: 2px; max-height: 34vh; overflow: auto; }
-        .fr { display: grid; grid-template-columns: 52px 1fr auto; gap: 6px; align-items: center; }
-        .fr canvas { width: 96px; height: 22px; display: block; }
-        .fn { font-size: 10.5px; color: #8fcbff; }
-        .fv { font-size: 10.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .hdt { font-size: 10px; letter-spacing: .12em; text-transform: uppercase; color: #8fcbff; }
+        .x {
+          font: inherit; font-size: 14px; line-height: 1; padding: 2px 7px; cursor: pointer;
+          color: #c2cde4; background: transparent; border: 0; border-radius: 6px;
+        }
+        .x:hover { color: #eef2ff; background: rgba(255,255,255,.08); }
+        .st { display: grid; gap: 3px; padding: 8px 12px 0; }
+        .s { font-size: 11px; color: #c2cde4; }
+        .bd { display: grid; gap: 7px; padding: 8px 12px; overflow-y: auto; overscroll-behavior: contain; }
+        details { border-top: 1px solid rgba(255,255,255,.08); padding-top: 6px; }
+        details:first-of-type { border-top: 0; padding-top: 0; }
+        summary {
+          cursor: pointer; list-style: none; display: flex; gap: 8px;
+          align-items: baseline; justify-content: space-between;
+          font-size: 10.5px; letter-spacing: .07em; color: #c2cde4;
+        }
+        summary::-webkit-details-marker { display: none; }
+        summary::after { content: "+"; color: #8fcbff; font-size: 12px; }
+        details[open] > summary::after { content: "\\2013"; }
+        .rows { display: grid; gap: 4px; padding-top: 6px; }
+        .fl { display: grid; gap: 2px; max-height: 26vh; overflow: auto; }
+        /* 44 + 56 + 12 of gaps leaves ~200px for the verdict: at 10px monospace that
+           is the whole "pinned check · dview 0.0px" line, and the sparkline still has
+           a box of its own instead of squeezing the text into an ellipsis. */
+        .fr { display: grid; grid-template-columns: 44px minmax(0, 1fr) 56px; gap: 6px; align-items: center; }
+        .fr canvas { width: 56px; height: 18px; display: block; }
+        .fn { font-size: 10px; color: #8fcbff; white-space: nowrap; }
+        .fv { font-size: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .fv.ok { color: #4ade80; }
         .fv.bad { color: #e2727f; }
+        .kv { display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; font-size: 10.5px; }
+        .kv i { font-style: normal; color: #9eabc4; }
+        .kv b { font-weight: 600; color: #eef2ff; }
+        .an { display: grid; gap: 1px; font-size: 10.5px; padding: 1px 0; }
+        .an .k { color: #e2727f; }
+        .an .w { color: #9eabc4; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .ft {
+          display: grid; grid-template-columns: 1fr auto; gap: 8px;
+          padding: 9px 12px; border-top: 1px solid rgba(255,255,255,.1);
+        }
+        button.pri, button.sec {
+          font: inherit; font-size: 11.5px; padding: 8px 10px; border-radius: 9px; cursor: pointer;
+        }
+        button.pri { background: #8fcbff; color: #07102a; border: 1px solid #8fcbff; font-weight: 600; }
+        button.sec { background: rgba(255,255,255,.07); color: #eef2ff; border: 1px solid rgba(255,255,255,.18); }
+        button.sec[hidden] { display: none; }
       </style>
-      <div class="p">
-        <div class="r" id="head"><b>PERF · this phone</b><span class="s" id="live"></span></div>
-        <div class="r s" id="hint"></div>
-        <div class="r s" id="verdict" hidden></div>
-        <div class="f">
-          <div class="fh" id="fhead">FONDO  sin capas</div>
-          <div class="fl" id="frows"></div>
+      <button class="b" id="bub" type="button" aria-expanded="false" aria-controls="pnl"
+        title="Medidor de rendimiento" aria-label="Medidor de rendimiento">${BUBBLE_IDLE}</button>
+      <section class="p" id="pnl" hidden aria-label="Medidor de rendimiento">
+        <div class="hd">
+          <span class="hdt">perf · esta página</span>
+          <button class="x" id="close" type="button" title="Cerrar el panel" aria-label="Cerrar el panel">×</button>
         </div>
-        <div class="r">
-          <button class="pri" id="go">Empezar</button>
-          <button id="panel">Panel fondo: ON</button>
+        <div class="st">
+          <div class="s" id="live">sin medir</div>
+          <div class="s" id="hint">Tocá Empezar y después scrolleá el sitio.</div>
+          <div class="s" id="verdict" hidden></div>
         </div>
-      </div>`;
-    ui.head = root.getElementById("head");
+        <div class="bd">
+          <details open>
+            <summary id="fhead">FONDO  sin capas</summary>
+            <div class="rows"><div class="fl" id="frows"></div></div>
+          </details>
+          <details>
+            <summary>VENTANA</summary>
+            <div class="rows"><div class="kv" id="win"></div></div>
+          </details>
+          <details>
+            <summary id="anomhead">ANOMALÍAS</summary>
+            <div class="rows" id="anoms"></div>
+          </details>
+        </div>
+        <div class="ft">
+          <button class="pri" id="go" type="button">Empezar</button>
+          <button class="sec" id="panel" type="button">Fondo: ON</button>
+        </div>
+      </section>`;
+    ui.bub = root.getElementById("bub");
+    ui.panelBox = root.getElementById("pnl");
+    ui.close = root.getElementById("close");
     ui.live = root.getElementById("live");
     ui.hint = root.getElementById("hint");
     ui.verdict = root.getElementById("verdict");
@@ -1215,7 +1314,29 @@
     ui.panel = root.getElementById("panel");
     ui.fieldHead = root.getElementById("fhead");
     ui.fieldRows = root.getElementById("frows");
+    ui.win = root.getElementById("win");
+    ui.anomHead = root.getElementById("anomhead");
+    ui.anoms = root.getElementById("anoms");
     ui.fieldSignature = "";
+    /* The numbers of the window, in one fixed order, built once: the passes then
+       write a value into a span that already exists. */
+    ui.kv = {};
+    for (const [key, label] of [
+      ["frames", "frames"],
+      ["p95", "p95"],
+      ["over", "sobre presupuesto"],
+      ["tasks", "long tasks"],
+      ["lcp", "LCP"],
+      ["cls", "CLS"],
+      ["cost", "medidor"],
+    ]) {
+      const name = document.createElement("i");
+      name.textContent = label;
+      const value = document.createElement("b");
+      value.textContent = "—";
+      ui.win.append(name, value);
+      ui.kv[key] = { value, text: "—" };
+    }
   } catch {
     /* no shadow DOM means no badge; the API below still measures */
   }
@@ -1235,45 +1356,130 @@
     /* the badge is mounted once; a page that drops it loses the button */
   }
 
-  const paint = (verdict) => {
+  /** One value of the window panel, written only when it changed. */
+  const setKv = (key, text) => {
+    const row = ui.kv && ui.kv[key];
+    if (!row || row.text === text) return;
+    row.text = text;
+    row.value.textContent = text;
+  };
+
+  const paintWindow = () => {
+    if (!open || !ui.win) return;
     try {
-      if (!ui.go) return;
-      /* The panel toggle is offered in idle and done only: flipping it inside an
-         open window would make the artifact describe two different meters. */
+      const refreshMs = pct(S.frames.slice(0, 120), 0.5);
+      const budget = refreshMs ? +(refreshMs * 1.5).toFixed(1) : null;
+      const over = budget ? S.frames.filter((d) => d > budget).length : 0;
+      const longest = S.longtasks.length ? Math.max(...S.longtasks) : 0;
+      setKv("frames", refreshMs ? `${S.frames.length} · ~${Math.round(1000 / refreshMs)} Hz` : "—");
+      setKv("p95", S.frames.length ? `${pct(S.frames, 0.95)} ms` : "—");
+      setKv("over", budget ? `${over} / ${S.frames.length}` : "—");
+      setKv("tasks", S.longtasks.length ? `${S.longtasks.length} · max ${Math.round(longest)} ms` : "0");
+      setKv("lcp", S.lcp ? `${Math.round(S.lcp)} ms` : "—");
+      setKv("cls", Number.isFinite(S.cls) ? S.cls.toFixed(4) : "—");
+      const cost = meterBlock();
+      setKv(
+        "cost",
+        cost.costMsPerSecond === null ? "—" : `${cost.costMsPerSecond} ms/s · ${cost.longestPassMs} max`,
+      );
+    } catch {
+      /* a readout that fails is not worth a frame */
+    }
+  };
+
+  /** The top four anomalies, rebuilt only when the scan added one. */
+  const paintAnomalies = () => {
+    if (!open || !ui.anoms) return;
+    try {
+      const total = S.anomalies.length;
+      const last = total ? S.anomalies[total - 1].at : 0;
+      const signature = `${total}:${last}`;
+      if (ui.anomHead) {
+        const header = total ? `ANOMALÍAS  ${total}` : "ANOMALÍAS  ninguna ✓";
+        if (ui.anomHead.textContent !== header) ui.anomHead.textContent = header;
+      }
+      if (signature === anomaliesSignature) return;
+      anomaliesSignature = signature;
+      ui.anoms.textContent = "";
+      const shown = S.anomalies.slice(-4).reverse();
+      for (const item of shown) {
+        const row = document.createElement("div");
+        row.className = "an";
+        const kind = document.createElement("span");
+        kind.className = "k";
+        kind.textContent = item.kind;
+        const where = document.createElement("span");
+        where.className = "w";
+        where.textContent = `${item.selector}${item.label ? ` · ${item.label}` : ""}`;
+        const detail = document.createElement("span");
+        detail.className = "w";
+        detail.textContent = item.detail || "";
+        row.append(kind, where, detail);
+        ui.anoms.appendChild(row);
+      }
+    } catch {
+      /* same rule as the rest of the panel */
+    }
+  };
+
+  /**
+   * The state of the meter, in both places it shows: the bubble carries it when
+   * the panel is closed, the panel repeats it when it is open. Nothing is written
+   * into the closed panel.
+   */
+  const paint = (verdict) => {
+    if (verdict !== undefined) verdictText = verdict || "";
+    try {
+      if (!ui.bub) return;
+      ui.bub.classList.toggle("rec", S.state === "recording");
+      ui.bub.classList.toggle("done", S.state === "done");
+      if (S.state === "idle" && ui.bub.textContent !== BUBBLE_IDLE) ui.bub.textContent = BUBBLE_IDLE;
+      if (S.state === "done" && ui.bub.textContent !== "✓") ui.bub.textContent = "✓";
+      /* The field-pass toggle is offered in idle and done only: flipping it inside
+         an open window would make the artifact describe two different meters. */
       if (ui.panel) {
         ui.panel.hidden = S.state === "recording";
-        const label = `Panel fondo: ${panelOn ? "ON" : "OFF"}`;
+        const label = `Fondo: ${panelOn ? "ON" : "OFF"}`;
         if (ui.panel.textContent !== label) ui.panel.textContent = label;
       }
-      if (S.state === "idle") {
-        ui.head.hidden = false;
-        ui.hint.hidden = false;
-        ui.hint.textContent = "Tocá Empezar y después scrolleá el sitio.";
-        ui.live.textContent = "sin medir";
-        ui.verdict.hidden = true;
-        ui.go.textContent = "Empezar";
-      } else if (S.state === "recording") {
-        ui.head.hidden = false;
-        ui.hint.hidden = true;
-        ui.verdict.hidden = true;
-        ui.go.textContent = "Terminar y enviar";
-      } else {
-        /* Done shows the verdict and the way back to measuring, and nothing else. */
-        ui.head.hidden = true;
-        ui.hint.hidden = true;
-        ui.verdict.hidden = false;
-        ui.verdict.textContent = verdict || "";
-        ui.go.textContent = "Medir otra vez";
+      if (!open) return;
+      const live = S.state === "recording" ? `${S.frames.length} frames · ${S.longtasks.length} long tasks` : S.state === "done" ? "" : "sin medir";
+      if (ui.live && ui.live.textContent !== live) ui.live.textContent = live;
+      if (ui.hint) ui.hint.hidden = S.state !== "idle";
+      if (ui.verdict) {
+        ui.verdict.hidden = !verdictText;
+        if (ui.verdict.textContent !== verdictText) ui.verdict.textContent = verdictText;
+      }
+      if (ui.go) {
+        const label = S.state === "recording" ? "Terminar y enviar" : S.state === "done" ? "Medir otra vez" : "Empezar";
+        if (ui.go.textContent !== label) ui.go.textContent = label;
       }
     } catch {
       /* the badge is cosmetic; never let it break the measurement */
     }
   };
 
+  /** Bubble label and the window numbers; runs on a timer, so it writes little. */
+  const paintLive = () => {
+    M.repaints += 1;
+    meterPass(() => {
+      try {
+        if (ui.bub && S.state === "recording") {
+          const refreshMs = pct(S.frames.slice(0, 120), 0.5);
+          const label = refreshMs ? `${Math.round(1000 / refreshMs)}Hz` : "···";
+          if (ui.bub.textContent !== label) ui.bub.textContent = label;
+        }
+        paintWindow();
+      } catch {
+        /* a text write that fails is not worth a frame */
+      }
+    });
+  };
+
   /**
-   * The panel toggle. It is refused while a window is open: the report carries one
-   * `window.panelOn` for one window, and a mid-window flip would make the artifact
-   * describe two different meters.
+   * The field-pass toggle. It is refused while a window is open: the report carries
+   * one `window.panelOn` for one window, and a mid-window flip would make the
+   * artifact describe two different meters.
    */
   const setPanel = (on) => {
     if (S.state === "recording" || panelOn === on) return panelOn;
@@ -1286,19 +1492,34 @@
     return panelOn;
   };
 
-  const paintLive = () => {
-    if (S.state !== "recording" || !ui.live) return;
-    M.repaints += 1;
-    meterPass(() => {
-      try {
-        const refreshMs = pct(S.frames.slice(0, 120), 0.5);
-        const hz = refreshMs ? Math.round(1000 / refreshMs) : null;
-        ui.live.textContent = `${hz ? `~${hz} Hz · ` : ""}${S.frames.length} frames · ${S.longtasks.length} long tasks`;
-      } catch {
-        /* a text write that fails is not worth a frame */
-      }
-    });
+  /**
+   * Open or close the panel. Opening is the only moment the readout is built:
+   * while it was closed the meter wrote nothing but the bubble's label, so the
+   * rows, the numbers, the anomalies and the sparklines are painted here and then
+   * kept current by the passes that were already running.
+   */
+  const setOpen = (next) => {
+    open = next;
+    try {
+      if (ui.panelBox) ui.panelBox.hidden = !open;
+      if (ui.bub) ui.bub.setAttribute("aria-expanded", open ? "true" : "false");
+      if (!open) return;
+      S.field.resolvedAt = -1000;
+      paint(verdictText);
+      paintWindow();
+      paintAnomalies();
+      paintField();
+    } catch {
+      /* a panel that refuses to open is still a meter that measures */
+    }
   };
+
+  try {
+    if (ui.bub) ui.bub.addEventListener("click", () => setOpen(!open));
+    if (ui.close) ui.close.addEventListener("click", () => setOpen(false));
+  } catch {
+    /* the shadow root is closed; without listeners the API below is the way in */
+  }
   setInterval(paintLive, 250);
 
   /* ---------------------------------------------------------------- lifecycle */
@@ -1350,7 +1571,13 @@
 
   const post = async (payload) => {
     try {
-      const res = await fetch("/__perf/report", {
+      /* Two ways in. The phone proxy that injects this file receives the report at
+         `/__perf/report`; inside `next dev` there is no proxy, so the overlay that
+         mounts the meter points `__perfReportEndpoint` at the dev-only API route
+         (`/api/perf-report`). The proxy path stays the default, so an injected
+         meter behaves exactly as it did before. */
+      const endpoint = window.__perfReportEndpoint || "/__perf/report";
+      const res = await fetch(endpoint, {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify(payload),
