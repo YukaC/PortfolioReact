@@ -31,7 +31,7 @@ const FIELD_INK = "#060b1a";
    desktop's 460x288) and is cheaper for it, so there is nothing for a separate
    profile to buy — the old `0.22 / 8` coarse branch put 86x186 targets behind a
    390x844 screen and is what made the mobile field look flat. See
-   odd/tasks/mobile-field-parity.md.
+   odd/tasks/archive/mobile-field-parity.md.
 
    `static` has no entry: it does not mount the canvas at all (§18.6). The
    lattice and its flares are CSS, so a phone loses nothing the field's identity

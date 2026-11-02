@@ -39,7 +39,7 @@ const MEASURE_DEBOUNCE_MS = 160;
  *
  * Writing the seven custom properties on <html> invalidated style for the whole
  * document every frame, which is the dominant measured cost of the scroll
- * (odd/tasks/scroll-perf-pass.md). Each channel is now written only on its
+ * (odd/tasks/archive/scroll-perf-pass.md). Each channel is now written only on its
  * readers, resolved when the loop (re)starts, and skipped when the formatted
  * value did not change.
  *

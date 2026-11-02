@@ -123,6 +123,7 @@ __pycache__/
 .atl/
 # Local AI runtime state
 .atl/
+.pi-glla/
 
 # design-taste-frontend inspector output (screenshots + report)
 .taste-skill/
