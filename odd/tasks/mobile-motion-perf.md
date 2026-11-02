@@ -16,9 +16,10 @@ amplificaba la captura clara del proyecto que pasaba por detrás. Tiene que vers
 mismo material en todas las alturas, sin flash.
 
 **S2 — Nada de glass sobre contenido arbitrario.** Corolario de S1 y de la regla de
-superficies del repo: el glass queda para el preview y su tag; el pill scrolleado y el
-drawer son ink sólido con hairline. Ningún velo translúcido sobre el que se mueve
-contenido claro.
+superficies del repo: el glass queda para el preview y su tag; el pill scrolleado es
+ink **sólido** con hairline y el drawer es ink casi opaco con su propio
+`backdrop-filter: blur(--blur-panel)`, que funciona porque no flota sobre una captura
+clara que se mueve. Ningún velo translúcido sobre contenido claro en movimiento.
 
 **S3 — La caída de Hz tiene causa medida, no opinada.** `raster`/`ablate` del arnés
 apagan una capa por vez y reportan el delta contra la línea base. El arreglo se elige
