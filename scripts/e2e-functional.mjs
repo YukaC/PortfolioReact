@@ -283,21 +283,37 @@ async function assertFilters(page, route) {
     return;
   }
 
-  await tabs.nth(1).click();
-  await page.waitForTimeout(300);
-  const filtered = await count();
-  const pressed = await page.evaluate(() => {
-    const [active] = [...document.querySelectorAll("[data-work-tab]")].filter(
-      (tab) => tab.getAttribute("aria-pressed") === "true",
-    );
-    return { active: active ? active.textContent.trim() : "", pressed: document.querySelectorAll('[data-work-tab][aria-pressed="true"]').length };
-  });
+  // Every card the snapshot serves is React-based, so the "React" tab legitimately
+  // keeps all six rows; what this check is about is that *a* filter narrows the
+  // list, so the tab is probed instead of hard-coded. The pressed check rides
+  // along on the winning probe, so a tab that lies about `aria-pressed` cannot
+  // pass on a row count alone.
+  let narrowed = null;
+  for (let index = 1; index < tabCount && narrowed === null; index += 1) {
+    await tabs.nth(index).click();
+    await page.waitForTimeout(300);
+    const filtered = await count();
+    const pressed = await page.evaluate(() => {
+      const [active] = [...document.querySelectorAll("[data-work-tab]")].filter(
+        (tab) => tab.getAttribute("aria-pressed") === "true",
+      );
+      return {
+        active: active ? active.textContent.trim() : "",
+        pressed: document.querySelectorAll('[data-work-tab][aria-pressed="true"]').length,
+      };
+    });
+    if (filtered > 0 && filtered < total && pressed.pressed === 1 && pressed.active !== "") {
+      narrowed = { index, filtered, pressed };
+    }
+  }
 
   record(
     route,
     "filters/filter",
-    filtered > 0 && filtered < total && pressed.pressed === 1 && pressed.active !== "",
-    `${total} rows → ${filtered} after "${pressed.active}" · ${pressed.pressed} tab pressed`,
+    narrowed !== null,
+    narrowed
+      ? `${total} rows → ${narrowed.filtered} after "${narrowed.pressed.active}" (tab ${narrowed.index}) · 1 tab pressed`
+      : `${total} rows: none of the ${tabCount} tabs narrowed the list and kept one pressed`,
   );
 
   await tabs.first().click();
@@ -378,7 +394,34 @@ async function assertDrawer(page, route) {
     });
 
   await trigger.click();
-  await page.waitForTimeout(700);
+  /* The panel fades in and the drawer hands focus over after the transition, so
+     the check waits for that settled state instead of racing it: a fixed 700 ms
+     read passed or failed depending on the machine (two of three routes went
+     red on one run and green on the next, with nothing in between). The
+     assertion below is unchanged and still strict — this only removes the race. */
+  await page
+    .waitForFunction(
+      () => {
+        const panel = document.querySelector(".mobile-menu-panel");
+        if (!panel) return false;
+        const link = panel.querySelector("a[href], button:not([disabled])");
+        const shown = (element) => {
+          if (!element) return false;
+          const style = getComputedStyle(element);
+          const rect = element.getBoundingClientRect();
+          return (
+            style.display !== "none" &&
+            style.visibility !== "hidden" &&
+            Number(style.opacity) > 0.5 &&
+            rect.height > 1
+          );
+        };
+        return shown(panel) && shown(link) && panel.contains(document.activeElement);
+      },
+      null,
+      { timeout: 4000 },
+    )
+    .catch(() => {});
   const opened = await state();
   record(
     route,
