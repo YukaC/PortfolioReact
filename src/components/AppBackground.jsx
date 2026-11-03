@@ -143,11 +143,13 @@ const FieldBlob = ({ index }) => (
 
 /**
  * The 36 strikes of the identity layer, built once from the pre-generated table
- * (audit.md §18.4, §19.2). They are plain markup: integer cell coordinates in
- * `--cx`/`--cy` — the stylesheet turns them into `calc(var(--cx) * 48px + 24px)`
- * so every flare lands on a dot centre, which a viewport percentage cannot do
- * (§19.3) — plus the cycle and its offset. Nothing here is computed at runtime
- * and nothing here needs hydration.
+ * (audit.md §18.4, §19.2; odd/tasks/flare-tempo.md S3). They are plain markup:
+ * integer cell coordinates in `--cx`/`--cy` — the stylesheet turns them into
+ * `calc(var(--cx) * 48px + 24px)` so every flare lands on a dot centre, which a
+ * viewport percentage cannot do (§19.3) — plus the phase, as a whole slot of the
+ * breath (`calc(<slot> * var(--grid))`). The cycle is not here at all: it is
+ * `--breath` in the stylesheet, one value for the whole field. Nothing here is
+ * computed at runtime and nothing here needs hydration.
  */
 const FLARE_ELEMENTS = FIELD_FLARES.map((flare) => (
   <i
@@ -156,8 +158,7 @@ const FLARE_ELEMENTS = FIELD_FLARES.map((flare) => (
     style={{
       "--cx": String(flare.cx),
       "--cy": String(flare.cy),
-      "--dur": `${flare.dur}s`,
-      "--delay": `${flare.delay}s`,
+      "--delay": `calc(${flare.slot} * var(--grid))`,
     }}
   />
 ));

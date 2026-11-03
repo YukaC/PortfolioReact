@@ -78,31 +78,39 @@ three hard steps inside an 8 % window (≈ 0.6 s at 7–11 s cycles), with
 permanently zero between strikes, and 36 independent long cycles put up to six
 at once.
 
-What it is now:
+**Cadence, tempo-locked** (`odd/tasks/flare-tempo.md`; owner brief: the flares go
+at 128 BPM "como respiracion", the tempo of Bocanada). The field used to carry 36
+hand-tuned cycles of 8.7–9.3 s; it now carries one, and it is the song's:
 
+- `--bpm: 128` is the only place the tempo is written down. `--beat: calc(60s /
+  var(--bpm))` is 0.46875 s, `--breath: calc(8 * var(--beat))` is 3.75 s, and
+  `.flare` runs its bell on `--breath`. Eight beats are exactly two 4/4 bars — 16
+  breaths a minute, the rate of a calm human breath. One breath per beat would be
+  2.13 Hz, and the count is `visible dots × duty cycle`: on 36 dots a 2.13 Hz
+  breath only fits the 1–4 budget as a sub-50 ms flicker, which is the blink T12
+  removed. `8` is the one knob for a faster or calmer field;
+- the phases are whole slots of `--grid: calc(var(--beat) / 8)` — a 32nd note,
+  58.59 ms — dealt in golden-ratio order over the 64 a breath holds, so every
+  prefix comes out spread and every onset and every peak sits on the song's grid.
+  `src/lib/field-flares.js` therefore carries `{ cx, cy, slot }` and nothing else:
+  no seconds, no cycle, no arithmetic at runtime;
 - one bell per density band — `flare` (36 dots), `flare-22`, `flare-12`,
   `flare-6` — resting at `0.04` (never `0`: the field is never completely dark),
   peaking at `0.5` instead of `1`, with both flanks eased by
   `--ease-in-out-field`, so no stop in the cycle is a step;
-- the slice of the cycle above the `0.05` "lit" threshold is set per band so that
+- the slice of the breath above the `0.05` "lit" threshold is set per band so that
   1–4 flares are lit at once however many dots the viewport carries (§19.2): the
-  six-dot phone field gets a 3.6 s swell, the 36-dot field a 0.45 s one. Fewer,
-  longer strikes are the only way to keep the count bounded — the count is
-  `visible dots × duty cycle`, so a long bright phase on 36 dots is arithmetically
-  a crowd;
-- the delays are one slot each of a 36-slot cycle (8 s / 36) dealt in
-  golden-ratio order, so every prefix — the six a phone shows as much as the 36 a
-  wide screen shows — comes out spread over the cycle instead of bunched at its
-  start;
-- the cycles are a narrow, all-distinct band around 9 s instead of a 7–11 s
-  scatter. A bounded count only holds while the phases stay roughly in step; the
-  scatter decorrelated them so fast that the count became a distribution whose
-  peak was 6. The band still drifts (the pattern is not a loop), at about 0.4 of
-  a cycle per minute.
+  six-dot phone field gets a 1.84 s swell, the 36-dot field a 0.34 s one. Fewer,
+  longer strikes are the only way to keep the count bounded — a long bright phase
+  on 36 dots is arithmetically a crowd;
+- the phases are staggered rather than unison (owner's choice): each dot has its
+  own slot inside the breath, so the field stays a shimmer and not a strobe. The
+  pattern repeats every breath by design — that is what being in tempo means.
 
 `src/lib/field-flares.js` holds the table and its generator notes;
 `src/lib/field-flares.test.js` pins the budget: peak ≤ 4 and at least one lit for
-the certified minute at every density band, plus the never-zero floor.
+the certified minute at every density band, the never-zero floor, and the tempo
+chain the stylesheet declares.
 
 ## §field — the blobs and the convolved blur
 

@@ -1,5 +1,6 @@
 /**
- * The identity layer's flare table (audit.md §18.4, §19.2; feature spec S5).
+ * The identity layer's flare table (audit.md §18.4, §19.2; feature spec S5, and
+ * the tempo lock of `odd/tasks/flare-tempo.md` S1–S3).
  *
  * The coral lattice is CSS: one tiled raster with a 48 px cell, anchored at the
  * tile origin `0 0`, so every dot centre sits at `n * 48 + 24` from the top-left
@@ -11,8 +12,12 @@
  * nearest dot centre" criterion in §18.8 is the one that failed there.
  *
  * `FIELD_FLARES` is a literal, generated once. Nothing here is computed at
- * runtime: the 36 entries are served in the HTML, and the ones a narrow viewport
- * does not need are hidden by media query, not by JavaScript (§18.4 rule 4).
+ * runtime and nothing here knows the tempo: the 36 entries are served in the
+ * HTML, the ones a narrow viewport does not need are hidden by media query, not
+ * by JavaScript (§18.4 rule 4), and the cycle, the beat and the grid are three
+ * custom properties in `globals.css` (`--breath`, `--beat`, `--grid`). This file
+ * carries only what is genuinely per-element: where the dot is, and which slot
+ * of the breath it fires on.
  *
  * How the table was generated, so it can be regenerated rather than guessed:
  *
@@ -29,16 +34,14 @@
  *      sequence of the plastic constant) inside it. Any prefix is therefore
  *      spread over its band instead of filling it row by row, and no cell is
  *      used twice.
- *   3. `--delay` is the phase of the whole field and `--dur` its cycle. The
- *      delays are one slot each of a 36-slot cycle (8 s / 36), dealt in
- *      golden-ratio order so that **every prefix** — the six a phone shows as
- *      much as the 36 a wide screen does — comes out spread over the cycle
- *      instead of bunched at its start. The cycles are then a narrow, all
- *      distinct band around 9 s rather than the 7–11 s scatter used before: a
- *      bounded number of lit flares only holds while the phases stay roughly in
- *      step, and a 2 s scatter decorrelates them so fast that the count became
- *      a distribution up to 6. The band still drifts (the pattern is not a loop)
- *      — it just drifts at ~0.4 of a cycle per minute instead of seconds.
+ *   3. `slot` is the phase of the whole field: one slot per flare out of the 64
+ *      that a breath holds, walked in golden-ratio order, so that **every
+ *      prefix** — the six a phone shows as much as the 36 a wide screen does —
+ *      comes out spread over the breath instead of bunched at its start. The
+ *      delay is `slot * --grid`, and `--grid` is a 32nd note at `--bpm: 128`
+ *      (58.59 ms), so every flare leaves its rest and reaches its peak *on the
+ *      song's grid*: one breath is 8 beats, its peak sits at 4 of them, and both
+ *      are whole beats away from the slot.
  *
  * One strike is a soft swell, not a blink: `@keyframes flare` rests at 0.04
  * (never 0), peaks at 0.5 and is eased on both flanks by `--ease-in-out-field`.
@@ -58,54 +61,54 @@ export const DOT_INSET_PX = 24;
  * The 36 flares, in the order the density media queries reveal them: the first
  * six are the phone field, the first twelve the tablet one, and so on.
  *
- * @type {ReadonlyArray<{ cx: number, cy: number, dur: number, delay: number }>}
+ * @type {ReadonlyArray<{ cx: number, cy: number, slot: number }>}
  *   `cx`/`cy` are integer cell coordinates (the position is `cx * 48 + 24`),
- *   `dur` is the cycle in seconds and `delay` its phase offset.
+ *   `slot` is the phase as a whole number of `--grid` steps inside one breath.
  *
- * The four columns are read together: the entry at index `i` is served in the
- * HTML as `--cx: 5; --cy: 7; --dur: 8.7s; --delay: 0s`, and the delays are the
- * 8 s slot grid (0.2222 s apart) walked in golden-ratio order.
+ * The three columns are read together: the entry at index `i` is served in the
+ * HTML as `--cx: 5; --cy: 7; --delay: calc(0 * var(--grid))`, and the slots are
+ * the 64 of a breath dealt in golden-ratio order.
  */
 export const FIELD_FLARES = Object.freeze(
   [
-    [5, 7, 8.7, 0],
-    [1, 0, 9.077, 4.889],
-    [4, 14, 8.854, 2],
-    [3, 6, 9.231, 6.889],
-    [2, 14, 8.991, 3.778],
-    [5, 1, 8.769, 0.889],
+    [5, 7, 0],
+    [1, 0, 34],
+    [4, 14, 13],
+    [3, 6, 47],
+    [2, 14, 26],
+    [5, 1, 60],
     // 12 — inside 1024×768
-    [0, 15, 8.906, 2.667],
-    [5, 3, 9.283, 7.556],
-    [17, 8, 8.82, 1.556],
-    [16, 5, 9.043, 4.444],
-    [7, 9, 9.146, 5.778],
-    [12, 6, 9.197, 6.444],
+    [0, 15, 5],
+    [5, 3, 39],
+    [17, 8, 18],
+    [16, 5, 52],
+    [7, 9, 31],
+    [12, 6, 10],
     // 22 — inside 1600×900
-    [21, 8, 8.957, 3.333],
-    [27, 17, 8.734, 0.444],
-    [25, 2, 9.111, 5.333],
-    [6, 12, 8.871, 2.222],
-    [4, 3, 9.249, 7.111],
-    [10, 7, 9.009, 4],
-    [17, 16, 8.786, 1.111],
-    [23, 1, 9.163, 6],
-    [29, 11, 8.923, 2.889],
-    [2, 8, 9.3, 7.778],
+    [21, 8, 44],
+    [27, 17, 23],
+    [25, 2, 57],
+    [6, 12, 2],
+    [4, 3, 36],
+    [10, 7, 15],
+    [17, 16, 49],
+    [23, 1, 28],
+    [29, 11, 62],
+    [2, 8, 7],
     // 36 — inside 1920×1080
-    [8, 7, 9.06, 4.667],
-    [14, 19, 8.837, 1.778],
-    [28, 1, 9.214, 6.667],
-    [26, 12, 8.974, 3.556],
-    [1, 2, 8.751, 0.667],
-    [31, 21, 9.129, 5.556],
-    [5, 10, 8.889, 2.444],
-    [3, 14, 9.266, 7.333],
-    [17, 4, 9.026, 4.222],
-    [23, 8, 8.803, 1.333],
-    [21, 20, 9.18, 6.222],
-    [35, 2, 8.94, 3.111],
-    [33, 13, 8.717, 0.222],
-    [15, 3, 9.094, 5.111],
-  ].map(([cx, cy, dur, delay]) => Object.freeze({ cx, cy, dur, delay })),
+    [8, 7, 41],
+    [14, 19, 20],
+    [28, 1, 54],
+    [26, 12, 33],
+    [1, 2, 12],
+    [31, 21, 46],
+    [5, 10, 25],
+    [3, 14, 59],
+    [17, 4, 4],
+    [23, 8, 38],
+    [21, 20, 17],
+    [35, 2, 51],
+    [33, 13, 30],
+    [15, 3, 9],
+  ].map(([cx, cy, slot]) => Object.freeze({ cx, cy, slot })),
 );

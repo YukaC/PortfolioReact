@@ -7,7 +7,8 @@ import { CELL_PX, DOT_INSET_PX, FIELD_FLARES } from "./field-flares.js";
 
 /**
  * The identity layer's acceptance criteria, as numbers (audit.md §18.4, §18.8,
- * §19.2, §19.4; feature spec S5, and the T12 rework of the cadence).
+ * §19.2, §19.4; feature spec S5, T12's cadence rework, and the tempo lock of
+ * `odd/tasks/flare-tempo.md` S1–S4).
  *
  * No DOM, no browser, no clock: the table is a literal, the curve is read out of
  * `@keyframes` as text, and the simulation below is a pure function of the two.
@@ -20,7 +21,9 @@ import { CELL_PX, DOT_INSET_PX, FIELD_FLARES } from "./field-flares.js";
  *   2. the field is a shimmer, not a blink — at every density band the number of
  *      flares past the "lit" threshold stays inside 1–4, and the field never goes
  *      completely dark. The owner's report was that the strikes felt abrupt and
- *      sporadic; both halves of that are pinned below, so neither can come back.
+ *      sporadic; both halves of that are pinned below, so neither can come back;
+ *   3. the shimmer is in tempo — 128 BPM, the beat of the song the field is named
+ *      after, with every phase and every peak on that grid (S1–S3).
  *
  * The opacity curve is interpolated **linearly** between the keyframe stops even
  * though the stylesheet eases each segment (`--ease-in-out-field`). That makes
@@ -32,6 +35,40 @@ import { CELL_PX, DOT_INSET_PX, FIELD_FLARES } from "./field-flares.js";
  */
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const css = readFileSync(path.join(ROOT, "src/styles/globals.css"), "utf8");
+
+/**
+ * The tempo, read out of the stylesheet instead of restated here (S1). The sheet
+ * is the only place it lives — the table carries phases in grid slots, never
+ * seconds — so the test derives its numbers from the same four declarations the
+ * browser resolves.
+ */
+const declared = (name) => {
+  const match = new RegExp(`${name}:\\s*([^;]+);`).exec(css);
+  return match ? match[1].trim() : "";
+};
+const BPM_DECL = declared("--bpm");
+const BEAT_DECL = declared("--beat");
+const BREATH_DECL = declared("--breath");
+const GRID_DECL = declared("--grid");
+
+const BPM = Number(BPM_DECL);
+/** The multiplier in `--breath: calc(8 * var(--beat))` — two 4/4 bars (S2). */
+const BREATH_BEATS = Number(/calc\(\s*([\d.]+)\s*\*\s*var\(--beat\)/.exec(BREATH_DECL)?.[1]);
+/** The divisor in `--grid: calc(var(--beat) / 8)` — a 32nd note (S3). */
+const GRID_DIVISOR = Number(/calc\(\s*var\(--beat\)\s*\/\s*([\d.]+)\s*\)/.exec(GRID_DECL)?.[1]);
+const BEAT_S = 60 / BPM;
+const BREATH_S = BREATH_BEATS * BEAT_S;
+const GRID_S = BEAT_S / GRID_DIVISOR;
+
+/**
+ * The table as the page plays it: the browser gets `--delay: calc(slot * var(--grid))`
+ * and the cycle from `--breath`, so the phase in seconds is `slot * --grid`.
+ */
+const FLARES = FIELD_FLARES.map((flare) => ({
+  ...flare,
+  dur: BREATH_S,
+  delay: flare.slot * GRID_S,
+}));
 
 /** The spec's lattice, spelled out here so the table cannot grade itself. */
 const SPEC_CELL = 48;
@@ -68,8 +105,8 @@ const STEP_MS = 20;
  * is still starting, which is the page load and not the field.
  */
 const WARM_MS =
-  Math.max(...FIELD_FLARES.map((flare) => flare.delay)) * 1000 +
-  Math.max(...FIELD_FLARES.map((flare) => flare.dur)) * 1000;
+  Math.max(...FLARES.map((flare) => flare.delay)) * 1000 +
+  Math.max(...FLARES.map((flare) => flare.dur)) * 1000;
 
 /**
  * The body of the first block opened by `opener`, balanced to its closing brace.
@@ -133,7 +170,7 @@ const saturation = (ms, flare) => {
  */
 const simulate = (count, name) => {
   const opacity = opacityAt(keyframeStops(name));
-  const band = FIELD_FLARES.slice(0, count);
+  const band = FLARES.slice(0, count);
   let min = Infinity;
   let max = 0;
   let sum = 0;
@@ -218,43 +255,87 @@ test("no two flares share a cell", () => {
   assert.deepEqual(duplicates, [], `cells used twice: ${duplicates.join(" ")}`);
 });
 
-test("cycles and phases stay inside the documented range, all distinct", () => {
-  const durations = FIELD_FLARES.map((flare) => flare.dur);
-  const delays = FIELD_FLARES.map((flare) => flare.delay);
-  const outOfRange = FIELD_FLARES.filter(
-    (flare) =>
-      !(flare.dur >= 7 && flare.dur <= 11) || !(flare.delay >= 0 && flare.delay <= 8),
-  );
-  assert.deepEqual(
-    outOfRange.map((flare) => `${flare.cx},${flare.cy}: ${flare.dur}s/${flare.delay}s`),
-    [],
-    "--dur must be 7–11 s and --delay 0–8 s (§18.4)",
-  );
-  // Distinct values are what keeps the field from turning into one synchronised
-  // strobe: no two flares share a cycle or a phase.
-  assert.equal(new Set(durations).size, SPEC_COUNT, "--dur must not repeat");
-  assert.equal(new Set(delays).size, SPEC_COUNT, "--delay must not repeat");
+test("the tempo is the song's: 128 BPM, one breath every 8 beats", () => {
+  // S1: 128 is the number the owner named, and it is the same number the sworn
+  // script resolves — the sheet states it once and everything else is a `calc`
+  // off it, so there is no second copy of the tempo to drift.
+  assert.equal(BPM, 128, "the field's tempo must be the 128 BPM of the song");
+  assert.match(BEAT_DECL, /^calc\(\s*60s\s*\/\s*var\(--bpm\)\s*\)$/, "--beat must be 60s / --bpm, not a hand-written decimal");
+  assert.ok(Math.abs(BEAT_S - 0.46875) < 1e-9, `one beat must be 0.46875 s, saw ${BEAT_S}`);
+  // S2: 8 beats are exactly two 4/4 bars — 16 breaths a minute, the rate of a
+  // calm human breath. One breath per beat would be 2.13 Hz, and 36 dots cannot
+  // pulse that fast and stay inside 1–4 lit at once.
+  assert.equal(BREATH_BEATS, 8, "one breath must be two 4/4 bars");
+  assert.ok(Math.abs(BREATH_S - 3.75) < 1e-9, `a breath must be 3.75 s, saw ${BREATH_S}`);
+  assert.equal(BREATH_BEATS % 4, 0, "a breath has to be whole bars, or its peak leaves the beat");
+  // S3: the phases are dealt on a musical subdivision, not on seconds — a 32nd
+  // note, 58.59 ms at 128 BPM.
+  assert.equal(GRID_DIVISOR, 8, "the phase grid must be a 32nd note");
+  assert.ok(Math.abs(GRID_S - 0.05859375) < 1e-9, `one grid step must be 58.59 ms, saw ${GRID_S}`);
 
-  // A narrow band, on purpose. A bounded number of lit flares only holds while
-  // the phases stay roughly in step, and a 7–11 s scatter decorrelates them fast
-  // enough that the count becomes a distribution whose peak was 6 (measured over
-  // the same minute this file certifies). The band still drifts — the pattern is
-  // not a loop — at about 0.4 of a cycle per minute.
-  const spread = Math.max(...durations) - Math.min(...durations);
-  assert.ok(spread <= 1.5, `the cycles span ${spread.toFixed(2)} s; 1.5 s is the ceiling`);
+  // And the flare reads both: the cycle comes from `--breath`, never from a
+  // per-instance `--dur`, which is what keeps the JSX carrying only the phase.
+  assert.match(
+    blockOf(".flare {"),
+    /animation:[^;]*var\(--breath[^;]*infinite/,
+    ".flare must take its cycle from --breath, not from a per-instance --dur",
+  );
+  assert.equal(
+    /--dur\s*:/.test(css),
+    false,
+    "a per-flare --dur would be a second copy of the tempo",
+  );
+});
+
+test("every flare breathes once per breath, on the tempo grid", () => {
+  // S3: the onset is a whole slot of the grid, and the peak sits half a breath
+  // later — 4 whole beats — so the peak is on the grid too. The field is in
+  // tempo, not near it.
+  const offGrid = [];
+  for (const [index, flare] of FLARES.entries()) {
+    if (!Number.isInteger(flare.slot)) {
+      offGrid.push(`${index}: slot ${flare.slot} is not whole`);
+      continue;
+    }
+    if (!(flare.slot >= 0 && flare.delay < BREATH_S)) {
+      offGrid.push(`${index}: slot ${flare.slot} is outside the breath`);
+    }
+    const peak = (flare.delay + flare.dur / 2) / GRID_S;
+    if (Math.abs(peak - Math.round(peak)) > 1e-6) {
+      offGrid.push(`${index}: peak at ${peak.toFixed(3)} grid steps is not on the grid`);
+    }
+  }
+  assert.deepEqual(offGrid, [], `flares off the tempo grid:\n${offGrid.join("\n")}`);
+
+  // Half a breath is a whole number of beats, which is what lets a grid-aligned
+  // onset put its peak on the grid as well.
+  const halfBreathBeats = BREATH_S / 2 / BEAT_S;
+  assert.ok(
+    Math.abs(halfBreathBeats - Math.round(halfBreathBeats)) < 1e-9,
+    `half a breath is ${halfBreathBeats} beats; it has to be whole`,
+  );
+
+  // Distinct phases are what keep 36 dots from turning into one synchronised
+  // strobe; a breath holds 64 grid slots for 36 flares.
+  const slots = FLARES.map((flare) => flare.slot);
+  assert.equal(new Set(slots).size, SPEC_COUNT, "--delay must not repeat");
+  assert.ok(
+    Math.max(...slots) < BREATH_BEATS * GRID_DIVISOR,
+    "a phase must sit inside the slots of one breath",
+  );
 });
 
 test("every prefix is spread over the cycle, not bunched at its start", () => {
-  // The delays are one slot each of a 36-slot cycle, dealt in golden-ratio order,
-  // so the six a phone shows are as spread as the 36 a wide screen shows. Without
-  // this a prefix sits in a burst and then leaves the field dark.
+  // The delays are one slot each of the breath's grid, dealt in golden-ratio
+  // order, so the six a phone shows are as spread as the 36 a wide screen shows.
+  // Without this a prefix sits in a burst and then leaves the field dark.
   for (const band of BANDS) {
-    const prefix = FIELD_FLARES.slice(0, band.count).map((flare) => flare.delay);
+    const prefix = FLARES.slice(0, band.count).map((flare) => flare.delay);
     const span = Math.max(...prefix) - Math.min(...prefix);
-    const floor = (8 * band.count * 0.8) / SPEC_COUNT;
+    const floor = (BREATH_S * band.count * 0.8) / SPEC_COUNT;
     assert.ok(
       span >= floor,
-      `the first ${band.count} delays span ${span.toFixed(2)} s of 8 s (floor ${floor.toFixed(2)} s)`,
+      `the first ${band.count} delays span ${span.toFixed(3)} s of ${BREATH_S} s (floor ${floor.toFixed(3)} s)`,
     );
   }
 });
@@ -344,8 +425,9 @@ test("the field stays calm: 1–4 lit at once, and never fully dark", () => {
   }
 
   // And the band gets a longer swell the sparser it is: the strike on a phone is
-  // a 3.6 s breath, the one on the 36-dot field 0.45 s. Same count, different
-  // window — that is how "1–4 at once" survives at 6 and at 36 dots.
+  // a 1.8 s breath, the one on the 36-dot field 0.34 s. Same count, different
+  // window — that is how "1–4 at once" survives at 6 and at 36 dots, because the
+  // count is `visible dots × duty cycle` and no window can beat that arithmetic.
   const window = (name) => {
     const stops = keyframeStops(name);
     const opacity = opacityAt(stops);
@@ -355,7 +437,7 @@ test("the field stays calm: 1–4 lit at once, and never fully dark", () => {
     }
     return lit;
   };
-  const seconds = (count) => (window(KEYFRAME_OF_BAND[count]) / 100) * 9;
+  const seconds = (count) => (window(KEYFRAME_OF_BAND[count]) / 100) * BREATH_S;
   assert.ok(seconds(6) > seconds(22), "the phone's strike must be the longest");
   assert.ok(seconds(36) < seconds(12), "the dense field must carry the shortest one");
 });
