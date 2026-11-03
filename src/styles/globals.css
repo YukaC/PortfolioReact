@@ -259,6 +259,19 @@
   --stagger-word: 45ms; /* between the words of a split heading */
   --stagger-phrase: 40ms; /* config STAGGER.phrase */
   --stagger-min: 30ms; /* config STAGGER.min, the floor for a sibling beat */
+  /* --- tempo (§19.2, odd/tasks/flare-tempo.md S1–S3) --------------------
+     The lattice breathes in the tempo of the song that gives the field its
+     name: `--bpm` is that number and the only place it is written down —
+     everything else is a `calc` off it. One flare swells once every `--breath`,
+     which is 8 beats: exactly two 4/4 bars, and 16 breaths a minute, the rate of
+     a calm human breath. One breath per beat would be 2.13 Hz, and 36 dots
+     cannot pulse that fast and stay inside 1–4 lit at once. `--grid` is the
+     subdivision the 36 phases are dealt on — a 32nd note — so every flare leaves
+     its rest and reaches its peak on the song's grid instead of near it. */
+  --bpm: 128;
+  --beat: calc(60s / var(--bpm));
+  --breath: calc(8 * var(--beat));
+  --grid: calc(var(--beat) / 8);
   /* The curves the sheet owns. The springs stay in `motion/config.js`:
      they are sampled CustomEases, not cubic-beziers (§14.4). */
   --ease-out-field: cubic-bezier(0.2, 0.7, 0.2, 1);
@@ -1237,11 +1250,14 @@
   }
 
   /* The strikes on those dots: 36 elements served in the HTML, positioned in
-     whole cell coordinates and staggered by `--dur`/`--delay`. Only `opacity`
-     and `transform` animate, so each one is composited and never repaints or
-     forces layout — no JavaScript, no hydration, no ResizeObserver (§18.4 rule
-     4). The table lives in `src/lib/field-flares.js`; the cadence, and why the
-     bell narrows as the density grows, are in docs/css-map.md §identity. */
+     whole cell coordinates and phased by `--delay` — a slot of the breath
+     (`calc(<slot> * var(--grid))`), never a hand-tuned number. The cycle is
+     `--breath`, one value for the whole field, because the cycle *is* the tempo.
+     Only `opacity` and `transform` animate, so each one is composited and never
+     repaints or forces layout — no JavaScript, no hydration, no ResizeObserver
+     (§18.4 rule 4). The table lives in `src/lib/field-flares.js`; the cadence,
+     and why the bell narrows as the density grows, are in docs/css-map.md
+     §identity. */
   .bocanada-flares {
     position: fixed;
     inset: 0;
@@ -1264,14 +1280,15 @@
       transparent 70%
     );
     opacity: var(--flare-rest, 0.04);
-    animation: flare var(--dur, 9s) var(--ease-in-out-field) var(--delay, 0s) infinite;
+    animation: flare var(--breath) var(--ease-in-out-field) var(--delay, 0s) infinite;
   }
 
   /* One keyframe per density band (docs/css-map.md §identity): the bell covers a
-     fixed slice of the cycle, so a band with six strikes keeps a long soft swell
-     and the 36-strike field keeps 1–4 of them lit at once. The rest opacity is
-     not zero — the field never goes fully dark — and the eased attack/decay
-     leaves no step anywhere in the cycle. */
+     fixed slice of the breath, so a band with six strikes keeps a long soft
+     swell (1.84 s of the 3.75 s) and the 36-strike field keeps 1–4 of them lit at
+     once with a 0.34 s one. The rest opacity is not zero — the field never goes
+     fully dark — and the eased attack/decay leaves no step anywhere in the
+     cycle. */
 
   /* Density by viewport: 6 / 12 / 22 / 36 visible, counted by computed `display`
      and driven by no script. Three cumulative `max-width` steps in this order
@@ -2508,16 +2525,17 @@
    rule that plays it only hides the list. Each one is named by the `animation`
    that asks for it.
 
-   The flares come in one bell per density band: `rise` is where the pulse leaves
-   its rest opacity, so the slice of the cycle that is above the "lit" threshold
-   is fixed per band. Six strikes on a phone get a long swell, the 36-strike
-   field keeps 1–4 lit at once (§19.2), and every band keeps a rest above zero so
-   the field is never completely dark. `--ease-in-out-field` shapes both flanks:
-   no stop in this cycle is a step. */
+   The flares come in one bell per density band, and a band's window is a slice
+   of the breath: `rise` is where the pulse leaves its rest opacity, so the slice
+   of the cycle that is above the "lit" threshold is fixed per band. Six strikes
+   on a phone get a long swell (1.84 s of the 3.75 s breath), the 36-strike field
+   keeps 1–4 lit at once (§19.2) with a 0.34 s one, and every band keeps a rest
+   above zero so the field is never completely dark. `--ease-in-out-field` shapes
+   both flanks: no stop in this cycle is a step. */
 @keyframes flare {
   0%,
-  47.1%,
-  52.9%,
+  45.5%,
+  54.5%,
   100% {
     opacity: 0.04;
     transform: scale(0.94);
@@ -2531,8 +2549,8 @@
 
 @keyframes flare-22 {
   0%,
-  45.6%,
-  54.4%,
+  43.1%,
+  56.9%,
   100% {
     opacity: 0.04;
     transform: scale(0.94);
@@ -2546,8 +2564,8 @@
 
 @keyframes flare-12 {
   0%,
-  42%,
-  58%,
+  36.7%,
+  63.3%,
   100% {
     opacity: 0.04;
     transform: scale(0.94);
@@ -2561,8 +2579,8 @@
 
 @keyframes flare-6 {
   0%,
-  28%,
-  72%,
+  25.4%,
+  74.6%,
   100% {
     opacity: 0.04;
     transform: scale(0.94);
