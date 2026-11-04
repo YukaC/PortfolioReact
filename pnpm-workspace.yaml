@@ -28,6 +28,14 @@ allowBuilds:
   sharp: true
   unrs-resolver: true
 
+# pnpm 11 quarantines any release younger than 24 h (its own default; stated here
+# so the exception below is readable instead of implied). The two exclusions are
+# deliberate and narrow: next 16.4.5 is the release that closes both critical
+# advisories this branch is fixing, and eslint-config-next tracks next's version
+# plus the eight platform builds of @next/swc it resolves. Only that exact
+# version is exempt — the next bump goes back behind the quarantine.
+minimumReleaseAge: 1440
+
 minimumReleaseAgeExclude:
   - '@next/env@16.4.5'
   - '@next/eslint-plugin-next@16.4.5'

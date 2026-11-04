@@ -47,19 +47,22 @@ export const SNAPSHOT_FILE = resolveSnapshotFile();
  * there is no fallback data and no network call to fall back to, so a broken
  * snapshot must fail the build instead of blanking the work list.
  *
+ * Next 16.4's tracer reads this function. The render path always passes no
+ * `file`, so the static arm (the module's own `SNAPSHOT_FILE`) is the one it can
+ * follow; the test-only override is marked `turbopackIgnore` because otherwise
+ * the tracer concludes any path is reachable and traces the whole project —
+ * `public/` included — into the server output, which is a size and a deploy-limit
+ * risk. The static arm is what ships.
+ *
  * @param {{ file?: string }} [options]
  * @returns {{ generatedAt: string|null, projects: object[], sha256: string }}
  */
 export function readProjectsSnapshot({ file = SNAPSHOT_FILE } = {}) {
-  // The render path always reads the module's own snapshot; `file` exists so the
-  // tests can point at a temp copy. Next 16.4's tracer follows the static arm and
-  // is explicitly told to ignore the override one: without the split it decides
-  // any path is reachable and traces the whole project — `public/` included —
-  // into the server output, which is both a size and a deploy-limit risk.
   const text =
     file === SNAPSHOT_FILE
       ? readFileSync(SNAPSHOT_FILE, "utf8")
-      : readFileSync(/* turbopackIgnore: true */ file, "utf8");
+      : // Tests only, and out of the tracer's reach on purpose (see above).
+        readFileSync(/* turbopackIgnore: true */ file, "utf8");
   const parsed = JSON.parse(text);
   const result = validate(parsed);
 
@@ -81,6 +84,11 @@ export function readProjectsSnapshot({ file = SNAPSHOT_FILE } = {}) {
  * `rename`, which is what makes readers see either the old bytes or the new
  * ones — never a half-written file.
  *
+ * This is the swap-side sibling of `readProjectsSnapshot`: it runs from
+ * `scripts/sync-projects.mjs` and from the tests, never from a request, so the
+ * path argument carries the same `turbopackIgnore` mark and the tracer does not
+ * chase it into the whole project.
+ *
  * @param {unknown} candidate array of projects, or `{ generatedAt, projects }`
  * @param {{ file?: string, generatedAt?: string, log?: (line: string) => void }} [options]
  * @returns {{ ok: true, sha256: string, bytes: number, generatedAt: string, projects: object[] }
@@ -98,11 +106,6 @@ export function commitProjectsSnapshot(
   const stamp = generatedAt ?? new Date().toISOString();
   const text = serializeSnapshot({ generatedAt: stamp, projects: result.items });
   const digest = sha256Hex(text);
-  // `turbopackIgnore` is not a correctness hint, it is a build-size one: the
-  // writer runs from `scripts/sync-projects.mjs` and from the tests, never from
-  // a request, and without it Next 16.4's tracer decides this call can touch any
-  // path and traces the *whole project* (public/ included) into the server
-  // output. Readers (`readProjectsSnapshot`) are untouched.
   const target = path.resolve(/* turbopackIgnore: true */ file);
   const temp = `${target}.${process.pid}.${randomUUID()}.tmp`;
 
