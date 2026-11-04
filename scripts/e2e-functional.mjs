@@ -399,7 +399,9 @@ async function assertDrawer(page, route) {
      read passed or failed depending on the machine (two of three routes went
      red on one run and green on the next, with nothing in between). The
      assertion below is unchanged and still strict — this only removes the race. */
-  await page
+  /* A timeout is not swallowed: the record below fails on state either way, and
+     the reason it waited in vain rides along in the detail instead of being lost. */
+  const settleTimeout = await page
     .waitForFunction(
       () => {
         const panel = document.querySelector(".mobile-menu-panel");
@@ -421,13 +423,14 @@ async function assertDrawer(page, route) {
       null,
       { timeout: 4000 },
     )
-    .catch(() => {});
+    .then(() => "")
+    .catch((error) => ` · did not settle in 4 s (${String(error?.message ?? error).split("\n")[0]})`);
   const opened = await state();
   record(
     route,
     "drawer/open",
     opened.open && opened.panelVisible && opened.linkVisible && opened.focusInside,
-    `${opened.side}: open=${opened.open} panel=${opened.panelVisible} link=${opened.linkVisible} focus inside=${opened.focusInside}`,
+    `${opened.side}: open=${opened.open} panel=${opened.panelVisible} link=${opened.linkVisible} focus inside=${opened.focusInside}${settleTimeout}`,
   );
 
   await page.keyboard.press("Escape");

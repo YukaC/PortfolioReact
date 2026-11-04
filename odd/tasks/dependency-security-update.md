@@ -68,6 +68,11 @@ fallaba de forma intermitente: leía el estado a los 700 ms fijos y la animació
 del panel no siempre había terminado; ahora espera el estado asentado con el
 mismo assert.
 
+Ojo con los totales de la tabla: la corrida "antes" usó el script previo, que
+contaba 51 verificaciones (48 OK + 3 FALLA), y la "después" el script corregido,
+que cuenta 51 (51 OK + 0). Lo comparable es el conjunto de fallos — los mismos
+tres `filters/filter` en las tres rutas, y nada nuevo — no el número de OKs.
+
 Lo único que el update cambió de verdad fue un **warning de build nuevo**
 (`next` 16.4 estrena el analizador de tracing): `readProjectsSnapshot` y
 `commitProjectsSnapshot` recibían la ruta por parámetro y el tracer concluía que
