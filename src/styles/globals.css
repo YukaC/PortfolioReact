@@ -630,6 +630,13 @@
     color var(--duration-fast) var(--ease-out-field),
     scale var(--duration-fast) var(--ease-out-field);
 
+  /* The filter row scrolls horizontally, and an overflow container clips on
+     both axes: at the sheet's 4px offset the ring lost its outer pixel top and
+     bottom. Inside the row's 5px padding it fits whole. */
+  &:focus-visible {
+    outline-offset: 1px;
+  }
+
   &:hover,
   &[aria-pressed="true"] {
     color: var(--color-white);
@@ -698,7 +705,7 @@
     border-color var(--duration-slow) var(--ease-out-field);
 
   @variant pointer-fine {
-    .work-row:hover & {
+    .work-row:is(:hover, :focus-within) & {
       color: var(--color-on-solid);
       border-color: var(--color-white);
     }
@@ -2068,19 +2075,19 @@
       --o: 0.6;
     }
 
-    .work-row:hover::before {
+    .work-row:is(:hover, :focus-within)::before {
       opacity: 1;
     }
 
-    .work-row:hover .work-body > * {
+    .work-row:is(:hover, :focus-within) .work-body > * {
       translate: 12px 0;
     }
 
-    .work-row:hover .work-num {
+    .work-row:is(:hover, :focus-within) .work-num {
       color: var(--color-sky);
     }
 
-    .work-row:hover .work-go::before {
+    .work-row:is(:hover, :focus-within) .work-go::before {
       transform: scale(1);
     }
   }
@@ -2758,6 +2765,12 @@
   .work-tab,
   .btn::before,
   .btn::after {
+    transition: none;
+  }
+
+  /* The disc the row's arrow fills, and the footer underline: both missed. */
+  .work-go::before,
+  .footer-links a {
     transition: none;
   }
 
