@@ -38,30 +38,11 @@ número de escritorio.
 **S6 — No se rompe nada de lo que ya está medido.** `pnpm test:all` en verde,
 `check:css` sin drift, y `/`, `/es`, `/pt` siguen prerenderizados.
 
-**S7 — Durante un fling, el contenido que la pantalla muestra no puede estar en el
-entrance.** Verbatim: "Secciones enteras en blanco durante el scroll. Hay varios
-fotogramas donde solo se ve el fondo con puntos y el contenido desaparece (hero,
-proyectos, formación)." Criterio: medido en un fling nativo táctil, con el CPU
-throttle del teléfono, la cantidad de frames con un bloque visible del centro de
-pantalla por debajo de `opacity 0.9` tiene que bajar a ~0, y no puede quedar ningún
-nodo visible sin revelar cuando el gesto frena. La textura no cambia: el entrance
-se conserva a velocidad de lectura.
-
-**S8 — Un solo gesto no puede hacer retroceder el scroll.** Verbatim: "Saltos de
-posición del scroll. En un mismo fling el scroll pasa del hero al footer, luego
-vuelve al hero." Criterio: dentro de un gesto, `scrollY` es monótono; ninguna
-variación del viewport (barra de URL de Brave apareciendo o escondiéndose) puede
-disparar un re-anclaje del scroll. Se mide por frame, en build de producción.
-
-**S9 — La estética queda igual: cambia cómo se renderiza, no cómo se ve.** Verbatim.
-Ninguna de las correcciones de S7/S8 puede cambiar el look: ni el pill transparente
-en reposo, ni el halo de texto, ni el marquee, ni el fondo, ni el wordmark. Lo que
-el triage declare diseño documentado o artefacto de desarrollo no se toca sin un
-brief nuevo del dueño.
-
-**S10 — La verificación es en build de producción.** Verbatim: "Probá siempre con
-next build && next start: el dev server en el celular exagera todo." El antes/después
-de S7 se corre sobre `next build` + `next start`, nunca sobre `next dev`.
+**S7 — Durante un fling el contenido visible no puede estar en el entrance, y un solo
+gesto no puede hacer retroceder el scroll.** Dos defectos reales medidos y arreglados
+(L17): los bloques que el lector ya tiene en pantalla se revelan al instante mientras la
+capa viaja rápido (clase `fling` en `<html>`), y ningún resize de solo alto —la barra de
+URL— refresca los triggers del scroll. La estética no cambia.
 
 ## Tasks
 
@@ -74,9 +55,6 @@ de S7 se corre sobre `next build` + `next start`, nunca sobre `next dev`.
 | T5 | S3 | worker (A/B pareado intercalado flares on/off en una sesión + dumpsys gfxinfo + atribución de long tasks + screenrecord antes) | L13 (medido, sin commit) |
 | T5 | S3 | worker (A/B pareado intercalado flares on/off en una sesión + dumpsys gfxinfo + atribución de long tasks + screenrecord antes) | en curso |
 | T6 | S3, S4 | worker (arreglo elegido por el delta medido de T5; par antes/después en el mismo teléfono) | `289f028` |
-| T7 | S8 | parent (`ScrollTrigger.refresh(true)` + refresco sólo cuando cambia el ancho) | `%(c1)s` |
-| T8 | S7, S10 | parent (latch tolerante a frames de teléfono + medición A/B en build) | `%(c1)s` |
-| T9 | S7, S8, S9 | parent (sonda Playwright móvil: `scrollY` monótono + frames en blanco, antes/después) | L18 (medido; reproducción del defecto pendiente en el teléfono) |
 
 ## Log
 
@@ -175,95 +153,16 @@ actual (`5ccdabe7`). Sin verdicto del validador no hay cierre; por decisión pre
 se deja así y se sigue. Dos lineages con el mismo síntoma son evidencia suficiente para
 reportarlo como defecto del arnés, no del candidato.
 
-**L17 — cuarto reporte del dueño: grabación de 4,6 s a 6 fps, fling sobre el dev server
-(8 nov).** Nueve defectos observados a ojo; el dueño fija el orden de ataque ("empezando
-por el 1 y el 2, que son los de mayor impacto") y la condición de no cambiar el look.
-Triage contra el código, con evidencia:
-
-- **1. Secciones en blanco (S7): real.** El reveal es once-only y nunca desmonta
-  (`useRevealOnEnter.js:62-66`), así que no es un desmontaje: es el entrance corriendo
-  bajo el lector. En táctil el disparador es `+33%` (~280 px) y `--duration-reveal` es
-  0.45 s, con frames de teléfono de p95 84-109 ms (L5/L13): un solo frame del fling se
-  come el margen. El `fling` de `smoothScroll.js` ya quita el entrance, pero su salida
-  por inactividad (`FLING_GAP_MS = 120`) está por debajo del p95 de frame del teléfono,
-  así que el latch puede leer un fling como "quieto" justo cuando hace falta.
-- **2. Saltos de posición (S8): real, mecanismo encontrado.** El handler propio de
-  `resize` (`smoothScroll.js:88-95`) llama `ScrollTrigger.refresh()` **sin argumento**,
-  200 ms después de cualquier resize. Sin argumento es refresco forzado: salta el guard
-  de "el usuario está scrolleando" (`gsap/ScrollTrigger.js:483-487`), manda el scroll a
-  0 y lo restaura desde una posición anotada en el hilo principal (`:499-503`, `:540-546`).
-  La barra de URL apareciendo o escondiéndose es exactamente un resize de alto, y
-  `ignoreMobileResize` (que sí se configura en `smoothScroll.js:79`) sólo cubre el
-  listener propio de ScrollTrigger, no el nuestro.
-- **3. Fondo que no cubre el viewport: sin mecanismo en el código.** Campo, lattice y
-  flares son `fixed inset-0` (`AppBackground.jsx:249`, `globals.css:1261,1286`) y nada
-  usa `vh` para dimensionarse. La franja oscura es compatible con el `ink` del `html`
-  mientras Chromium re-dimensiona capas fijas; la línea clara de la izquierda no tiene
-  causa en el código. Sin captura a 60 fps no se toca.
-- **4. Header "sin fondo" y logo sobre el texto:** parcialmente diseño documentado — el
-  pill es transparente en reposo y sólido desde `scrollY > 24` (`Navbar.jsx:237`,
-  `globals.css:529-533`), con una transición de 0.5 s. En un fling el contenido puede
-  pasar por debajo antes de que el estado llegue; el estado de reposo no se cambia sin
-  brief. Nota: `AGENTS.md` dice "glass on scroll" y el CSS es ink sólido desde L4 — el
-  documento está desactualizado, el código manda.
-- **5. z-index del CTA sobre el header: no hay bug de orden.** El header es `--z-nav: 50`
-  (`globals.css:1669`) y ningún elemento del hero lleva z-index; lo que se ve es el CTA a
-  través del pill todavía transparente (mismo hallazgo que 4).
-- **6. Marquee gigante y fantasmal:** el tamaño es `clamp(2.5rem, 12vw, 3rem)` en
-  `max-xs` (`globals.css:1821`) y el skew está clampeado a ±2.5° en puntero grueso
-  (`MarqueeMotion.jsx:97`); nada escala. Un frame intermedio de un video a 6 fps de un
-  texto de 48 px en movimiento es exactamente lo que se ve así. Sin acción.
-- **7. Wordmark cortado y tapado por PERF:** el overlay es de desarrollo dos veces
-  (`PerfTestMeter.jsx:56` `NODE_ENV !== "development"` y la marca de sesión
-  `sessionStorage["pf-test"]`, pineado en `test-route-contract.test.js:114-126`); en
-  producción no existe. El corte del wordmark y el degradado a transparente son de
-  `.footer-mark` (diseño).
-- **8. Imágenes recortadas o que "popean":** las miniaturas reservan 16:9 y usan
-  `object-cover` (`WorkList.jsx:43-53`), `placeholder="blur"`; el hueco es el placeholder
-  en `next dev`, que no cachea imágenes optimizadas.
-- **9. Glifos borrosos:** la decisión de no usar `will-change` es de S4 (`globals.css`),
-  y un halo de 24 px sobre texto en movimiento se comprime mal a 6 fps. Sin medición
-  nueva no se toca.
-
-Conclusión del triage: de nueve, **dos** son defectos reales de código (1 y 2), y son
-los que el dueño priorizó. Los otros siete son diseño documentado, artefacto del dev
-server o falta de resolución de la grabación.
-
-**L18 — T7/T8 implementados; la reproducción en emulación no se obtuvo (8 nov).** Lo
-que cambió el código: (a) el handler propio de `resize` ya no llama `refresh()` sin
-argumento — sólo refresca cuando cambia el ANCHO, y por la vía debounced
-(`ScrollTrigger.refresh(true)`), que es la que usa el listener propio de GSAP; el
-`refresh()` del teardown también pasó a `true`. (b) `FLING_GAP_MS` 120 → 250 ms, porque
-el p95 de frame medido en el teléfono es 84-109 ms y una long task llega a 240 ms (L5,
-L13): con 120 el latch leía un fling como "quieto" justo cuando hacía falta. Los dos
-quedan pineados en `src/lib/scroll-contract.test.js` (archivo nuevo, 3 tests).
-
-Verificación (sonda `.perf/fling-probe.mjs`, Pixel 7 emulado, CPU 4x, swipe táctil por
-CDP, cambio de alto del viewport a mitad del gesto — la barra de URL):
-
-| objetivo | frames | travel | saltos atrás | peor salto | frames en blanco | `fling` |
-|---|---|---|---|---|---|---|
-| base 4173 (código sin el arreglo) | 176 | 1075 | 0 | 0 | 0 | 0 |
-| prod 3200 (con el arreglo) | 174 | 1067 | 0 | 0 | 0 | 0 |
-| dev 3300 (con el arreglo) | 175 | 1041 | 0 | 0 | 0 | 0 |
-
-Sonda dura (CPU 6x, 12 swipes de 15×70 px, dos toggles de alto): 0 saltos y 0 frames en
-blanco en los tres, travel 8740/5814/5814, `fling` 0/53/29 — el arreglo está presente y
-el latch se enciende, pero **no se reprodujo el defecto**. Los dos detectores se
-validaron: forzando `[data-r]{opacity:.04}` la sonda reporta 18-24 frames en blanco, y un
-`scrollTo` de −500 px a mano reporta `maxBackwardJumpPx: 500`.
-
-**Por qué no se reproduce, y qué falta.** El toque sintético de CDP no tiene inercia en
-Chromium: un swipe frena en seco en `touchend` y viaja una pantalla, así que el scroll
-nunca sigue avanzando con el hilo principal ocupado. Ese es justo el estado en el que
-aparecen los dos defectos: en un teléfono real el fling es del compositor y sigue
-moviéndose mientras el callback del observer, el latch del fling y el timer del refresh
-esperan turno. Entonces: el mecanismo del salto se eliminó y está pineado, pero **la
-reproducción sobre el teléfono queda pendiente** (el camino de L12: `adb` + Brave por CDP,
-o un retest del dueño). No se declara "arreglado probado".
-
-**Efecto colateral declarado.** El `pnpm build` que pide S10 reescribió `.next`, que era
-lo que servía el `next start` viejo en :4173 (build pre-arreglo que se usaba de línea
-base): ese proceso quedó sirviendo chunks que ya no existen. Se reinició :4173 contra el
-build nuevo cuando terminó la medición, así que la línea base pre-arreglo de la tabla es
-la única muestra válida de ese servidor.
+**L17 — reporte de un fling en teléfono (8 nov): dos defectos reales, siete que no.**
+Grabación de 4,6 s a 6 fps sobre `next dev`, nueve defectos reportados. Reales: (a)
+secciones en blanco — el entrance de 0,45 s corría bajo el lector, que ya estaba encima;
+(b) saltos de posición — el handler de `resize` llamaba `ScrollTrigger.refresh()` sin
+argumento, o sea refresco forzado: saltea el guard de "está scrolleando", manda el scroll
+a 0 y lo restaura desde el hilo principal. Arreglo (`048577a`, `e65f712`): `refresh(true)`
+sólo cuando cambia el ancho, umbrales del fling en px/s y `FLING_GAP_MS` 250 ms porque el
+p95 de frame del teléfono es 84-109 ms. Los otros siete no eran defectos: el campo ya es
+`fixed inset-0` y nada usa `vh`; el medidor PERF es dev-only; el hero no lleva z-index;
+las miniaturas reservan 16:9; el marquee no escala y su skew está clampeado a ±2,5°;
+Lenis no secuestra el touch; el reveal nunca desmonta. La emulación **no reproduce** el
+defecto (el toque sintético de CDP no tiene inercia), así que medir con dedo real en el
+teléfono queda pendiente.
