@@ -1549,7 +1549,7 @@
     transition:
       opacity var(--duration-reveal) var(--ease-out-field),
       transform var(--duration-reveal) var(--ease-out-field);
-    transition-delay: var(--d, 0ms);
+    transition-delay: var(--d,0s);
   }
 
   /* Hidden is `:not(.is-in)` and nothing else: the observer in
@@ -1568,16 +1568,6 @@
     filter: none;
   }
 
-  /* A phone scrolls through the entrance instead of watching it: six pixels keep
-     the rise visible and small enough that several blocks entering at once do not
-     pull the text out from under the finger. Desktop keeps 16 px.
-     `docs/css-map.md` §reveal carries the why. */
-  @variant pointer-coarse {
-    html.js {
-      --reveal-rise: 6px;
-    }
-  }
-
   /* Above-the-fold reveals paint on the first frame, driven by CSS instead of
      waiting for hydration and an observer: text that starts at `opacity: 0`
      cannot be the largest paint until that round trip finishes (2.2 s measured
@@ -1589,16 +1579,39 @@
     filter: none;
     translate: none;
     animation: r-paint var(--duration-reveal) var(--ease-out-field) backwards;
-    animation-delay: var(--d, 0ms);
+    animation-delay: var(--d,0s);
   }
 
   .w {
     display: inline-block;
     overflow: hidden;
     vertical-align: top;
-    padding: 0 0.06em 0.14em;
-    margin: 0 -0.06em -0.14em;
-    translate: 0 calc(var(--scy) * var(--k, 0) * 1px);
+    padding: 0 .06em .14em;
+    margin: 0 -.06em -.14em;
+    translate: 0 calc(var(--scy) * var(--k,0) * 1px);
+
+    /* No word drift on a phone. `--k` grows with the word's position, so on a
+       flick the last word of a line travels furthest while `--scy` is still
+       catching up with a page that has already arrived: the lines overlap and
+       the block reads as broken. The hero wrapper has always stopped moving on
+       narrow layouts for the same reason — this is the same decision one level
+       down, applied to the pointer that flicks. */
+    /* No word drift on a phone: `--k` grows with the word's position, so on a flick
+       the last word of a line travels furthest while `--scy` is still catching up
+       with a page that already arrived — the lines overlap. */
+  }
+
+  /* One coarse-pointer block for the scroll-driven text: the reveal starts a third
+     of a viewport early with a six-pixel rise, and a heading word never drifts.
+     Both are decisions about a finger, not about a screen width. */
+  @variant pointer-coarse {
+    html.js {
+      --reveal-rise: 6px;
+    }
+
+    .w {
+      translate: none;
+    }
   }
 
   /* No script: the word sits in its box, still — there is nothing to release. */

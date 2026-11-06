@@ -55,6 +55,10 @@ const AboutScroll = () => {
       itemTops = items.map((item) => item.getBoundingClientRect().top + window.scrollY);
     };
     window.addEventListener("resize", measure);
+    /* A webfont that lands after this measured reflows the timeline without a
+       ScrollTrigger refresh, and a stale cache marks the wrong item: the review of
+       6 nov 2026 flagged exactly that. `fonts.ready` is the one signal for it. */
+    if (document.fonts?.ready) document.fonts.ready.then(measure).catch(() => {});
 
     const lastOpacity = words.map(() => null);
     const lastColor = words.map(() => null);
