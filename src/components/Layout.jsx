@@ -24,7 +24,7 @@ const Layout = ({ locale = "en", children }) => {
   const { t } = translator(locale);
 
   return (
-    <div className="relative min-h-[100dvh] bg-ink text-white">
+    <div className="relative min-h-svh bg-ink text-white">
       <div className="field-progress" aria-hidden="true">
         <span />
       </div>

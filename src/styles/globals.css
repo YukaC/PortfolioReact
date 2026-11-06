@@ -1316,6 +1316,20 @@
     animation: flare var(--breath) var(--ease-in-out-field) var(--delay, 0s) infinite;
   }
 
+  /* While the reader is flinging, the field stops painting. The flares are 36
+     elements on a FIXED, viewport-sized layer, each one breathing opacity and
+     scale for its whole life: that is the largest per-frame raster this page
+     asks for, and it asks for it exactly when the compositor is already behind.
+     Turning them off won every paired test on the phone (p95 92,1 -> 66,6 ms,
+     long tasks 3-10 -> 0 — odd/tasks/mobile-motion-perf.md L13), and frames that
+     slow are what leaves a flick showing only the background: the page cannot
+     paint the new tiles in time. Paused, not removed: the bell resumes where it
+     was, `--fp` and the lattice are untouched, and at reading speed nothing
+     changes. The class is the scroll layer's (`smoothScroll.js`). */
+  html.fling .flare {
+    animation-play-state: paused;
+  }
+
   /* One bell for every density band. A strike is a tide with a bloom on top (see
      the keyframes): the dot moves for most of the breath and is bright only in the
      middle of it, which is the only way to keep a slow swell and a low lit count at

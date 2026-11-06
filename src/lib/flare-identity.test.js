@@ -180,3 +180,20 @@ test("the strike is one slow bell, and reduced motion still drops it", () => {
   const reduced = blockAt(bare.indexOf("{", at));
   assert.match(reduced, /\.flare\s*\{\s*display:\s*none/, "reduced motion must still drop the strikes");
 });
+
+test("the flares stop painting while the reader is flinging", () => {
+  // 36 elements on a FIXED viewport-sized layer, each breathing opacity and
+  // scale for its whole life: the largest per-frame raster the page asks for,
+  // charged exactly when the compositor is behind. Frames that slow are what
+  // leaves a flick showing only the background (odd/tasks/mobile-motion-perf.md
+  // L13: flares off won every paired phone test). Paused, not removed.
+  const css = readFileSync(path.join(ROOT, "src/styles/globals.css"), "utf8").replace(
+    /\/\*[\s\S]*?\*\//g,
+    "",
+  );
+  assert.match(
+    css,
+    /html\.fling \.flare \{\s*animation-play-state:\s*paused;/,
+    "a fling must stop the flare breath: it is the field's whole frame bill",
+  );
+});
