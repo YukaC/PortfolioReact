@@ -176,3 +176,7 @@ El campo también deja de pintar durante el fling: `html.fling .flare { animatio
 paused }` (L13 ya había medido que apagar los 36 destellos gana todos los pares en el
 teléfono: p95 92,1 → 66,6 ms). En carga, el shell pasa de `100dvh` a `svh` para que no
 cambie de alto cuando la barra de Brave se esconde — el hero ya usaba `svh`.
+Segunda pasada (el dueño reportó "siguen desapareciendo, pero menos"): el halo de 24 px
+sobre todo el texto se apaga durante el fling (`html.fling :is(.hero-copy, .site-shell)`),
+que es lo más caro que pide cada sección al entrar — a DPR 3 son 72 px de blur por línea.
+Techo de `@layer components` 30120 → 30250.

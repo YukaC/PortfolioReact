@@ -2,7 +2,7 @@
   "note": "Baseline of the compiled stylesheet for `pnpm check:css`. The number is measured from the source, not from a build: src/styles/globals.css compiled in-process with @tailwindcss/postcss (the plugin the app itself uses), so any machine and any CI job gets the same byte count. The guard fails when the compiled sheet grows more than `growthAllowance` over `compiledBytes` (audit.md §13.3 S7 / §21.3), and when `@layer components` exceeds `componentsCeiling` (§14.3, spec S14). Raising either number is a decision that belongs in the same commit as the CSS that makes it grow, with the reason in the feature doc.",
   "compiledBytes": 77888,
   "componentsBytes": 29645,
-  "componentsCeiling": 30120,
+  "componentsCeiling": 30250,
   "growthAllowance": 0.05,
   "history": [
     {
@@ -66,6 +66,11 @@
       "stage": "scroll-flick — the fling state of the reveal",
       "componentsBytes": 30035,
       "source": "odd/tasks/mobile-motion-perf.md L17: two selectors and one declaration for the fling state of the reveal (+141 B). The layer was 6 B under the old ceiling, so the ceiling moves to 30120 B (85 B of slack)."
+    },
+    {
+      "stage": "scroll-flick — the halo drops during a fling",
+      "componentsBytes": 30142,
+      "source": "odd/tasks/mobile-motion-perf.md L17: one selector and one declaration so the 24 px text halo stops rastering while the reader is flinging (+107 B over 30035). Ceiling 30120 -> 30250 (108 B of slack)."
     }
   ]
 }

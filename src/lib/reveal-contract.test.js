@@ -233,3 +233,14 @@ test("a phone reveals a third of a viewport early, a desktop does not", () => {
     "the coarse pointer must pre-reveal a third of a viewport; the desktop keeps -8%",
   );
 });
+
+test("a fling drops the copy halo", () => {
+  // A 24 px blurred shadow on every line is rastered at the device pixel ratio
+  // (72 device px on a DPR-3 phone): the most expensive thing each entering
+  // section asks for, charged while the page is already behind.
+  assert.match(
+    bare,
+    /html\.fling :is\(\.hero-copy,\s*\.site-shell\) \{\s*text-shadow:\s*none;/,
+    "a fling must drop the halo: it is the copy's whole raster bill",
+  );
+});
