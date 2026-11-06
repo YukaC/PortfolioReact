@@ -66,7 +66,11 @@
     }
   })();
 
-  const SAMPLE_MS = COARSE_POINTER ? 250 : 100;
+  /* A pass reads computed style and a rect per node, so it is the meter's own cost
+     and it shows up in the report it produces: 814-948 ms in a 13-15 s phone window,
+     a third of the budget being measured. A phone gets one pass every half second
+     instead of every 250 ms — enough to catch a 300 ms stall, half the bill. */
+  const SAMPLE_MS = COARSE_POINTER ? 500 : 100;
   /** The phone has to survive this scan, so the watchlist is bounded on purpose. */
   const NODE_CAP = COARSE_POINTER ? 160 : 400;
   const MAX_ITEMS = 40;
@@ -296,6 +300,10 @@
           url: String(sc.sourceURL || ""),
           fn: String(sc.sourceFunctionName || ""),
           how: String(sc.invokerType || ""),
+          /* A minified chunk reuses one-letter names across modules: `g` is four
+             different functions in one file, so URL + name is not an identity. The
+             character position is. */
+          pos: Number(sc.sourceCharPosition || 0),
           ms: +(sc.duration || 0).toFixed(1),
         })),
       });
@@ -1232,7 +1240,7 @@
         const rows = new Map();
         for (const e of S.loaf) {
           for (const sc of e.scripts) {
-            const key = `${sc.url || "(no url)"} ${sc.fn || ""} [${sc.how}]`.trim();
+            const key = `${sc.url || "(no url)"} ${sc.fn || ""}@${sc.pos} [${sc.how}]`.trim();
             const row = rows.get(key) || { key, count: 0, ms: 0 };
             row.count += 1;
             row.ms += sc.ms;
