@@ -18,10 +18,11 @@ import { CELL_PX, DOT_INSET_PX, FIELD_FLARES } from "./field-flares.js";
  *   1. a flare lands on the centre of a dot — a fixed 48 px lattice puts its dots
  *      at `n * 48 + 24`, so a position in percentages cannot land on one (§19.3,
  *      commit `8164756`);
- *   2. the field is a shimmer, not a blink — at every density band the number of
- *      flares past the "lit" threshold stays inside 1–4, and the field never goes
- *      completely dark. The owner's report was that the strikes felt abrupt and
- *      sporadic; both halves of that are pinned below, so neither can come back;
+ *   2. the field breathes rather than sparkles — one bell, its window the whole
+ *      cycle, a low peak, and never a dark field. The owner's first report was
+ *      that the strikes felt abrupt and sporadic, and the second was that they
+ *      still read as sparkles ("parecen más destellos que respiraciones"): both
+ *      halves are pinned below, so neither can come back;
  *   3. the shimmer is in tempo — 128 BPM, the beat of the song the field is named
  *      after, with every phase and every peak on that grid (S1–S3).
  *
@@ -52,13 +53,13 @@ const BREATH_DECL = declared("--breath");
 const GRID_DECL = declared("--grid");
 
 const BPM = Number(BPM_DECL);
-/** The multiplier in `--breath: calc(8 * var(--beat))` — two 4/4 bars (S2). */
+/** The multiplier in `--breath: calc(12 * var(--beat))` — three 4/4 bars (S2). */
 const BREATH_BEATS = Number(/calc\(\s*([\d.]+)\s*\*\s*var\(--beat\)/.exec(BREATH_DECL)?.[1]);
-/** The divisor in `--grid: calc(var(--beat) / 8)` — a 32nd note (S3). */
-const GRID_DIVISOR = Number(/calc\(\s*var\(--beat\)\s*\/\s*([\d.]+)\s*\)/.exec(GRID_DECL)?.[1]);
+/** The divisor in `--grid: calc(var(--breath) / 64)` — the slots a breath holds. */
+const GRID_SLOTS = Number(/calc\(\s*var\(--breath\)\s*\/\s*([\d.]+)\s*\)/.exec(GRID_DECL)?.[1]);
 const BEAT_S = 60 / BPM;
 const BREATH_S = BREATH_BEATS * BEAT_S;
-const GRID_S = BEAT_S / GRID_DIVISOR;
+const GRID_S = BREATH_S / GRID_SLOTS;
 
 /**
  * The table as the page plays it: the browser gets `--delay: calc(slot * var(--grid))`
@@ -84,17 +85,18 @@ const BANDS = [
 ];
 
 /**
- * The one keyframe that applies at each density: `.flare` is the default (the 36
- * dots a screen wider than 1600 px shows) and each narrower band overrides
- * `animation-name` in the same media query that hides its extra dots.
+ * The one keyframe every density runs: `.flare` is the whole cadence now, and no
+ * media query overrides `animation-name`, so the band a viewport lands in decides
+ * how many dots are painted and never how they breathe.
  */
-const KEYFRAME_OF_BAND = { 36: "flare", 22: "flare-22", 12: "flare-12", 6: "flare-6" };
+const KEYFRAME_OF_BAND = { 36: "flare", 22: "flare", 12: "flare", 6: "flare" };
 
-/** What "lit" means: the threshold the cadence budget and the probe count. */
-const LIT_THRESHOLD = 0.05;
-
-/** §19.2: between 1 and 4 flares are lit at once, never more. */
-const PEAK_CEILING = 4;
+/**
+ * What "lit" means now: the **bright** crest, not the dim tide. The bell is a slow
+ * swell that tops out in a short bloom (L10), so counting everything above 0.05
+ * would count the whole band and say nothing. 0.25 sits above the tide's 0.16.
+ */
+const LIT_THRESHOLD = 0.25;
 
 /** One certified minute of steady state, sampled at 20 ms. */
 const HORIZON_MS = 60_000;
@@ -244,6 +246,57 @@ test("every prefix fits its viewport band", () => {
   }
 });
 
+test("every band is balanced across its own width", () => {
+  // The owner's report (L9): the dots “parecen caer por grupos mayormente en el
+  // lado izquierdo”. The cause is structural — the table is a cumulative ladder,
+  // so the six a phone shows are pinned inside x < 8 and they stay on screen on a
+  // 1920 field — but nothing forced the *other* thirty to keep piling up there.
+  // A band is balanced when its own centroid sits near the middle of the cells it
+  // can use, and when no third of that width is starved.
+  const offenders = [];
+  for (const band of BANDS) {
+    const prefix = FIELD_FLARES.slice(0, band.count);
+    const centroid = prefix.reduce((sum, flare) => sum + flare.cx, 0) / prefix.length;
+    const middle = (band.cellsX - 1) / 2;
+    const tolerance = band.cellsX * 0.14;
+    if (Math.abs(centroid - middle) > tolerance) {
+      offenders.push(
+        `${band.count}: centroid x ${centroid.toFixed(2)} is outside ${middle}±${tolerance.toFixed(2)}`,
+      );
+    }
+    const third = band.cellsX / 3;
+    const buckets = [0, 0, 0];
+    for (const flare of prefix) buckets[Math.min(2, Math.floor(flare.cx / third))] += 1;
+    const floor = Math.ceil(prefix.length * 0.18);
+    if (buckets.some((count) => count < floor)) {
+      offenders.push(`${band.count}: thirds hold ${buckets.join(" / ")}, each needs ${floor}`);
+    }
+  }
+  assert.deepEqual(offenders, [], `lopsided bands:\n${offenders.join("\n")}`);
+});
+
+test("neighbours never fire together: no groups, no clumps", () => {
+  // Six dots lighting at the same instant in one corner is what reads as a group
+  // rather than a field. Two rules, both cheap to satisfy and both visible when
+  // broken: cells that sit close to each other must be at least eight slots
+  // (0.7 s) apart in phase, and no two flares may occupy touching cells.
+  const offenders = [];
+  for (let i = 0; i < FIELD_FLARES.length; i += 1) {
+    for (let j = i + 1; j < FIELD_FLARES.length; j += 1) {
+      const a = FIELD_FLARES[i];
+      const b = FIELD_FLARES[j];
+      const distance = Math.max(Math.abs(a.cx - b.cx), Math.abs(a.cy - b.cy));
+      if (distance === 0) continue;
+      if (distance < 2) offenders.push(`${i}/${j}: cells ${distance} apart`);
+      if (distance <= 3) {
+        const slotGap = Math.abs(a.slot - b.slot);
+        if (slotGap < 8) offenders.push(`${i}/${j}: ${distance} cells apart, ${slotGap} slots apart`);
+      }
+    }
+  }
+  assert.deepEqual(offenders, [], `flares that fire as a group:\n${offenders.join("\n")}`);
+});
+
 test("no two flares share a cell", () => {
   const seen = new Set();
   const duplicates = [];
@@ -255,23 +308,32 @@ test("no two flares share a cell", () => {
   assert.deepEqual(duplicates, [], `cells used twice: ${duplicates.join(" ")}`);
 });
 
-test("the tempo is the song's: 128 BPM, one breath every 8 beats", () => {
+test("the tempo is the song's: 128 BPM, one breath every 12 beats", () => {
   // S1: 128 is the number the owner named, and it is the same number the sworn
   // script resolves — the sheet states it once and everything else is a `calc`
   // off it, so there is no second copy of the tempo to drift.
   assert.equal(BPM, 128, "the field's tempo must be the 128 BPM of the song");
   assert.match(BEAT_DECL, /^calc\(\s*60s\s*\/\s*var\(--bpm\)\s*\)$/, "--beat must be 60s / --bpm, not a hand-written decimal");
   assert.ok(Math.abs(BEAT_S - 0.46875) < 1e-9, `one beat must be 0.46875 s, saw ${BEAT_S}`);
-  // S2: 8 beats are exactly two 4/4 bars — 16 breaths a minute, the rate of a
-  // calm human breath. One breath per beat would be 2.13 Hz, and 36 dots cannot
-  // pulse that fast and stay inside 1–4 lit at once.
-  assert.equal(BREATH_BEATS, 8, "one breath must be two 4/4 bars");
-  assert.ok(Math.abs(BREATH_S - 3.75) < 1e-9, `a breath must be 3.75 s, saw ${BREATH_S}`);
+  // S2 as amended by the owner's briefs of the respiratory rework: 12 beats are
+  // three 4/4 bars — 10.7 breaths a minute. The path here is the whole story: 8
+  // beats read “muy rápidos” (L5), 16 read “muy despacio” (L8), and 12 is the
+  // point where a breath is slow enough to be one and still visibly happening.
+  // One breath per beat would be 2.13 Hz, and 36 dots cannot pulse that fast and
+  // stay calm.
+  assert.equal(BREATH_BEATS, 12, "one breath must be three 4/4 bars");
+  assert.ok(Math.abs(BREATH_S - 5.625) < 1e-9, `a breath must be 5.625 s, saw ${BREATH_S}`);
   assert.equal(BREATH_BEATS % 4, 0, "a breath has to be whole bars, or its peak leaves the beat");
-  // S3: the phases are dealt on a musical subdivision, not on seconds — a 32nd
-  // note, 58.59 ms at 128 BPM.
-  assert.equal(GRID_DIVISOR, 8, "the phase grid must be a 32nd note");
-  assert.ok(Math.abs(GRID_S - 0.05859375) < 1e-9, `one grid step must be 58.59 ms, saw ${GRID_S}`);
+  // S3: the phases are dealt on 64 slots of the breath, and the grid is derived
+  // from the cycle itself. Deriving it from the beat is the bug this pins: at 16
+  // beats a `--beat / 4` grid covered only the first half of the cycle and the
+  // field went dark for the other half (0 lit, then 6 lit at once).
+  assert.equal(GRID_SLOTS, 64, "a breath's phases are dealt over 64 slots");
+  assert.ok(Math.abs(GRID_S - 0.087890625) < 1e-9, `one grid step must be 87.89 ms, saw ${GRID_S}`);
+  assert.ok(
+    Math.abs((BREATH_S / GRID_S) - 64) < 1e-9,
+    `a breath must hold exactly 64 grid slots, saw ${(BREATH_S / GRID_S).toFixed(3)}`,
+  );
 
   // And the flare reads both: the cycle comes from `--breath`, never from a
   // per-instance `--dur`, which is what keeps the JSX carrying only the phase.
@@ -320,7 +382,7 @@ test("every flare breathes once per breath, on the tempo grid", () => {
   const slots = FLARES.map((flare) => flare.slot);
   assert.equal(new Set(slots).size, SPEC_COUNT, "--delay must not repeat");
   assert.ok(
-    Math.max(...slots) < BREATH_BEATS * GRID_DIVISOR,
+    Math.max(...slots) < GRID_SLOTS,
     "a phase must sit inside the slots of one breath",
   );
 });
@@ -340,7 +402,7 @@ test("every prefix is spread over the cycle, not bunched at its start", () => {
   }
 });
 
-test("the pulse is a soft swell: eased, low peak, never zero", () => {
+test("the pulse is one slow breath: eased, low peak, never zero", () => {
   const rule = blockOf(".flare {");
   assert.notEqual(rule, "", "no .flare rule in globals.css");
   // No step and no linear ramp: the attack and the decay are eased.
@@ -352,61 +414,84 @@ test("the pulse is a soft swell: eased, low peak, never zero", () => {
   assert.equal(/steps\(/.test(rule), false, "a stepped animation is the blink this rework removed");
   assert.match(css, /--ease-in-out-field:\s*cubic-bezier\(/, "the easing token is not declared");
 
-  for (const name of Object.values(KEYFRAME_OF_BAND)) {
-    const stops = keyframeStops(name);
-    const levels = [...new Set(stops.map(([, opacity]) => opacity))].sort((a, b) => a - b);
-    // Two levels only: rest and peak. The old curve stopped at 1, dipped to 0.6
-    // and dropped to 0 — three levels in a 8 % window, which read as a blink.
-    assert.deepEqual(
-      levels,
-      [0.04, 0.5],
-      `${name}: the pulse must have a rest level and one peak, saw ${levels.join(" / ")}`,
-    );
-    const rest = levels[0];
-    const peak = levels[levels.length - 1];
-    // Never zero: the field keeps a faint light on every dot between strikes, so
-    // "completely dark" is not a state the stylesheet can reach.
-    assert.ok(rest > 0, `${name}: the rest opacity must stay above zero`);
-    assert.ok(peak < 1, `${name}: the peak must be under 1 (it was a hard flash at 1)`);
-    // The bell climbs once and comes down once: no second hump to read as a
-    // double blink.
-    const values = stops.map(([, opacity]) => opacity);
-    const peakAt = values.indexOf(Math.max(...values));
-    assert.ok(
-      values.slice(0, peakAt).every((value, i, all) => i === 0 || value >= all[i - 1]),
-      `${name}: the attack must be monotone`,
-    );
-    assert.ok(
-      values.slice(peakAt).every((value, i, all) => i === 0 || value <= all[i - 1]),
-      `${name}: the decay must be monotone`,
-    );
-  }
+  const stops = keyframeStops("flare");
+  const levels = [...new Set(stops.map(([, opacity]) => opacity))].sort((a, b) => a - b);
+  // Three levels: rest, tide and crest. The rest is untouched by the brightness
+  // brief (L12): a stronger parked footprint is the semi-transparent circle the
+  // owner already rejected (L11), so the light is added to the swell and to the
+  // bloom, which are the two states that read as the dot being lit.
+  assert.deepEqual(
+    levels,
+    [0.02, 0.16, 0.6],
+    `the pulse must be rest → tide → crest, saw ${levels.join(" / ")}`,
+  );
+  const rest = levels[0];
+  const peak = levels[levels.length - 1];
+  // Never zero: the field keeps a faint light on every dot between strikes, so
+  // "completely dark" is not a state the stylesheet can reach.
+  assert.ok(rest > 0, "the rest opacity must stay above zero");
+  // The owner read 0.18, then 0.3, then 0.45 and finally 0.5 as tenue (L8–L12):
+  // the crest is the bright value and this band is what stops it drifting back
+  // down.
+  assert.ok(peak >= 0.5 && peak <= 0.7, `the crest must sit between 0.5 and 0.7, saw ${peak}`);
+  // The shape is a tide with a bloom on top: the dim swell opens at 38 %, the crest
+  // closes at 62 %. A flat window cannot give both a long swell and a low lit
+  // count (that is `count × duty`), which is why the crest is short and the tide is
+  // long (L10).
+  assert.deepEqual(
+    stops.map(([percent]) => percent),
+    [0, 38, 50, 62, 100],
+    "the bell must be tide → crest → tide, with the crest centred in the cycle",
+  );
+  const crestS = (BREATH_S * (62 - 38)) / 100;
+  assert.ok(Math.abs(crestS - 1.35) < 1e-9, `the crest must last 1.35 s, saw ${crestS}`);
+  // And the tide covers most of the cycle: the dot is moving for ~5.6 s, not
+  // sitting still and then blinking.
+  const tideS = (BREATH_S * (100 - 62 + 38)) / 100;
+  assert.ok(tideS > 4, `the dim swell must span most of the breath, saw ${tideS.toFixed(2)} s`);
+  // The bell climbs once and comes down once: no second hump to read as a double
+  // blink.
+  const values = stops.map(([, opacity]) => opacity);
+  const peakAt = values.indexOf(Math.max(...values));
+  assert.ok(
+    values.slice(0, peakAt).every((value, i, all) => i === 0 || value >= all[i - 1]),
+    "the attack must be monotone",
+  );
+  assert.ok(
+    values.slice(peakAt).every((value, i, all) => i === 0 || value <= all[i - 1]),
+    "the decay must be monotone",
+  );
 });
 
-test("the field stays calm: 1–4 lit at once, and never fully dark", () => {
+test("the field breathes as one body: seconds-long swell, never fully dark", () => {
   const bands = BANDS.map((band) => simulate(band.count, KEYFRAME_OF_BAND[band.count]));
 
   for (const band of bands) {
-    // The audit's ceiling, at every density: 1–4 strikes at a time (§19.2). The
-    // old table certified a peak of 6 here.
+    // L10: "que no se prendan tantas a la vez". The bright population is the
+    // number this pins — about four of the 36 in its crest at any instant, and
+    // never a full side of the field at once.
     assert.ok(
-      band.max <= PEAK_CEILING,
-      `${band.count} flares: at most ${PEAK_CEILING} may be lit at once, saw ${band.max}`,
+      band.mean <= band.count * 0.2,
+      `${band.count} flares: mean bright ${band.mean.toFixed(2)} is more than a fifth of the band`,
     );
-    // The audit's arithmetic band: 36 dots at ~6 % duty is a mean of ~2, which is
-    // the calm field it asks for against the ~18 glows the shader held.
+    // A phone carries six dots, so a mean below one is arithmetic and not a bug;
+    // what must hold at every density is that the crest does light somebody.
+    assert.ok(band.mean > 0, `${band.count} flares: nobody is ever lit`);
+    assert.ok(band.max >= 1, `${band.count} flares: no crest ever reaches the threshold`);
     assert.ok(
-      band.mean >= 1 && band.mean <= 4,
-      `${band.count} flares: mean lit ${band.mean.toFixed(2)} is outside 1–4`,
+      band.max <= Math.ceil(band.count * 0.35),
+      `${band.count} flares: ${band.max} lit at once is a crowd`,
     );
     // The floor that holds at every density and at every instant: every flare
-    // rests at 0.04, so the field's total light never reaches zero.
+    // rests at 0.02, so the field's total light never reaches zero.
     assert.ok(band.faintest > 0, `${band.count} flares: the field went to zero light`);
   }
 
-  // Never completely dark. Two floors, because only the first one is a theorem:
+  // Never completely dark: the rest opacity is a theorem, so it holds at every
+  // instant. The other floor — "somebody is bright" — is no longer a requirement:
+  // with a short crest the field is dim between blooms on purpose (L10).
   //
-  //   • the *light* floor — every flare rests at 0.04, so the field's total
+  //   • the *light* floor — every flare rests at 0.02, so the field's total
   //     opacity can never reach zero. That is a property of the stylesheet and
   //     holds at every instant, for ever; it is asserted per band above.
   //   • the *strike* floor — at least one flare is above the lit threshold. How
@@ -417,29 +502,18 @@ test("the field stays calm: 1–4 lit at once, and never fully dark", () => {
   //     3.3 % at 1440 and 3.8 % at 1920; the shipped curve was dark for 62.8 %
   //     of the same minute at 390 and 9.8 % at 1440. The model below samples on
   //     its own phase grid, so it is a budget, not a stopwatch.
-  for (const band of bands) {
-    assert.ok(
-      band.darkMs <= 0.05 * HORIZON_MS,
-      `${band.count} flares: no strike for ${band.darkMs} ms of the minute (budget ${0.05 * HORIZON_MS} ms)`,
-    );
+  // The bright crest is a fraction of the breath, at every density, and that is
+  // what keeps the lit population low while the motion stays slow.
+  const opacity = opacityAt(keyframeStops("flare"));
+  let lit = 0;
+  for (let percent = 0; percent < 100; percent += 0.05) {
+    if (opacity(percent) > LIT_THRESHOLD) lit += 0.05;
   }
-
-  // And the band gets a longer swell the sparser it is: the strike on a phone is
-  // a 1.8 s breath, the one on the 36-dot field 0.34 s. Same count, different
-  // window — that is how "1–4 at once" survives at 6 and at 36 dots, because the
-  // count is `visible dots × duty cycle` and no window can beat that arithmetic.
-  const window = (name) => {
-    const stops = keyframeStops(name);
-    const opacity = opacityAt(stops);
-    let lit = 0;
-    for (let percent = 0; percent < 100; percent += 0.05) {
-      if (opacity(percent) > LIT_THRESHOLD) lit += 0.05;
-    }
-    return lit;
-  };
-  const seconds = (count) => (window(KEYFRAME_OF_BAND[count]) / 100) * BREATH_S;
-  assert.ok(seconds(6) > seconds(22), "the phone's strike must be the longest");
-  assert.ok(seconds(36) < seconds(12), "the dense field must carry the shortest one");
+  const brightS = (lit / 100) * BREATH_S;
+  assert.ok(
+    brightS > 0.4 && brightS < 1.6,
+    `the bright crest spans ${brightS.toFixed(2)} s of the ${BREATH_S} s breath`,
+  );
 });
 
 test("the stylesheet places flares by cell coordinate, not by percentage", () => {
@@ -506,14 +580,20 @@ test("density is a max-width cascade, never JavaScript", () => {
     "a min-width flare rule reopens the gap a max-width cascade closes",
   );
 
-  // Each step carries the cadence for the dots it leaves visible: the same
-  // breakpoint that hides the surplus switches the bell (see the cadence test).
-  for (const [width, name] of [
-    ["100rem", "flare-22"],
-    ["64rem", "flare-12"],
-    ["40rem", "flare-6"],
-  ]) {
+  // Each step hides the dots it does not need, and no step switches the bell: one
+  // cycle covers every density, so a viewport can never land in a band with a
+  // different cadence from its neighbour.
+  for (const width of ["100rem", "64rem", "40rem"]) {
     const block = blockOf(`@media (max-width: ${width})`);
-    assert.match(block, new RegExp(`animation-name:\\s*${name}`), `the ${width} band must run ${name}`);
+    assert.equal(
+      /animation-name/.test(block),
+      false,
+      `the ${width} band must not override the bell — there is one cadence`,
+    );
   }
+  assert.equal(
+    /@keyframes flare-(22|12|6)/.test(css),
+    false,
+    "the per-band bells are gone: only `flare` may exist",
+  );
 });
