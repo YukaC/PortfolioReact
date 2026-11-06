@@ -16,6 +16,9 @@ const MAX_SKEW = 8;
  * capped at a third of it — the band still leans into a flick, it just stays
  * readable. The numbers are the owner's phone report of 6 nov 2026.
  */
+/* A layout that only changed height does not move this band; a filter or a late
+   image does not either. The debounce is the same 200 ms the scroll layer uses. */
+const MEASURE_DEBOUNCE_MS = 200;
 const MAX_SKEW_COARSE = 2.5;
 
 /** Asked once: `matchMedia` inside the loop is a query per frame for a value that
@@ -81,8 +84,24 @@ const MarqueeMotion = () => {
       });
     };
 
+    /* A resize is not a layout change until it changes the WIDTH. Brave on Android
+       reports one every frame while the URL bar collapses — that is, during a scroll —
+       and each one re-measured two `width: max-content` tracks with `offsetWidth`, i.e.
+       a forced layout of the widest thing on the page. The phone report of 8 nov puts
+       this callback inside 8 of 49 long frames at ~31 ms each, with 460 ms of forced
+       style/layout in a 22 s window. Same policy as `smoothScroll.js`: only a width
+       change re-measures, and the burst is waited out first. */
+    let measuredWidth = window.innerWidth;
+    let measureTimer = 0;
+    const scheduleMeasure = () => {
+      if (window.innerWidth === measuredWidth) return;
+      measuredWidth = window.innerWidth;
+      clearTimeout(measureTimer);
+      measureTimer = window.setTimeout(measure, MEASURE_DEBOUNCE_MS);
+    };
+
     measure();
-    window.addEventListener("resize", measure);
+    window.addEventListener("resize", scheduleMeasure);
     if (document.fonts?.ready) document.fonts.ready.then(measure);
 
     let frame = 0;
@@ -167,7 +186,8 @@ const MarqueeMotion = () => {
     return () => {
       unsubscribe();
       stop();
-      window.removeEventListener("resize", measure);
+      window.removeEventListener("resize", scheduleMeasure);
+      clearTimeout(measureTimer);
     };
   }, []);
 
