@@ -117,13 +117,24 @@ const Footer = () => {
 
     registerMotion();
 
+    /* `--fp` drives `opacity` and `translate` on the 70 px `background-clip:
+       text` wordmark, so every write is a recalc of the footer subtree and a
+       repaint of that text. A scrub reports its progress on every frame of a
+       scroll whether the value moved or not, and three decimals of a five-
+       hundred-pixel travel means most frames repeat the previous value. The
+       comparison is the same one `AboutScroll` makes for `--tlp`: write only
+       the change, at the precision the CSS was tuned for. */
+    let lastProgress = null;
     const rise = ScrollTrigger.create({
       trigger: footer,
       start: "top 85%",
       end: "bottom bottom",
       scrub: true,
       onUpdate(self) {
-        footer.style.setProperty("--fp", self.progress.toFixed(3));
+        const progress = self.progress.toFixed(3);
+        if (progress === lastProgress) return;
+        lastProgress = progress;
+        footer.style.setProperty("--fp", progress);
       },
     });
 

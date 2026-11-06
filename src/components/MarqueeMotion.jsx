@@ -52,11 +52,24 @@ const MarqueeMotion = () => {
     const inner = root?.querySelector(".marquee-inner");
     if (!root || !inner) return undefined;
 
+    /* One write per row that actually changed, compared on the formatted string
+       the same way `useFieldMotion.write` compares a channel. A transform write
+       is not free even when it produces the same matrix: it re-records the
+       element and recalcs its subtree, and this loop runs for as long as the
+       band is on screen, scrolling or not. */
+    const writeRow = (row) => {
+      const text = `translate3d(${row.x.toFixed(1)}px,0,0)`;
+      if (text === row.last) return;
+      row.last = text;
+      row.el.style.transform = text;
+    };
+
     const rows = [...inner.querySelectorAll("[data-mq]")].map((el) => ({
       el,
       dir: Number(el.dataset.dir),
       x: 0,
       width: 0,
+      last: "",
     }));
 
     const measure = () => {
@@ -64,7 +77,7 @@ const MarqueeMotion = () => {
         const width = row.el.firstElementChild?.offsetWidth ?? 0;
         if (row.dir > 0 && (!row.width || row.x === 0)) row.x = -width;
         row.width = width;
-        row.el.style.transform = `translate3d(${row.x}px,0,0)`;
+        writeRow(row);
       });
     };
 
@@ -77,6 +90,7 @@ const MarqueeMotion = () => {
     let lastTime = 0;
     let lastScroll = window.scrollY;
     let velocity = 0;
+    let lastSkew = "";
 
     const loop = (time) => {
       const delta = lastTime ? Math.min(64, time - lastTime) : 16;
@@ -93,12 +107,17 @@ const MarqueeMotion = () => {
           while (row.x <= -row.width) row.x += row.width;
           while (row.x > 0) row.x -= row.width;
         }
-        row.el.style.transform = `translate3d(${row.x.toFixed(1)}px,0,0)`;
+        writeRow(row);
       });
 
+      // The skew is zero at rest, which is most of a slow scroll: the wrapper
+      // keeps the write it already has instead of being told the same angle.
       const ceiling = coarsePointer() ? MAX_SKEW_COARSE : MAX_SKEW;
-      const skew = Math.min(ceiling, Math.max(-ceiling, velocity * -0.008));
-      inner.style.transform = `skewX(${skew.toFixed(2)}deg)`;
+      const skew = `skewX(${Math.min(ceiling, Math.max(-ceiling, velocity * -0.008)).toFixed(2)}deg)`;
+      if (skew !== lastSkew) {
+        lastSkew = skew;
+        inner.style.transform = skew;
+      }
 
       frame = running ? requestAnimationFrame(loop) : 0;
     };
@@ -125,7 +144,10 @@ const MarqueeMotion = () => {
       cancelAnimationFrame(frame);
       frame = 0;
       running = false;
+      // The wrapper is handed back to the stylesheet, so the cached angle has to
+      // go with it: a restart at the same angle must write again.
       inner.style.transform = "";
+      lastSkew = "";
     };
 
     // The reader can flip the OS switch mid-session, so the band follows the

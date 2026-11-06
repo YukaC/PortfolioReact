@@ -148,6 +148,7 @@
     samples: 0,
     frames: [],
     longtasks: [],
+    loaf: [],
     cls: 0,
     fcp: 0,
     lcp: 0,
@@ -270,6 +271,34 @@
       row.count += 1;
       row.ms += +e.duration.toFixed(1);
       S.longTaskOwners.set(key, row);
+    }
+  });
+  /* A long task says the thread blocked; it does not say what the frame did with the
+     time. `long-animation-frame` splits one frame into the phases the reader can feel
+     — script, forced style/layout inside that script, and the render itself — and names
+     the script by URL and function. On a phone with no cable this is the only way to
+     find out who eats 400 ms: a `rAF` callback from our own chunk and a listener on
+     `window` are indistinguishable in the task attribution above. */
+  observe("long-animation-frame", (entries) => {
+    if (S.state !== "recording") return;
+    for (const e of entries) {
+      const scripts = e.scripts || [];
+      const js = scripts.reduce((a, sc) => a + (sc.duration || 0), 0);
+      const forced = scripts.reduce((a, sc) => a + (sc.forcedStyleAndLayoutDuration || 0), 0);
+      const render = e.renderStart ? Math.max(0, e.startTime + e.duration - e.renderStart) : 0;
+      S.loaf.push({
+        duration: +e.duration.toFixed(1),
+        blocking: +(e.blockingDuration || 0).toFixed(1),
+        js: +js.toFixed(1),
+        forced: +forced.toFixed(1),
+        render: +render.toFixed(1),
+        scripts: scripts.map((sc) => ({
+          url: String(sc.sourceURL || ""),
+          fn: String(sc.sourceFunctionName || ""),
+          how: String(sc.invokerType || ""),
+          ms: +(sc.duration || 0).toFixed(1),
+        })),
+      });
     }
   });
   observe("layout-shift", (entries) => {
@@ -1194,6 +1223,35 @@
           .slice(0, 6)
           .map((row) => ({ owner: row.key, type: row.type || null, count: row.count, ms: +row.ms.toFixed(0) })),
       },
+      /* Where the frame time went, and by whom. `rows` is grouped by script so the
+         first row is the file to open; `phases` says whether the bill was script,
+         forced style/layout inside that script, or the render that followed. */
+      loaf: (() => {
+        if (!S.loaf.length) return { count: 0 };
+        const sum = (key) => +S.loaf.reduce((a, e) => a + e[key], 0).toFixed(0);
+        const rows = new Map();
+        for (const e of S.loaf) {
+          for (const sc of e.scripts) {
+            const key = `${sc.url || "(no url)"} ${sc.fn || ""} [${sc.how}]`.trim();
+            const row = rows.get(key) || { key, count: 0, ms: 0 };
+            row.count += 1;
+            row.ms += sc.ms;
+            rows.set(key, row);
+          }
+        }
+        return {
+          count: S.loaf.length,
+          maxMs: Math.max(...S.loaf.map((e) => e.duration)),
+          jsMs: sum("js"),
+          forcedMs: sum("forced"),
+          renderMs: sum("render"),
+          blockingMs: sum("blocking"),
+          rows: [...rows.values()]
+            .sort((a, b) => b.ms - a.ms)
+            .slice(0, 6)
+            .map((row) => ({ script: row.key, count: row.count, ms: +row.ms.toFixed(0) })),
+        };
+      })(),
       vitals: { fcp: S.fcp, lcp: S.lcp, cls: +S.cls.toFixed(4) },
       reveals: {
         total: reveals.length,
