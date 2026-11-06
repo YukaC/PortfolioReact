@@ -90,3 +90,31 @@ test("S7: the proxy still posts to its own report path", () => {
     "the proxy must not set the dev override; that belongs to the overlay",
   );
 });
+
+test("S10: a phases artifact only carries the rows of its own run", () => {
+  const source = readFileSync(METER, "utf8");
+
+  // A native review of 6 nov 2026 raised this as CRITICAL: a later ordinary window
+  // re-embedding an earlier run's phase rows, so an artifact would present frames
+  // measured under one ablation as another's data. The claim cited `S.phases`,
+  // which has never existed here — but "it cannot happen" was only a comment, and
+  // a comment cannot answer a reviewer. These three assertions are the answer.
+  assert.doesNotMatch(
+    source,
+    /S\.phases/,
+    "phase rows must not live on the meter's state: the next window would inherit them",
+  );
+
+  const carrier = source.match(/phases:/g) || [];
+  assert.equal(
+    carrier.length,
+    1,
+    `exactly one place may attach phase rows to a report, saw ${carrier.length}`,
+  );
+
+  const post = /const postPhases = async \(collected\) => \{[\s\S]*?phases: collected/.exec(source);
+  assert.ok(
+    post,
+    "postPhases must build its payload from the rows it was given, never from the meter's state",
+  );
+});
