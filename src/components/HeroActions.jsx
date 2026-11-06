@@ -1,6 +1,5 @@
 "use client";
 
-import Magnetic from "@/components/Magnetic";
 import SwapArrow from "@/components/SwapArrow";
 import { useT } from "@/i18n/LocaleProvider";
 import { scrollToSectionByHash } from "@/utils/scroll-to-section";
@@ -8,11 +7,13 @@ import { scrollToSectionByHash } from "@/utils/scroll-to-section";
 /**
  * The hero's two calls to action, and the whole reason the hero needs a script.
  *
- * `Magnetic` follows the pointer with a spring and both anchors scroll to their
- * section through Lenis instead of jumping — two effects, one island, ~1 KB. The
- * statement, the split headline, the lead, the stack line and the ornament
- * cluster are markup and CSS, so `HeroSection` renders on the server and this is
- * all that hydrates (audit.md §16.2).
+ * Both anchors scroll to their section through Lenis instead of jumping, which
+ * is the one thing markup cannot do — the island is that and nothing else. The
+ * motion is the page's own button motion, shared with every other `.btn`
+ * (`.lb` label roll plus the `SwapArrow` swap on `globals.css`): the hero used to
+ * wrap its primary in `Magnetic`, and the drift read as a different button under
+ * the same field. No CTA follows the pointer any more; the navbar's was the last
+ * one and it went with the hero's.
  */
 const HeroActions = () => {
   const { t } = useT();
@@ -28,22 +29,25 @@ const HeroActions = () => {
       data-r="paint"
       style={{ "--d": "640ms" }}
     >
-      <Magnetic>
-        <a
-          href="#portfolio"
-          className="btn btn-solid focus-ring"
-          onClick={(e) => handleClick(e, "#portfolio")}
-        >
-          {t("hero.seeWork")}
-          <SwapArrow direction="r" />
-        </a>
-      </Magnetic>
+      <a
+        href="#portfolio"
+        className="btn btn-solid focus-ring"
+        onClick={(e) => handleClick(e, "#portfolio")}
+      >
+        <span className="lb">
+          <span data-t={t("hero.seeWork")}>{t("hero.seeWork")}</span>
+        </span>
+        <SwapArrow direction="r" />
+      </a>
       <a
         href="#contact"
         className="btn focus-ring"
         onClick={(e) => handleClick(e, "#contact")}
       >
-        {t("hero.getInTouch")}
+        <span className="lb">
+          <span data-t={t("hero.getInTouch")}>{t("hero.getInTouch")}</span>
+        </span>
+        <SwapArrow direction="r" />
       </a>
     </div>
   );
