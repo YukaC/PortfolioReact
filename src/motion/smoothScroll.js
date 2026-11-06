@@ -52,6 +52,7 @@ let tickerCallback = null;
 let refreshTimer = 0;
 let lastFlingPosition = 0;
 let lastFlingTime = 0;
+let flingWatchdog = 0;
 
 export function getLenis() {
   return lenisInstance;
@@ -164,13 +165,46 @@ function stopSmoothScroll() {
   }
 
   // A stopped layer is never flinging, and the class may not outlive it.
-  document.documentElement.classList.remove(FLING_CLASS);
+  clearFling();
   lastFlingTime = 0;
 
   /* Same rule as the resize handler: a forced refresh re-anchors the scroll,
      and this one runs on a reduced-motion flip, which can land mid-gesture. */
   ScrollTrigger.refresh(true);
 }
+
+/**
+ * Takes the class off, and disarms the watchdog that would have taken it off.
+ */
+const clearFling = () => {
+  if (flingWatchdog) {
+    clearTimeout(flingWatchdog);
+    flingWatchdog = 0;
+  }
+  if (typeof document !== "undefined") {
+    document.documentElement.classList.remove(FLING_CLASS);
+  }
+};
+
+/**
+ * The latch is evaluated from scroll events, so silence is the one case it
+ * cannot see: a locked layer, a backgrounded tab, a gesture the browser
+ * cancels. The watchdog re-checks the gap on a timer while the class is on and
+ * drops it once the events have stopped — one timer, armed when the class goes
+ * on, re-armed only while the fling is still reporting.
+ */
+const armFlingWatchdog = () => {
+  if (flingWatchdog) clearTimeout(flingWatchdog);
+  flingWatchdog = window.setTimeout(() => {
+    flingWatchdog = 0;
+    if (!document.documentElement.classList.contains(FLING_CLASS)) return;
+    if (performance.now() - lastFlingTime <= FLING_GAP_MS) {
+      armFlingWatchdog();
+      return;
+    }
+    document.documentElement.classList.remove(FLING_CLASS);
+  }, FLING_GAP_MS);
+};
 
 /**
  * Writes `fling` on `<html>` while the scroll is a fling, and takes it off as
@@ -193,7 +227,11 @@ const syncFling = () => {
       ? FLING_EXIT_PX_PER_S
       : FLING_ENTER_PX_PER_S;
     const idle = elapsed > FLING_GAP_MS;
-    root.classList.toggle(FLING_CLASS, !idle && speed > threshold);
+    const flinging = !idle && speed > threshold;
+    if (flinging !== root.classList.contains(FLING_CLASS)) {
+      root.classList.toggle(FLING_CLASS, flinging);
+      if (flinging) armFlingWatchdog();
+    }
   }
 
   lastFlingPosition = position;
@@ -201,6 +239,9 @@ const syncFling = () => {
 };
 
 export function lockSmoothScroll() {
+  // The layer is being stopped on purpose, so no event will arrive to correct a
+  // latch that was on: the class goes with it.
+  clearFling();
   lenisInstance?.stop();
 }
 
