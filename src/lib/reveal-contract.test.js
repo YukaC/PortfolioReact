@@ -164,3 +164,22 @@ test("the decorations a scroll trigger owns still resolve without a script", () 
     "the timeline rail stays at zero without a script instead of being drawn",
   );
 });
+
+test("a phone gets a shorter entrance than a desktop", () => {
+  // A finger scrolls through the entrance instead of watching it. Sixteen pixels of
+  // rise on several blocks entering at once is what the 6 nov 2026 phone report
+  // reads as the page wobbling; the desktop keeps the full rise because there it is
+  // watched. The rise lives in a token so the variant shortens it without a second
+  // copy of the rule.
+  const hidden = ruleFor('html.js [data-r]:not(.is-in):not([data-r="paint"])');
+  assert.match(
+    hidden,
+    /translateY\(var\(--reveal-rise,\s*16px\)\)/,
+    "the hidden state must take its rise from --reveal-rise, so one variant can shorten it",
+  );
+  assert.match(
+    css,
+    /@variant pointer-coarse \{\s*html\.js \{\s*--reveal-rise:\s*6px;/,
+    "a coarse pointer must shorten the reveal rise to 6 px",
+  );
+});
