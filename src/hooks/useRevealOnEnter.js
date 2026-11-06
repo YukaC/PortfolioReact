@@ -32,6 +32,16 @@ import {
  */
 const REVEAL_SELECTOR = '[data-r]:not([data-r="paint"])';
 
+/** Asked once per reveal pass: `matchMedia` is a query, and the answer only
+    changes when the OS flips the pointer. */
+const coarsePointer = () => {
+  try {
+    return window.matchMedia("(pointer: coarse)").matches;
+  } catch {
+    return false;
+  }
+};
+
 export function useRevealOnEnter() {
   useEffect(() => {
     const body = document.body;
@@ -58,7 +68,19 @@ export function useRevealOnEnter() {
         // `threshold: 0` means "any part of it is on screen"; the margin keeps the
         // trigger from firing on the last 8% of the viewport, where a node would
         // be revealed already half past the fold.
-        { threshold: 0, rootMargin: "0px 0px -8% 0px" },
+        //
+        // A finger changes the arithmetic. A block that reveals *as it arrives* is
+        // still rising from `opacity: 0` for the whole entrance, and a flick lands
+        // the reader in a screenful of blocks that have only just been observed —
+        // a phone report of 6 nov 2026 shows whole screens with no text and a work
+        // preview floating without its row. On a coarse pointer the reveal starts
+        // a third of a viewport early instead, so the entrance is over by the time
+        // the block is under the thumb. Desktop keeps the late trigger, where the
+        // entrance is watched rather than scrolled through.
+        {
+          threshold: 0,
+          rootMargin: coarsePointer() ? "0px 0px 33% 0px" : "0px 0px -8% 0px",
+        },
       );
     }
 

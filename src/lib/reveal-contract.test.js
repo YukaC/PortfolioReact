@@ -183,3 +183,39 @@ test("a phone gets a shorter entrance than a desktop", () => {
     "a coarse pointer must shorten the reveal rise to 6 px",
   );
 });
+
+test("a phone does not drift the words of a heading", () => {
+  // `--k` grows with the word's position, and `--scy` is a smoothed scroll value,
+  // so on a flick the last word of a line travels furthest while the page has
+  // already arrived: the lines overlap and the heading reads as broken. The phone
+  // report of 6 nov 2026 shows "Desarrollo" drawn over "tu software,". Desktop
+  // keeps the drift; a coarse pointer must not.
+  const word = ruleFor(".w");
+  assert.notEqual(word, "", ".w rule not found");
+  assert.match(
+    word,
+    /translate:\s*0\s*calc\(var\(--scy\)[^;]*\)/,
+    "the word box no longer reads the scroll channel at all — did the drift move?",
+  );
+  const coarse = css.slice(css.indexOf("@variant pointer-coarse", css.indexOf(".w {")));
+  assert.match(
+    coarse.slice(0, 400),
+    /translate:\s*none/,
+    "a coarse pointer must stop the per-word drift: otherwise the heading overlaps itself on a flick",
+  );
+});
+
+test("a phone reveals a third of a viewport early, a desktop does not", () => {
+  // A block that reveals as it arrives is still rising from opacity 0 while the
+  // reader is already on it, and a flick lands the reader in a screenful of those:
+  // the phone report shows whole screens with no text and a preview floating
+  // without its row. Only a coarse pointer pre-reveals; the desktop entrance is
+  // watched, so it keeps the late trigger.
+  const hook = readFileSync(path.join(ROOT, "src/hooks/useRevealOnEnter.js"), "utf8");
+  assert.match(hook, /pointer:\s*coarse/, "the reveal observer does not ask about the pointer");
+  assert.match(
+    hook,
+    /rootMargin:\s*coarsePointer\(\)\s*\?\s*"0px 0px 33% 0px"\s*:\s*"0px 0px -8% 0px"/,
+    "the coarse pointer must pre-reveal a third of a viewport; the desktop keeps -8%",
+  );
+});
