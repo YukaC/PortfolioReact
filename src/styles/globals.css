@@ -1568,6 +1568,26 @@
     filter: none;
   }
 
+  /* A fling is not an entrance (owner report: "al hacer flick rápido/agresivo,
+     el texto desaparece por instantes"). A wheel or trackpad flick covers more
+     than a screen inside `--duration-reveal`, so a block is observed and still
+     rising from `opacity: 0` when the reader is already on it: the text is
+     there, invisible for a beat, and back on the next scroll. While the smooth
+     layer reports a fling (`fling` on `<html>`, written by `smoothScroll.js`),
+     a node reveals at once — same observer, same `.is-in`, just no entrance to
+     miss. At reading speed nothing changes: the entrance is still watched.
+     Reason for staying in this layer (audit.md §13.2): a state the script owns,
+     the third of the four admitted kinds. */
+  html.js.fling [data-r]:not([data-r="paint"]) {
+    transition: none;
+  }
+
+  /* The same decision one level down: a heading observed mid-fling would still
+     lift its words 112% with a stagger nobody saw the start of. */
+  html.js.fling .w > span {
+    transition: none;
+  }
+
   /* Above-the-fold reveals paint on the first frame, driven by CSS instead of
      waiting for hydration and an observer: text that starts at `opacity: 0`
      cannot be the largest paint until that round trip finishes (2.2 s measured

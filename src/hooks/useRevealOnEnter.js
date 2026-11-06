@@ -76,7 +76,10 @@ export function useRevealOnEnter() {
         // preview floating without its row. On a coarse pointer the reveal starts
         // a third of a viewport early instead, so the entrance is over by the time
         // the block is under the thumb. Desktop keeps the late trigger, where the
-        // entrance is watched rather than scrolled through.
+        // entrance is watched rather than scrolled through — and a wheel or
+        // trackpad fling, the case where it is scrolled through anyway, drops the
+        // entrance through the `fling` class `smoothScroll.js` writes instead of
+        // moving this trigger (globals.css §reveal).
         {
           threshold: 0,
           rootMargin: coarsePointer() ? "0px 0px 33% 0px" : "0px 0px -8% 0px",
