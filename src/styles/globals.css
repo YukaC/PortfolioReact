@@ -1559,13 +1559,23 @@
      GPU, and it is gone from the entrance, not merely narrowed. */
   html.js [data-r]:not(.is-in):not([data-r="paint"]) {
     opacity: 0;
-    transform: translateY(16px);
+    transform: translateY(var(--reveal-rise, 16px));
   }
 
   [data-r].is-in {
     opacity: 1;
     transform: none;
     filter: none;
+  }
+
+  /* A phone scrolls through the entrance instead of watching it: six pixels keep
+     the rise visible and small enough that several blocks entering at once do not
+     pull the text out from under the finger. Desktop keeps 16 px.
+     `docs/css-map.md` §reveal carries the why. */
+  @variant pointer-coarse {
+    html.js {
+      --reveal-rise: 6px;
+    }
   }
 
   /* Above-the-fold reveals paint on the first frame, driven by CSS instead of
