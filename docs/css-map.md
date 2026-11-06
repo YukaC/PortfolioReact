@@ -83,33 +83,60 @@ at 128 BPM "como respiracion", the tempo of Bocanada). The field used to carry 3
 hand-tuned cycles of 8.7–9.3 s; it now carries one, and it is the song's:
 
 - `--bpm: 128` is the only place the tempo is written down. `--beat: calc(60s /
-  var(--bpm))` is 0.46875 s, `--breath: calc(8 * var(--beat))` is 3.75 s, and
-  `.flare` runs its bell on `--breath`. Eight beats are exactly two 4/4 bars — 16
-  breaths a minute, the rate of a calm human breath. One breath per beat would be
-  2.13 Hz, and the count is `visible dots × duty cycle`: on 36 dots a 2.13 Hz
-  breath only fits the 1–4 budget as a sub-50 ms flicker, which is the blink T12
-  removed. `8` is the one knob for a faster or calmer field;
-- the phases are whole slots of `--grid: calc(var(--beat) / 8)` — a 32nd note,
-  58.59 ms — dealt in golden-ratio order over the 64 a breath holds, so every
-  prefix comes out spread and every onset and every peak sits on the song's grid.
-  `src/lib/field-flares.js` therefore carries `{ cx, cy, slot }` and nothing else:
-  no seconds, no cycle, no arithmetic at runtime;
-- one bell per density band — `flare` (36 dots), `flare-22`, `flare-12`,
-  `flare-6` — resting at `0.04` (never `0`: the field is never completely dark),
-  peaking at `0.5` instead of `1`, with both flanks eased by
-  `--ease-in-out-field`, so no stop in the cycle is a step;
-- the slice of the breath above the `0.05` "lit" threshold is set per band so that
-  1–4 flares are lit at once however many dots the viewport carries (§19.2): the
-  six-dot phone field gets a 1.84 s swell, the 36-dot field a 0.34 s one. Fewer,
-  longer strikes are the only way to keep the count bounded — a long bright phase
-  on 36 dots is arithmetically a crowd;
-- the phases are staggered rather than unison (owner's choice): each dot has its
-  own slot inside the breath, so the field stays a shimmer and not a strobe. The
-  pattern repeats every breath by design — that is what being in tempo means.
+  var(--bpm))` is 0.46875 s, `--breath: calc(12 * var(--beat))` is 5.625 s, and
+  `.flare` runs its bell on `--breath`. Twelve beats are exactly three 4/4 bars —
+  about 10.7 breaths a minute. The path is the whole story: eight beats read “muy
+  rápidos”, sixteen read “muy despacio” (L5, L8), and twelve is the point where a
+  breath is slow enough to be one and still visibly happening. The tempo of the
+  song stays 128: what stretches is the breath, because the tempo belongs to the
+  song and the breath is the design decision. The multiplier in `--breath` is the
+  one knob for a faster or calmer field;
+- the phases are whole slots of `--grid: calc(var(--breath) / 64)` — 87.89 ms at
+  the shipped cycle — dealt in golden-ratio order over the 64 a breath holds, so
+  every prefix comes out spread and every onset and every peak sits on the
+  subdivision. The grid is derived from the **cycle**, never from the beat: with a
+  `--beat`-derived grid, lengthening the breath packs all 36 phases into its first
+  half and leaves the rest dark (the count simulation read 0 lit and 6 lit at once
+  when that happened). `src/lib/field-flares.js` therefore carries `{ cx, cy, slot
+  }` and nothing else: no seconds, no cycle, no arithmetic at runtime;
+- one bell for every density — `flare`, and nothing else: a **tide with a bloom on
+  top**. The dot rests at `0.02` (never `0`: the field is never completely dark),
+  drifts up to a dim `0.16` by 38 % of the cycle, blooms to `0.6` at the middle and
+  is back down by 62 %. That shape answers L10 (“el ritmo está bien pero que no se
+  prendan tantas a la vez”): a flat window cannot give a long swell *and* a low lit
+  count, because the lit population is `count × duty`. With the crest short the
+  bright population is ~4 of 36 at any instant (measured 3–8) while the dot still
+  moves for most of its 5.6 s breath. `--ease-in-out-field` eases every segment, so
+  no stop is a step. The three earlier shapes are recorded so nobody re-tries them:
+  a per-band sliver (0.68 s of glow in a 7.5 s cycle) read as sparkles (L6), a
+  window covering the whole cycle read as “muy despacio y juntos” (L8), and a flat
+  half-cycle window lit half the field at once (L10);
+- the disc itself is a **two-layer glow**: a coral core lifted toward white, a
+  short shoulder and a wide soft tail, in a 28 px element centred on the dot. A
+  single steep gradient was tried first and read as a flat disc (“perdió ese toque
+  de glow”, L10): the halo, not the peak opacity, is what makes the dot read as
+  light. The footprint is also capped by the rest state — a 34 px halo at 4 % read
+  as a semi-transparent circle parked on the field (“quedaron unos circulos semi
+  transparentes”, L11), so the disc is 28 px and the rest is 0.02;
+- no `animation-name` overrides by viewport any more. One cycle covers 6 and 36
+  dots alike: the band decides how many dots are painted and never how they
+  breathe, so a fractional viewport cannot land in a band with another cadence;
+- the field's calm is no longer a headcount. §19.2's “1–4 lit at once” was the
+  arithmetic of those narrow windows and the owner retired it (L6): with half the
+  cycle lit, roughly half the band is above the threshold at any instant, and the
+  cold count is what keeps it from reading as a wash: 0.18, 0.3 and 0.45 all read
+  as tenue (L8–L12), and the crest is `0.6` — what separates “flash” from “light”
+  is the crest being brief, not the amplitude being low. The floor that survives
+  unchanged is “never completely dark”;
+- the phases are still staggered rather than unison (owner's choice, L2): each dot
+  has its own slot inside the breath, so the field scatters instead of pulsing as
+  one flat wash. The pattern repeats every breath by design — that is what being in
+  tempo means.
 
 `src/lib/field-flares.js` holds the table and its generator notes;
-`src/lib/field-flares.test.js` pins the budget: peak ≤ 4 and at least one lit for
-the certified minute at every density band, the never-zero floor, and the tempo
+`src/lib/field-flares.test.js` pins the contract: one bell whose window is half the
+cycle, a peak between 0.25 and 0.4 for the certified minute at every density band,
+the never-zero floor, and the tempo
 chain the stylesheet declares.
 
 ## §field — the blobs and the convolved blur
@@ -142,3 +169,35 @@ went quiet. That shadow had no blur and no offset — it was a filled disc of li
 green behind the dot — and the same disc is now a pseudo-element that only fades
 and scales, which the compositor owns. An idle page asks for 0 frames of work and
 the geometry is unchanged: radius 3.5 px + spread, reproduced by `scale`.
+
+## §buttons — one motion, four boxes
+
+The button motion is one recipe in two layers: a label that rises while its copy
+enters from below (`.lb > span` translated `-100 %`, the copy painted by
+`span::after` with `data-t`), and an arrow that leaves while its copy arrives
+(`.ar > svg`, the second glyph parked at minus one step and swapped to `none`).
+Everything is a `transform` on a clipped inline box, so the compositor owns it
+and nothing repaints.
+
+Four boxes carry it: `.btn` (the page's own buttons — hero, About, project pages,
+the work list), `.nav-cta` (the navbar's contact pill), `.work-row` (the list
+rows, on `:focus-within` because the row is the click target) and `.bigmail`
+(the contact block). The triggers are one `:is()` list per state, not one group
+per recipe: adding a box to the motion is one name in one list, and the compiled
+`@layer components` stays flat instead of growing a block per selector.
+
+`@utility nav-cta` shares the arrow swap and nothing else: **no label roll**. Its
+padding (`0.6875rem 1rem`) and `--text-ui-sm` are what keeps the floating pill at
+its 62 px rhythm — `.btn`'s `0.875rem 1.625rem` and `--text-ui` are the hero's
+scale, and inheriting them would push the header taller at every scroll state —
+and the roll inside a 41 px-tall pill read as a second, smaller button (owner's
+brief). The nav's CTA is the same motion where the box has room for it, and only
+there.
+
+Its surface is a ladder step, not a colour of its own: `--hover` (white/10) over
+the field with white type, `--soft` under a pointer, plus the existing sky glow.
+A solid `--color-white` fill was the only opaque slab in a row made of a hairline
+pill and bare links, and it read as a louder button than the ones beside it
+(owner's brief). Because the pill is now translucent it takes the `.nav-pill`
+halo instead of resetting it, so the glyphs stay readable when the plume blooms
+behind them.
