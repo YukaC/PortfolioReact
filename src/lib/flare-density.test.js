@@ -89,7 +89,7 @@ test("the phone band still carries all six strikes", () => {
   const phone = ladder.find((band) => band.maxRem === 40);
   assert.ok(phone, "no `max-width: 40rem` density band: the phone keeps all 36 flares");
   assert.equal(phone.cut, 7, `the phone band hides from child ${phone.cut}; the sixth must stay visible`);
-  assert.equal(phone.bell, "flare-6", "the phone band must keep its own bell");
+  assert.equal(phone.bell, null, "the phone band must not switch the bell: there is one cadence");
 });
 
 test("the density ladder is the documented six / twelve / twenty-two / thirty-six", () => {
@@ -108,8 +108,8 @@ test("the density ladder is the documented six / twelve / twenty-two / thirty-si
   });
   assert.deepEqual(
     ladder.map((band) => band.bell),
-    ["flare-22", "flare-12", "flare-6"],
-    "one bell per density band, switched in the same query that hides the extra dots",
+    [null, null, null],
+    "no density band switches the bell any more: one cycle covers 6 and 36 dots alike (owner's L6)",
   );
 });
 

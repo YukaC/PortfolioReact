@@ -259,19 +259,27 @@
   --stagger-word: 45ms; /* between the words of a split heading */
   --stagger-phrase: 40ms; /* config STAGGER.phrase */
   --stagger-min: 30ms; /* config STAGGER.min, the floor for a sibling beat */
-  /* --- tempo (§19.2, odd/tasks/flare-tempo.md S1–S3) --------------------
+  /* --- tempo (§19.2, odd/tasks/flare-tempo.md S1–S3, as amended by the
+     respiratory rework) ------------------------------------------------
      The lattice breathes in the tempo of the song that gives the field its
      name: `--bpm` is that number and the only place it is written down —
      everything else is a `calc` off it. One flare swells once every `--breath`,
-     which is 8 beats: exactly two 4/4 bars, and 16 breaths a minute, the rate of
-     a calm human breath. One breath per beat would be 2.13 Hz, and 36 dots
-     cannot pulse that fast and stay inside 1–4 lit at once. `--grid` is the
-     subdivision the 36 phases are dealt on — a 32nd note — so every flare leaves
-     its rest and reaches its peak on the song's grid instead of near it. */
+     which is 12 beats: three 4/4 bars, and about 10.7 breaths a minute. It was 8
+     beats (3.75 s, 16 a minute) and the owner's report was still “muy rápidos”:
+     what doubles was the cycle only — the `--bpm`, the beat and the grid keep the
+     song's values, because stretching the breath is the design decision and the
+     tempo is the song's. Then 16 beats read “muy despacio” (L8), so the answer is
+     three bars: slow enough to be a breath, fast enough to be seen happening. One
+     breath per beat would be 2.13 Hz, and 36 dots cannot pulse that fast and stay
+     calm. `--grid` is the subdivision the 36 phases are dealt on, derived straight
+     from the cycle: the table deals its slots over **64 of them per breath**, so
+     the grid is `--breath / 64` (87.89 ms here) whatever the cycle's length is —
+     derive it from the beat instead and the phases silently stop covering the
+     cycle the moment the breath changes. */
   --bpm: 128;
   --beat: calc(60s / var(--bpm));
-  --breath: calc(8 * var(--beat));
-  --grid: calc(var(--beat) / 8);
+  --breath: calc(12 * var(--beat));
+  --grid: calc(var(--breath) / 64);
   /* The curves the sheet owns. The springs stay in `motion/config.js`:
      they are sampled CustomEases, not cubic-beziers (§14.4). */
   --ease-out-field: cubic-bezier(0.2, 0.7, 0.2, 1);
@@ -1269,38 +1277,43 @@
     position: absolute;
     left: calc(var(--cx) * 48px + 24px);
     top: calc(var(--cy) * 48px + 24px);
-    width: 24px;
-    height: 24px;
-    margin: -12px 0 0 -12px;
+    width: 28px;
+    height: 28px;
+    margin: -14px 0 0 -14px;
     border-radius: 50%;
-    background: radial-gradient(
-      circle,
-      color-mix(in srgb, var(--color-coral) 16%, var(--color-white)) 0%,
-      color-mix(in srgb, var(--color-coral) 45%, transparent) 45%,
-      transparent 70%
-    );
-    opacity: var(--flare-rest, 0.04);
+    /* Two stacked radials: core, shoulder, wide tail. The steep single-stop
+       gradient of the previous pass read as a flat disc (L10); the halo is what
+       makes the dot read as light. */
+    background:
+      radial-gradient(
+        circle,
+        color-mix(in srgb, var(--color-coral) 30%, var(--color-white)) 0%,
+        color-mix(in srgb, var(--color-coral) 45%, transparent) 32%,
+        transparent 58%
+      ),
+      radial-gradient(
+        circle,
+        color-mix(in srgb, var(--color-coral) 26%, transparent) 0%,
+        transparent 64%
+      );
+    opacity: var(--flare-rest, 0.02);
     animation: flare var(--breath) var(--ease-in-out-field) var(--delay, 0s) infinite;
   }
 
-  /* One keyframe per density band (docs/css-map.md §identity): the bell covers a
-     fixed slice of the breath, so a band with six strikes keeps a long soft
-     swell (1.84 s of the 3.75 s) and the 36-strike field keeps 1–4 of them lit at
-     once with a 0.34 s one. The rest opacity is not zero — the field never goes
-     fully dark — and the eased attack/decay leaves no step anywhere in the
-     cycle. */
+  /* One bell for every density band. A strike is a tide with a bloom on top (see
+     the keyframes): the dot moves for most of the breath and is bright only in the
+     middle of it, which is the only way to keep a slow swell and a low lit count at
+     the same time. `--breath`, the shape and the amplitude are the three knobs the
+     owner has dialled (L5–L10); docs/css-map.md §identity has the history. */
 
   /* Density by viewport: 6 / 12 / 22 / 36 visible, counted by computed `display`
      and driven by no script. Three cumulative `max-width` steps in this order
      rather than two-sided ranges, because a fractional viewport (page zoom, a
-     non-integer pixel ratio) must not fall between two ranges and get all 36. */
+     non-integer pixel ratio) must not fall between two ranges and get all 36.
+     No step switches the bell any more: one cycle covers every density. */
   @media (max-width: 100rem) {
     .flare:nth-child(n + 23) {
       display: none;
-    }
-
-    .flare {
-      animation-name: flare-22;
     }
   }
 
@@ -1308,19 +1321,11 @@
     .flare:nth-child(n + 13) {
       display: none;
     }
-
-    .flare {
-      animation-name: flare-12;
-    }
   }
 
   @media (max-width: 40rem) {
     .flare:nth-child(n + 7) {
       display: none;
-    }
-
-    .flare {
-      animation-name: flare-6;
     }
   }
 
@@ -2514,80 +2519,38 @@
 }
 
 /* --- keyframes -----------------------------------------------------------
-   All seven in one place: a keyframe is a global name, so living next to the
-   rule that plays it only hides the list. Each one is named by the
-   `animation` that asks for it, and each is a keyframe for one of the four
-   reasons this layer keeps: the flare's cycle, the two reveal entries (with
-   and without the blur), the word split, the arrival flash, the status pulse
-   and the ornament's entrance. */
-/* --- keyframes -----------------------------------------------------------
    All of them in one place: a keyframe is a global name, so living next to the
    rule that plays it only hides the list. Each one is named by the `animation`
    that asks for it.
 
-   The flares come in one bell per density band, and a band's window is a slice
-   of the breath: `rise` is where the pulse leaves its rest opacity, so the slice
-   of the cycle that is above the "lit" threshold is fixed per band. Six strikes
-   on a phone get a long swell (1.84 s of the 3.75 s breath), the 36-strike field
-   keeps 1–4 lit at once (§19.2) with a 0.34 s one, and every band keeps a rest
-   above zero so the field is never completely dark. `--ease-in-out-field` shapes
-   both flanks: no stop in this cycle is a step. */
+   The flare's bell is one keyframe for every density band, and it is a tide with a
+   bloom on top: a long dim swell (0.02 → 0.16 between 0 % and 38 %) and a short,
+   bright crest in the middle of it (0.6 at 50 %, back to 0.16 by 62 %). That shape
+   is the answer to L10 — “el ritmo está bien pero que no se prendan tantas a la
+   vez” — and it is arithmetic, not taste: with a flat window the number of dots
+   lit at any instant is `count × duty`, so a long swell and a low count cannot both
+   come from the window alone. Splitting it into a dim tide and a brief crest keeps
+   the slow motion (5.6 s per breath) and drops the bright population to ~4 of 36,
+   without shortening the swell into the sparkle of L6. The amplitude is the one
+   knob the brightness briefs turn (L8–L12), and it turns on the two lit states
+   only: the rest stays at 0.02, because a stronger parked footprint is the
+   semi-transparent disc the owner rejected (L11). `--ease-in-out-field` shapes
+   every segment: no stop in this cycle is a step. */
 @keyframes flare {
   0%,
-  45.5%,
-  54.5%,
   100% {
-    opacity: 0.04;
-    transform: scale(0.94);
+    opacity: 0.02;
+    transform: scale(0.97);
+  }
+
+  38%,
+  62% {
+    opacity: 0.16;
+    transform: scale(1.01);
   }
 
   50% {
-    opacity: 0.5;
-    transform: scale(1.06);
-  }
-}
-
-@keyframes flare-22 {
-  0%,
-  43.1%,
-  56.9%,
-  100% {
-    opacity: 0.04;
-    transform: scale(0.94);
-  }
-
-  50% {
-    opacity: 0.5;
-    transform: scale(1.06);
-  }
-}
-
-@keyframes flare-12 {
-  0%,
-  36.7%,
-  63.3%,
-  100% {
-    opacity: 0.04;
-    transform: scale(0.94);
-  }
-
-  50% {
-    opacity: 0.5;
-    transform: scale(1.06);
-  }
-}
-
-@keyframes flare-6 {
-  0%,
-  25.4%,
-  74.6%,
-  100% {
-    opacity: 0.04;
-    transform: scale(0.94);
-  }
-
-  50% {
-    opacity: 0.5;
+    opacity: 0.6;
     transform: scale(1.06);
   }
 }
