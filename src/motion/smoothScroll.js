@@ -15,13 +15,43 @@ const SCROLL_LERP = 0.07;
 /* A window resize fires every frame while a window edge is dragged, and on iOS
 it also fires when the URL bar collapses mid-gesture. A `ScrollTrigger.refresh`
 re-measures every trigger, so refreshing per event stutters exactly when the
-reader is moving (audit.md §10 P2-6). The refresh waits for the resize to stop;
-`ignoreMobileResize` drops the URL-bar case before it ever reaches us. */
+reader is moving (audit.md §10 P2-6). The refresh waits for the resize to stop.
+
+`ignoreMobileResize` is not the answer for the URL bar here: it only gates the
+listener ScrollTrigger registers itself (`gsap/ScrollTrigger.js:395-397`), not
+the one below. */
 const REFRESH_DEBOUNCE_MS = 200;
+
+/* A fling is a scroll nobody is reading through: the smoothed layer is
+travelling faster than an entrance can finish inside it, which is how a
+revealed block ends up still rising from `opacity: 0` while the reader is
+already on it (owner report: "al hacer flick rápido/agresivo, el texto
+desaparece por instantes"). While the class is on, the stylesheet reveals a
+node at once instead of playing `--duration-reveal` under a reader who has gone
+past it (globals.css §reveal).
+
+The threshold is a speed, in px per second, not a distance per frame: a delta
+per frame means a different thing on a 60 Hz and a 144 Hz screen, and this one
+answer must be the same on both. Two values make it a latch — enter at the
+higher speed, leave at the lower — so a fling does not chatter the class on and
+off as the smoothed value eases out. */
+const FLING_CLASS = "fling";
+const FLING_ENTER_PX_PER_S = 2200;
+const FLING_EXIT_PX_PER_S = 900;
+/* The layer reports one scroll event per frame while it moves, so a gap this
+   long means it has settled. Without it, a scroll stopped by a locked layer
+   would leave the class on with no further event to take it off. 250 ms and not
+   a frame: this repo's own phone measurements put p95 frames at 84-109 ms and a
+   long task at 240 ms (odd/tasks/mobile-motion-perf.md L5, L13), so a tighter
+   gap reads a fling as "settled" exactly when the reader needs the class — and
+   a fling that keeps the class a quarter of a second too long costs nothing. */
+const FLING_GAP_MS = 250;
 
 let lenisInstance = null;
 let tickerCallback = null;
 let refreshTimer = 0;
+let lastFlingPosition = 0;
+let lastFlingTime = 0;
 
 export function getLenis() {
   return lenisInstance;
@@ -64,11 +94,23 @@ export function startSmoothScroll() {
 
   ScrollTrigger.config({ ignoreMobileResize: true });
 
+  let lastWidth = window.innerWidth;
   const onResize = () => {
+    /* Only a width change can move a trigger. The height-only resize a phone
+    reports when the URL bar shows or hides is the case an app handler must let
+    go of entirely: `refresh()` with no argument is a FORCED refresh, and its
+    first act is to jump the scroll to 0 and restore a position recorded on the
+    main thread (`gsap/ScrollTrigger.js:483-546`). During a gesture that stops
+    the native fling and re-anchors the page behind the reader's thumb — the
+    hero → footer → hero jump of the 8 nov recording
+    (odd/tasks/mobile-motion-perf.md L17). `refresh(true)` is the debounced path
+    ScrollTrigger's own listener takes, and it never runs for a height change. */
+    if (window.innerWidth === lastWidth) return;
+    lastWidth = window.innerWidth;
     if (refreshTimer) clearTimeout(refreshTimer);
     refreshTimer = window.setTimeout(() => {
       refreshTimer = 0;
-      ScrollTrigger.refresh();
+      ScrollTrigger.refresh(true);
     }, REFRESH_DEBOUNCE_MS);
   };
   window.addEventListener("resize", onResize);
@@ -95,6 +137,9 @@ function mountLenis() {
   });
 
   lenis.on("scroll", ScrollTrigger.update);
+  lenis.on("scroll", syncFling);
+  lastFlingPosition = lenis.scroll;
+  lastFlingTime = 0;
 
   tickerCallback = (time) => {
     lenis.raf(time * 1000);
@@ -113,12 +158,47 @@ function stopSmoothScroll() {
   gsap.ticker.lagSmoothing(500, 33);
 
   if (lenisInstance) {
+    lenisInstance.off("scroll", syncFling);
     lenisInstance.destroy();
     lenisInstance = null;
   }
 
-  ScrollTrigger.refresh();
+  // A stopped layer is never flinging, and the class may not outlive it.
+  document.documentElement.classList.remove(FLING_CLASS);
+  lastFlingTime = 0;
+
+  /* Same rule as the resize handler: a forced refresh re-anchors the scroll,
+     and this one runs on a reduced-motion flip, which can land mid-gesture. */
+  ScrollTrigger.refresh(true);
 }
+
+/**
+ * Writes `fling` on `<html>` while the scroll is a fling, and takes it off as
+ * soon as the smoothed value is back at reading speed.
+ *
+ * Rides the scroll event the layer already emits — no listener and no loop of
+ * its own, and the class only reaches the document when it changes, so a still
+ * page costs nothing and a fling costs two class writes.
+ */
+const syncFling = () => {
+  if (typeof document === "undefined") return;
+  const root = document.documentElement;
+  const position = lenisInstance ? lenisInstance.scroll : window.scrollY;
+  const now = performance.now();
+  const elapsed = lastFlingTime ? now - lastFlingTime : 0;
+
+  if (elapsed > 0) {
+    const speed = (Math.abs(position - lastFlingPosition) / elapsed) * 1000;
+    const threshold = root.classList.contains(FLING_CLASS)
+      ? FLING_EXIT_PX_PER_S
+      : FLING_ENTER_PX_PER_S;
+    const idle = elapsed > FLING_GAP_MS;
+    root.classList.toggle(FLING_CLASS, !idle && speed > threshold);
+  }
+
+  lastFlingPosition = position;
+  lastFlingTime = now;
+};
 
 export function lockSmoothScroll() {
   lenisInstance?.stop();

@@ -2,7 +2,7 @@
   "note": "Baseline of the compiled stylesheet for `pnpm check:css`. The number is measured from the source, not from a build: src/styles/globals.css compiled in-process with @tailwindcss/postcss (the plugin the app itself uses), so any machine and any CI job gets the same byte count. The guard fails when the compiled sheet grows more than `growthAllowance` over `compiledBytes` (audit.md §13.3 S7 / §21.3), and when `@layer components` exceeds `componentsCeiling` (§14.3, spec S14). Raising either number is a decision that belongs in the same commit as the CSS that makes it grow, with the reason in the feature doc.",
   "compiledBytes": 77888,
   "componentsBytes": 29645,
-  "componentsCeiling": 29900,
+  "componentsCeiling": 30200,
   "growthAllowance": 0.05,
   "history": [
     {
@@ -61,6 +61,12 @@
       "componentsBytes": 29645,
       "deltaPct": 5.04,
       "source": "odd/tasks/archive/about-perf.md: AboutScroll no longer runs on a coarse pointer (the statement scrub and the drawn rail were the section's whole frame bill), so the stylesheet owes the finished state — lit statement, drawn rail, lit dots — the same one the (scripting: none) block already promised. 472 B in @layer components; ceiling 29900 B and baseline re-registered here with the reason."
+    },
+    {
+      "stage": "scroll-flick — the fling state of the reveal",
+      "componentsBytes": 30008,
+      "source": "Owner report: \"al hacer flick rápido/agresivo, el texto desaparece por instantes\". A wheel or trackpad fling covers more than a screen inside --duration-reveal, so a block is observed and still rising from opacity 0 when the reader is already on it. The layer owes the fling state two selectors and one declaration (globals.css §reveal): 114 B, and the ceiling moves from 29900 B to 30200 B with 192 B of headroom. The block cannot be a @utility: it is a class the script puts on <html>, one of the four kinds audit.md §13.2 admits into the layer, and the entrance it overrides lives in the same layer, so a @layer base copy would lose to it.",
+      "inherited": "the layer entered this change at 29894 B — 6 B under the old ceiling — so the growth is real behaviour, not leftover slack"
     }
   ]
 }
