@@ -6,27 +6,26 @@
  * ten seconds of repose, measured through CDP, with the canvas instrumented
  * before the page loads.
  *
- * **Two idle paths, two checks.** §18.3 ends the smoke in `frozen` (0 draws) and
- * that is still what every device that is not a full-tier desktop gets. A desktop
- * with the conditions of the owner's brief (L21) ends in `ambient` instead: one
- * presented frame every ~190 ms with a faint inflow, so the plume is alive at
- * rest. The script reads which path the page is on and applies the matching gate:
+ * **One idle path, one check.** §18.3 ends the smoke in `frozen` (0 draws), and
+ * that is now the only place it can end: after 350 ms of stillness `LiquidEther`
+ * stops feeding the plume and lets it disperse into nothing over 3.7 s at display
+ * rate — the dye thins through its dissipation and the procedural haze fades with
+ * it — then cancels its loop. There is no low-cadence path left to gate on
+ * — a plume presenting five frames a second is a plume that visibly steps — so
+ * the script reads whether the loop is parked and applies the one gate:
  *
- *   frozen   1. draws      0 draw calls in the whole window (§18.3: the loop is
- *                          cancelled, not slowed down);
- *   ambient  1'. cadence   4.5–5.5 presents per second… reported, with the draws
- *                          over the window printed beside it — the field must be
- *                          drawing, and it must not be drawing at display rate;
+ *   1. draws      0 draw calls in the whole window (§18.3: the loop is
+ *                  cancelled, not slowed down). The dispersal is over before the
+ *                  window opens, so anything drawn here is a loop that is not
+ *                  parked;
  *
- * and, on both paths, unchanged:
+ * and, unchanged:
  *
  *   2. recalc     `RecalcStyleCount` ≤ 1.5 × animation frames: one style
  *                  invalidation per frame is the budget of P1-1, and 1.5 leaves
  *                  room for the channels a single frame legitimately writes;
  *   3. task       `TaskDuration` ≤ 100 ms in the whole window: repose may not
- *                  spend a tenth of a second of main thread. The ambient path
- *                  pays for its presents here and the budget is **not** relaxed:
- *                  if 5 fps of the pipeline cannot fit, this is red;
+ *                  spend a tenth of a second of main thread;
  *   4. flares     the CSS flares are still animating (the identity is not the
  *                  smoke): a running `flare` animation and at least one flare
  *                  whose opacity moved during the window.
@@ -39,7 +38,7 @@
  *   pnpm measure:idle                        # reuse :4173, else start the build
  *   pnpm measure:idle --url http://…:3000    # a server already running
  *   pnpm measure:idle --window 15000         # longer window (ms)
- *   pnpm measure:idle --reduced-motion       # the path that must stay frozen
+ *   pnpm measure:idle --reduced-motion       # no canvas at all: reduced motion
  *   pnpm measure:idle --viewport 390x844     # a phone: no canvas at all
  *   pnpm measure:idle --swiftshader          # the potato, for contrast
  *   pnpm measure:idle --headed               # watch it, GPU included
@@ -77,16 +76,12 @@ const BUDGET = {
   recalcPerFrame: Number(process.env.IDLE_RECALC_PER_FRAME ?? 1.5),
   taskMs: Number(process.env.IDLE_TASK_MS ?? 100),
   draws: 0,
-  /* The ambient path's design cadence is one presented frame every 190 ms, i.e.
-     5.3 fps. The gate brackets that (4.5–5.5 fps would fail on timer jitter that
-     costs nothing) without leaving room for "it fell back to display rate". */
-  ambientFpsMin: Number(process.env.IDLE_AMBIENT_FPS_MIN ?? 4),
-  ambientFpsMax: Number(process.env.IDLE_AMBIENT_FPS_MAX ?? 6),
 };
 
-/* §18.3: 350 ms of full rate, then 1.2 s settling. +850 ms of margin so the
-   window never starts inside a phase transition. */
-const SETTLE_MS = 2400;
+/* §18.3, with the dispersal: 350 ms of full rate, then 3.7 s of the dye leaving
+   at that same display rate, then the loop is cancelled. 4700 ms = 350 + 3700 +
+   650 ms of margin, so the window never starts inside the dispersal. */
+const SETTLE_MS = 4700;
 
 const results = [];
 const record = (id, ok, detail) => {
@@ -234,8 +229,8 @@ const INSTRUMENT = () => {
 
 /**
  * Presented frames from the draw timestamps: a run of draw calls closer together
- * than `gapMs` is one present (one simulation step + one output pass), so 5 fps of
- * ambient presents cannot be mistaken for 90 draw calls of display rate.
+ * than `gapMs` is one present (one simulation step + one output pass), so a
+ * cadence slower than display rate cannot be mistaken for 90 draw calls of it.
  */
 const READ_PRESENTS = (gapMs) => {
   const times = window.__idle.drawTimes ?? [];
@@ -256,9 +251,9 @@ const READ_FLARES = () => {
   return {
     visible: visible.length,
     opacities: visible.map((element) => Number(getComputedStyle(element).opacity)),
-    /* The identity ships four keyframes — `flare`, `flare-22`, `flare-12`,
-       `flare-6` — one per density band (§18.4). Matching only the base name
-       would count zero on every viewport wide enough to switch band. */
+    /* The identity ships one bell — `flare` — for every density band (§18.4).
+       The `^flare` match stays so a band that ever grows its own name again is
+       still counted. */
     running: document
       .getAnimations()
       .filter(
@@ -270,8 +265,8 @@ const READ_FLARES = () => {
 
 const readDraws = (page) => page.evaluate(() => window.__idle.draws);
 
-/** Wait until the smoke has picked its idle path, then read which one it is. */
-async function readIdlePath(page, settleMs = SETTLE_MS) {
+/** Wait for the dispersal to be over, then read whether the loop is parked. */
+async function readIdle(page, settleMs = SETTLE_MS) {
   await page.waitForTimeout(settleMs);
   const drawsBefore = await readDraws(page);
   const presentsBefore = await page.evaluate(READ_PRESENTS, 60);
@@ -281,7 +276,7 @@ async function readIdlePath(page, settleMs = SETTLE_MS) {
   const drawsPerSecond = drawsAfter - drawsBefore;
   const presentsPerSecond = presentsAfter - presentsBefore;
   return {
-    path: drawsPerSecond > 0 ? "ambient" : "frozen",
+    path: drawsPerSecond > 0 ? "running" : "frozen",
     drawsPerSecond,
     presentsPerSecond,
     drawsBeforeWindow: drawsAfter,
@@ -345,14 +340,10 @@ async function main() {
         : `no canvas mounted in ${BUDGET.canvasMs} ms — "0 draws" would be vacuous`,
     );
 
-    const idle = await readIdlePath(page);
+    const idle = await readIdle(page);
     report.canvas = canvasCount;
     report.path = idle.path;
-    console.log(
-      idle.path === "ambient"
-        ? `  path: ambient — ${idle.drawsPerSecond} draw call(s)/s · ${idle.presentsPerSecond} presented frame(s)/s before the window`
-        : "  path: frozen — 0 draws/s before the window",
-    );
+    console.log(`  path: ${idle.path} — ${idle.drawsPerSecond} draw call(s)/s before the window`);
 
     const cdp = await context.newCDPSession(page);
     await cdp.send("Performance.enable");
@@ -412,34 +403,15 @@ async function main() {
       },
     };
 
-    if (idle.path === "ambient") {
-      /* The ambient path is not a frozen page and nothing here pretends it is:
-         the field must be drawing, at the cadence of its own design, and the
-         draws it costs are printed beside the frames they buy. */
-      const fps = report.metrics.presentsPerSecond;
-      record(
-        "idle/ambient",
-        canvasCount > 0 && draws > 0,
-        canvasCount === 0
-          ? "no canvas in the page — the ambient path was not exercised"
-          : `${draws} draw calls in ${args.windowMs} ms = ${presents} presented frame(s): the plume is alive at rest, not parked`,
-      );
-      record(
-        "idle/ambient-cadence",
-        fps >= BUDGET.ambientFpsMin && fps <= BUDGET.ambientFpsMax,
-        `${fps} presented frame(s)/s (design 5.3/s · gate ${BUDGET.ambientFpsMin}–${BUDGET.ambientFpsMax}) · ${draws} draw calls over ${args.windowMs} ms`,
-      );
-    } else {
-      record(
-        "idle/draws",
-        draws === BUDGET.draws && canvasCount > 0,
-        canvasCount === 0
-          ? "no canvas in the page — the 0-draw budget was not exercised"
-          : draws === 0
-            ? `0 draws in ${args.windowMs} ms`
-            : `${draws} draw call(s) after the freeze — the loop is not parked`,
-      );
-    }
+    record(
+      "idle/draws",
+      draws === BUDGET.draws && canvasCount > 0,
+      canvasCount === 0
+        ? "no canvas in the page — the 0-draw budget was not exercised"
+        : draws === 0
+          ? `0 draws in ${args.windowMs} ms`
+          : `${draws} draw call(s) after the dispersal — the loop is not parked`,
+    );
 
     record(
       "idle/recalc",
