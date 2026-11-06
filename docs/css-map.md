@@ -56,34 +56,17 @@ not a load-time decision: the observer runs under it (adding `.is-in` is a no-op
 there) and a mid-session change reveals the document once, so flipping the
 preference back off cannot strand a node.
 
-**A fling is not an entrance** (owner report: "al hacer flick rápido/agresivo, el
-texto desaparece por instantes"). The desktop trigger stays late — `-8%`, the
-reveal watched rather than scrolled through — but a wheel or trackpad fling
-covers more than a screen inside `--duration-reveal`, so a block is observed and
-still rising from `opacity: 0` while the reader is already on it. `smoothScroll.js`
-writes `fling` on `<html>` while the smoothed layer travels faster than
-`2200 px/s` (and takes it off below `900 px/s`, so the class cannot chatter as the
-ease-out decays), and while it is on, `html.js.fling [data-r]:not([data-r="paint"])`
-and `html.js.fling .w > span` carry `transition: none`: the same observer, the
-same `.is-in`, no entrance left to miss. Measured with three 6000 px wheel
-impulses on a 1280×800 viewport, counting blocks in the middle half of the
-viewport at `opacity < 0.9`: 15 of 71 frames before, 1 of 72 after, and 8 moving
-heading words at the worst frame before, 0 after. At reading speed nothing
-changes — 8 wheel notches of 220 px with a 420 ms pause: 0 frames with the class,
-the entrance still playing (11 frames of rising words).
-
-Two things the selector had to get right, both measured rather than reasoned:
-
-- The node rule must match on **both** sides of the moment `.is-in` lands. Scoped
-to `:not(.is-in)` it stops applying exactly when the class arrives, the 0.45 s
-transition comes back with the change, and the block fades in under a reader who
-is already past it — the engine evaluates the transition from the new computed
-style, not the old one. Written that way the first probe still showed 15 ghost
-frames; the `:not(.is-in)` above is why.
-- The threshold is a speed, not a delta per frame: `2200 px/frame` would mean
-something different on a 60 Hz and a 144 Hz screen. Hence `performance.now()` and
-px per second, riding the scroll event the layer already emits — no extra
-listener, no loop, and the class reaches the document only when it changes.
+**A fling is not an entrance** (owner report: "al hacer flick rápido/agresivo, el texto
+desaparece por instantes"). A wheel or trackpad flick covers more than a screen inside
+`--duration-reveal`, so a block is observed and still rising from `opacity: 0` while the
+reader is already on it. `smoothScroll.js` writes `fling` on `<html>` while the smoothed
+layer travels faster than 2200 px/s (and clears it below 900 px/s, so the class cannot
+chatter), and `html.js.fling [data-r]` / `html.js.fling .w > span` carry `transition: none`.
+Measured on a 1280×800 desktop: 15 of 71 frames with invisible text at the centre of the
+screen before, 1 of 72 after. The node rule must match on both sides of the moment
+`.is-in` lands — scoped to `:not(.is-in)` it stops applying exactly when the class
+arrives, the transition returns, and the block still fades in (15 ghost frames again).
+At reading speed nothing changes.
 
 ## §identity — the lattice and its flares
 
