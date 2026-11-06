@@ -24,92 +24,68 @@ import {
   WebGLRenderer,
 } from 'three';
 
-// The smoke has four phases (audit.md §18.3, then the owner's brief of L21).
-// Below the first threshold the field runs at display rate; between the two it
-// settles — every other animation frame for 1.2 s while the dye thins out and
-// leaves downward — and then one of two things happens:
+// The smoke has three phases (audit.md §18.3, amended by the owner's brief L21
+// and by `odd/tasks/flare-tempo.md` L6, then corrected by L8). The loop runs at
+// display rate for as long as the reader does anything; once they have been still
+// for SETTLE_AFTER_MS the plume stops being fed and disperses into nothing over
+// DISPERSAL_DURATION_MS — still at display rate — and only after that does the
+// loop cancel itself: 0 draws at rest.
 //
-//   • `ambient` (opt-in, `ambient` prop): one presented frame every
-//     AMBIENT_INTERVAL_MS with a faint inflow, so the plume is still being born
-//     and still drifting down at rest. It is a cadence, not a loop: no rAF runs
-//     between presents, so a resting tab is idle for the same reason the frozen
-//     build was, and no timer is armed while the document is hidden. Because the
-//     phase is a cadence the cost is per present, and the one knob that makes a
-//     present cheap is `AMBIENT_ITERATIONS_CAP` — the phase changes nothing else
-//     about the step it runs.
-//   • `frozen` (everything else: `lite`, `static`, reduced motion, a coarse
-//     pointer, a narrow viewport): the loop is cancelled outright and the canvas
-//     keeps its last frame.
+//   • `dispersing`: the dye is simulated exactly like a live frame, but with the
+//     dispersal dissipation, with both feeds at zero and with the procedural haze
+//     faded to 0 across the same window, so the density falls away and the mist
+//     itself leaves with it. This is the "fade out de la animación" the owner asked
+//     for: the animation's own fade-out, not the picture being switched off. It
+//     takes both halves, because the dye thins through dissipation while the haze
+//     in `color_frag` is procedural and reads the clock instead of the dye.
+//   • `frozen`: the dispersal has run its whole length (or the tab hid, or WebGL
+//     died). The last frame drawn was the one with `hazeFade = 0` and the thinned
+//     dye, so nothing is drawn and nothing is scheduled, and the canvas has no
+//     pixels left to keep, because the colour pass writes premultiplied alpha: at
+//     dye density 0 every channel, alpha included, is 0.
 //
-// Either way the way out is by event, never by a timer: an interaction wakes the
-// field. The lattice and its flares are CSS and live outside this component, so
-// repose can cost nothing without the field going dead (§18.1: that is why the
-// 143 ms breath existed and why it is gone — the ambient phase brings the smoke
-// back at a fifth of that cadence over a pipeline that no longer has the grid
-// pass, and the honest price is measured in `measure:idle`).
+// Either way the way out is by event, never by a timer: an interaction restores
+// the dye's own values and restarts the loop. The lattice and its flares are CSS
+// and live outside this component, so repose can cost nothing without the field
+// going dead (§18.1).
+//
+// What this replaced, so nobody re-adds it: an `ambient` phase presenting one
+// frame every 190 ms with a faint inflow. It kept the plume alive at rest, but a
+// 5 fps cadence is a plume that visibly steps, and the owner's report was exactly
+// that ("bajar los fps del smoke no me gusta… prefiero un fade out sencillo"). If
+// a later brief wants the plume to keep moving while it goes, the frame to buy is
+// a display-rate one — never a slower cadence in place of the dispersal. A CSS
+// opacity fade on the canvas was also tried and rejected by the owner (L8): it
+// switches the picture off instead of letting the smoke go.
 const SETTLE_AFTER_MS = 350;
-const SETTLE_DURATION_MS = 1200;
+// How long the plume takes to disperse once nobody stirs it. Long on purpose:
+// this is the "neblina que se va", and those 3.7 s are simulated, so its length
+// is paid in frames at display rate — never bought back with a slower cadence.
+const DISPERSAL_DURATION_MS = 3700;
 const PHASE_ACTIVE = 'active';
-const PHASE_SETTLING = 'settling';
-const PHASE_AMBIENT = 'ambient';
+const PHASE_DISPERSING = 'dispersing';
 const PHASE_FROZEN = 'frozen';
-// The dissipation the settling phase runs with. It is the simulation's own
-// value, stated here because the phase is the one place the behaviour is
-// specified: the dye keeps thinning, and because the mist is fed from the floor
-// the ink leaves downward (§18.1 rule 2).
-const SETTLE_DISSIPATION = 0.993;
-// ~5 fps: one presented frame every 190 ms. Below the AutoDriver's 0.2 s delta
-// clamp on purpose, so an ambient step is a real ambient step and not 16 ms of
-// motion followed by 184 ms of nothing.
-const AMBIENT_INTERVAL_MS = 190;
-// Ambient thinning. The phase is a cadence, so the dye is fed once per 190 ms
-// instead of once per display frame, and the injection itself cannot be made
-// smaller (a moving driver always lays down the same wake). What keeps the mist
-// faint is therefore the pair: the dye is thinned faster here, and the source
-// travels far enough between presents that a point is hit a few times instead of
-// dozens — so what accumulates is haze, not a headlight.
-const AMBIENT_DISSIPATION = 0.925;
-// The ambient inflow is the same `AutoDriver` the demo pointer uses, at a low
-// speed: a slow wander that keeps laying dye down and keeps the velocity field
-// moving. Normalized units per second.
-const AMBIENT_DRIFT_SPEED = 0.28;
-// Where that wander may go: the lower half of the field. The mist is fed from the
-// floor and leaves downward (§18.1 rule 2), so `active`, `ambient` and the CSS
-// blobs all agree about where the smoke lives — an ambient source wandering into
-// the top edge reads as a light leak over the headline, not as mist.
-const AMBIENT_Y_MIN = -0.95;
-const AMBIENT_Y_MAX = 0.1;
-// The ceiling the ambient step puts on every iteration loop it runs, so a
-// cheaper present is bought where the draws actually are. The projection
-// (`Poisson`) is the only pass that loops in this field: the `full` tier runs 12
-// iterations there and that is 12 of the 18 draw calls one present costs, the
-// other six being single passes (advection, force, divergence, pressure, dye,
-// output). The viscous pass is off in the Bocanada build and gets the same
-// ceiling if a design ever turns it on.
-//
-// Why 4: a present every 190 ms lets the dye travel a third as far as a
-// display-rate frame, and the ambient inflow is a slow local stir, so the extra
-// Gauss–Seidel sweeps only make a velocity field that is re-advected 190 ms
-// later *less* compressible than the eye can resolve at 5.3 presents per second.
-//
-// Cost, measured with `measure:idle` on the RX 570 at 1440x900: the field's 10 s
-// of repose goes from 954 draw calls (18 per present) to 530 (10 per present) at
-// the same 5.3 presents/s. What that buys on *this* host's `TaskDuration` is
-// small — 318 ms before, 314 ms after, both red — and the reason is worth
-// keeping here, because the next reader will otherwise look for the saving in
-// the wrong place: that window is dominated by the 22 identity flare animations,
-// not by the field. With the flares simply not painted the same window reads
-// 134 ms; with the field pinned to `frozen` (0 draws) and the flares alive it
-// still reads 293 ms; with reduced motion, where there are neither flares nor a
-// canvas, it reads 48 ms. The cut is for the GPUs that do feel the projection,
-// not for that number.
-//
-// Do not take it to 1–2 to buy a few more milliseconds: the projection is what
-// stops the dye from pumping in and out of the moving source instead of flowing
-// away from it, and that reads in a screenshot even though no number here sees
-// it. Do not remove the cap either: without it an ambient present is the full
-// display-rate step, 5.3 times a second, for a field that has 190 ms to move.
-const AMBIENT_ITERATIONS_CAP = 4;
+// The dissipation a dispersing step runs with, stated here because the phase is
+// the one place the behaviour is specified: the dye keeps ~2 % of its density
+// after ~3 s of steps at display rate (0.978^180 ≈ 0.02) and under 1 % by the end
+// of the dispersal window (0.978^222 ≈ 0.007), which is what "termina de
+// dispersarse" looks like as a number. It is the simulation's own value, and
+// because the mist is fed from the floor the ink leaves downward (§18.1 rule 2).
+const DISPERSAL_DISSIPATION = 0.978;
+/**
+ * The haze's share of the dispersal: 1 before it, 0 at its end, smoothstepped in
+ * between so the mist leaves with the same ease the plume thins with.
+ *
+ * It has to exist because the dispersal has two halves. Dissipation thins the dye
+ * texture; the dawn-mist `haze` in `color_frag` is procedural — it reads the clock
+ * and the noise field, never the dye — so no amount of simulated waiting removes
+ * it. Without this fade the canvas would park with a static mist band at the floor
+ * that never leaves, and the plume would never be seen to finish dispersing.
+ */
+function dispersalHazeFade(idleMs) {
+  const p = Math.min(1, Math.max(0, (idleMs - SETTLE_AFTER_MS) / DISPERSAL_DURATION_MS));
+  return 1 - p * p * (3 - 2 * p);
+}
 
 export default function LiquidEther({
   mouseForce = 20,
@@ -134,11 +110,6 @@ export default function LiquidEther({
   backgroundColor = '#FFFFFF',
   lightMode = false,
   onUnavailable = null,
-  // Keep the plume alive at rest instead of freezing it (audit.md §18.3 as
-  // amended by the owner's brief, L21). `AppBackground` passes this only for the
-  // tier and the pointer that can afford it, so the default is the frozen field:
-  // nothing that is not explicitly opted in ever pays for it.
-  ambient = false,
   // A phone's plume trailing the finger reads as a smudge chasing the thumb while
   // the reader is trying to scroll, so touch input does not drive the dye unless
   // a design explicitly asks for it. Mouse movement is unaffected.
@@ -675,6 +646,7 @@ export default function LiquidEther({
     uniform float time;
     uniform vec2 texelSize;
     uniform float hazeStrength;
+    uniform float hazeFade;
     uniform vec2 pointerUv;
     varying vec2 uv;
     ${noise_glsl}
@@ -703,7 +675,7 @@ export default function LiquidEther({
     vec2 hazeWarp = vec2(fbm(aspectUv * 0.55 + vec2(time * 0.012, 0.0)), fbm(aspectUv * 0.55 + vec2(3.1, time * 0.009))) - 0.5;
     float hazeNoise = fbm(aspectUv * 0.72 + hazeWarp * 0.9 + pointerPush + vec2(time * 0.014, time * 0.006));
     float linger = 0.88 + 0.12 * sin(time * 0.11);
-    float haze = smoothstep(0.34, 0.86, hazeNoise) * hazeStrength * heightFade * linger;
+    float haze = smoothstep(0.34, 0.86, hazeNoise) * hazeStrength * heightFade * linger * hazeFade;
     float density = 1.0 - exp(-(softDensity * breakup + haze) * 1.55);
 
     // Light from above: rims facing it glow, thick core falls into shadow
@@ -1244,17 +1216,12 @@ export default function LiquidEther({
         }
       }
       /**
-       * One simulation step.
-       *
-       * `ambient` is the only phase knowledge a step gets, and it is a cost cap,
-       * never a behaviour switch: the same passes run in the same order with the
-       * same parameters, only the iteration loops are shortened
-       * (`AMBIENT_ITERATIONS_CAP`). `Math.min` and not the constant alone, so a
-       * tier that is already cheaper than the ceiling keeps its own value.
+       * One simulation step. Every phase runs the same passes in the same order
+       * with the same iteration counts: the dispersal changes the dye's
+       * dissipation and how much is fed to it, never the step.
        */
-      update(ambient = false) {
-        const iterations = (count) =>
-          ambient ? Math.min(count, AMBIENT_ITERATIONS_CAP) : count;
+      update() {
+        const iterations = (count) => count;
         if (this.options.isBounce) {
           this.boundarySpace.set(0, 0);
         } else {
@@ -1346,6 +1313,10 @@ export default function LiquidEther({
               time: { value: 0 },
               texelSize: { value: this.simulation.cellScale },
               hazeStrength: { value: this.simulation.options.haze_strength },
+              /* The haze's own dispersal knob (see `dispersalHazeFade`): 1 keeps
+                 the mist exactly as it has always looked, 0 removes the
+                 procedural term so nothing is left at the floor. */
+              hazeFade: { value: 1 },
               pointerUv: { value: new Vector2(0.5, 0.5) }
             }
           })
@@ -1362,8 +1333,14 @@ export default function LiquidEther({
         Common.renderer.setRenderTarget(null);
         Common.renderer.render(this.scene, this.camera);
       }
-      update(shouldSimulate = true, shouldPresent = true, ambientStep = false) {
-        if (shouldSimulate) this.simulation.update(ambientStep);
+      /* One owner for the haze's dispersal value: the simulation cannot produce
+         it (the haze never reads the dye), so it is written from the phase. */
+      setHazeFade(value) {
+        if (!this.output) return;
+        this.output.material.uniforms.hazeFade.value = value;
+      }
+      update(shouldSimulate = true, shouldPresent = true) {
+        if (shouldSimulate) this.simulation.update();
         if (!shouldPresent) return;
         const uniforms = this.output.material.uniforms;
         uniforms.dye.value = this.simulation.dyeRead.texture;
@@ -1395,11 +1372,13 @@ export default function LiquidEther({
         Mouse.takeoverDuration = props.takeoverDuration;
         Mouse.touchSmoke = props.touchSmoke === true;
         this.lastUserInteraction = performance.now();
-        this.frameIndex = 0;
+        /* Nothing has been drawn into the dye until something interacts with the
+           field. A reload with no interaction therefore has nothing to disperse:
+           simulating 3.7 s of steps at display rate to fade an empty buffer is the
+           burst the owner heard as load noise (L11). */
+        this.touched = false;
         this.phase = PHASE_ACTIVE;
         this.reallocTimer = null;
-        this.ambientTimer = null;
-        this.ambient = props.ambient === true;
         Mouse.onInteract = () => {
           this.wake();
         };
@@ -1409,22 +1388,12 @@ export default function LiquidEther({
           resumeDelay: props.autoResumeDelay,
           rampDuration: props.autoRampDuration
         });
-        /* The ambient inflow is this same driver at a low speed, never a second
-           splat path: whatever `AutoDriver` does to the mouse — and therefore to
-           the force and dye passes — is what the ambient phase does, slower. */
-        this.ambientDriver = new AutoDriver(Mouse, this, {
-          enabled: true,
-          speed: AMBIENT_DRIFT_SPEED,
-          resumeDelay: 0,
-          rampDuration: 1.6,
-          respectsHover: false,
-          yMin: AMBIENT_Y_MIN,
-          yMax: AMBIENT_Y_MAX
-        });
         this.init();
         // The values the simulation was built with, so leaving a phase can always
         // restore them instead of guessing (see `enterPhase`).
         this.baseDissipation = this.output.simulation.options.dissipation;
+        this.baseSmokeAmount = this.output.simulation.options.smoke_amount;
+        this.baseAmbientAmount = this.output.simulation.options.ambient_amount;
         this._loop = this.loop.bind(this);
         this._resize = this.resize.bind(this);
         window.addEventListener('resize', this._resize);
@@ -1449,43 +1418,38 @@ export default function LiquidEther({
         this.props.$wrapper.prepend(Common.renderer.domElement);
         this.output = new Output();
       }
-      /** The dye values a phase runs with: one owner, one place. */
+      /**
+       * The three simulation values a phase owns: one owner, one place. Both
+       * directions of the dispersal go through here, so `wake()` cannot restore
+       * the dissipation without restoring the feed with it.
+       *
+       * The canvas itself is never faded by CSS (there is no `canvas.style.opacity`
+       * or `canvas.style.transition` anywhere, by design): the colour pass writes
+       * premultiplied alpha with `bgColor.a = 0`, so as the dye density goes to 0
+       * every channel goes to 0 with it and the canvas ends up transparent on its
+       * own. A CSS opacity fade was tried instead and rejected by the owner (L8):
+       * it switches the picture off, it does not let the smoke go.
+       */
       enterPhase(phase) {
         this.phase = phase;
         if (!this.output) return;
+        const dispersing = phase === PHASE_DISPERSING;
         const options = this.output.simulation.options;
-        const ambient = phase === PHASE_AMBIENT;
-        options.dissipation = ambient
-          ? AMBIENT_DISSIPATION
-          : phase === PHASE_SETTLING
-            ? SETTLE_DISSIPATION
-            : this.baseDissipation;
+        options.dissipation = dispersing ? DISPERSAL_DISSIPATION : this.baseDissipation;
+        // Nothing is fed while the plume leaves: `smoke_amount` is the pointer
+        // splat and `ambient_amount` is the dawn-mist inflow, which would
+        // otherwise top the canvas up for ever and no dispersal would ever land.
+        options.smoke_amount = dispersing ? 0 : this.baseSmokeAmount;
+        options.ambient_amount = dispersing ? 0 : this.baseAmbientAmount;
       }
-      /**
-       * Enables or disables the ambient phase in place.
-       *
-       * The prop is applied through the manager rather than by remounting the
-       * canvas: a tier that downgrades mid-session has to be able to take the
-       * ambient cadence away without paying for a new WebGL context.
+      /*
+       * The haze's half of the dispersal, written from the phase that owns it.
+       * Dissipation can only thin the dye texture; the dawn-mist `haze` is
+       * procedural and reads the clock, so it needs its own fade or the canvas
+       * would park with a static mist band at the floor that never leaves.
        */
-      setAmbient(enabled) {
-        const next = enabled === true;
-        if (next === this.ambient) return;
-        this.ambient = next;
-        if (!next) {
-          this.clearAmbient();
-          if (this.phase === PHASE_AMBIENT) {
-            // Back to the frozen design: park the field on its last frame.
-            this.enterPhase(PHASE_FROZEN);
-            this.running = false;
-          }
-          return;
-        }
-        // Turning it on while parked resumes the cadence, but never over a hidden
-        // tab or an off-screen canvas.
-        if (this.running || !isVisibleRef.current || document.hidden) return;
-        const idleMs = performance.now() - this.lastUserInteraction;
-        if (this.phaseFor(idleMs) === PHASE_AMBIENT) this.start();
+      setHazeFade(value) {
+        if (this.output) this.output.setHazeFade(value);
       }
       /* Adopts a new device-pixel ratio without rebuilding the context: the
          framebuffers are sized in simulation units, so only the drawing buffer
@@ -1501,15 +1465,17 @@ export default function LiquidEther({
       /**
        * The idle phase, from how long the reader has been still (§18.3).
        *
-       * `active → settling → ambient | frozen`. Which of the last two the field
-       * lands in is the `ambient` prop and nothing else: the phase order and the
-       * wake-up-by-event rule are the same for both, so a device that freezes and
-       * a device that drifts cannot diverge in any other way.
+       * `active → dispersing → frozen`, for every device: the phase order and the
+       * wake-up-by-event rule do not depend on a tier, so no two devices can
+       * diverge in anything but how fast their GPU draws the same three phases.
        */
       phaseFor(idleMs) {
         if (idleMs < SETTLE_AFTER_MS) return PHASE_ACTIVE;
-        if (idleMs < SETTLE_AFTER_MS + SETTLE_DURATION_MS) return PHASE_SETTLING;
-        return this.ambient ? PHASE_AMBIENT : PHASE_FROZEN;
+        // Nothing was ever fed, so there is nothing to disperse: park on the first
+        // frame instead of paying for the fade of an empty buffer (L11).
+        if (!this.touched) return PHASE_FROZEN;
+        if (idleMs < SETTLE_AFTER_MS + DISPERSAL_DURATION_MS) return PHASE_DISPERSING;
+        return PHASE_FROZEN;
       }
       resize() {
         // A resize is an interaction (§18.3), and it also leaves stale targets
@@ -1532,65 +1498,46 @@ export default function LiquidEther({
         }, 120);
       }
       render(shouldSimulate = true, shouldPresent = true) {
-        // One injector at a time: the ambient driver only in `ambient`, the demo
-        // pointer (off unless a design asks for it) in every other phase.
-        if (this.phase === PHASE_AMBIENT) {
-          if (this.ambientDriver) this.ambientDriver.update();
-        } else if (this.autoDriver && this.autoDriver.enabled) {
-          this.autoDriver.update();
-        }
+        if (this.autoDriver && this.autoDriver.enabled) this.autoDriver.update();
+        // `mouseMoved` is true only while a real pointer event is fresh (it clears
+        // itself after 100 ms), which is exactly "dye is being laid down". A reload
+        // that is only observed never sets it, so nothing is dispersed for nothing.
+        if (Mouse.mouseMoved || Mouse.hasUserControl) this.touched = true;
         Mouse.update();
         Common.update();
-        // The phase is the only place that knows an ambient present is a cheap
-        // one; the step itself is told, so no option has to be written and
-        // restored around the phase machine.
-        this.output.update(shouldSimulate, shouldPresent, this.phase === PHASE_AMBIENT);
+        this.output.update(shouldSimulate, shouldPresent);
       }
       loop() {
         if (!this.running) return;
-        this.frameIndex += 1;
         const idleMs = performance.now() - this.lastUserInteraction;
         const phase = this.phaseFor(idleMs);
-        if (phase === PHASE_AMBIENT) {
-          // Hand the display-rate loop over to the ambient cadence: the rAF chain
-          // stops here and a single timer re-arms one present at a time, so no
-          // frame between presents does any work at all.
-          this.enterPhase(PHASE_AMBIENT);
-          if (this.needsPresent) {
-            this.needsPresent = false;
-            this.render(true, true);
-          }
-          this.scheduleAmbient();
-          return;
-        }
         if (phase === PHASE_FROZEN) {
-          // Frozen: no rAF, no timers, no GPU work at all. The last frame stays
-          // on the canvas with the mist at the bottom, and only an event may
-          // leave this phase — a timer here is what kept the old build drawing
-          // every 143 ms for an unchanged image.
+          // Parked, and reached exactly at `SETTLE_AFTER_MS + DISPERSAL_DURATION_MS`
+          // — after the whole dispersal has been simulated at display rate, never
+          // on its first frame. This is the last frame drawn: hazeFade 0 with the
+          // thinned dye, so the canvas is left transparent on its own
+          // (`bgColor.a = 0`, premultiplied output) and only the CSS field shows.
+          this.setHazeFade(0);
+          this.needsPresent = false;
+          this.render(true, true);
           this.enterPhase(PHASE_FROZEN);
           this.running = false;
           return;
         }
         if (phase !== this.phase) this.enterPhase(phase);
-        // One fixed simulation step per drawn frame (simProps.dt is a constant,
-        // not a wall-clock delta), so the cadence changes how much the fluid
-        // advances, never how a single frame looks.
-        let advance = true;
-        let present = true;
-        if (phase === PHASE_SETTLING) {
-          // Half rate: the dye thins out and stops moving, so every other frame
-          // is a full picture and the crowds of draws buy nothing.
-          advance = (this.frameIndex & 1) === 0;
-          present = advance;
-        }
-        // Draw only when the presented frame is stale. A resize or reallocation
-        // leaves empty render targets behind, so it always forces a full step.
-        const mustPresent = this.needsPresent;
-        if (mustPresent || present) {
-          this.needsPresent = false;
-          this.render(mustPresent ? true : advance, true);
-        }
+        // Both halves of the dispersal, and one owner for each: the simulation
+        // thins the dye through its dissipation and its feeds, and the procedural
+        // haze leaves through its own fade (1 outside the dispersal, so a live
+        // field looks exactly as it always did).
+        this.setHazeFade(phase === PHASE_DISPERSING ? dispersalHazeFade(idleMs) : 1);
+        // Display rate in both live phases, one fixed simulation step per drawn
+        // frame (simProps.dt is a constant, not a wall-clock delta): the dispersal
+        // is the animation's own fade-out, so it gets the same frame as any other
+        // and no phase knowledge reaches the step. Nothing here ever skips a frame
+        // or shortens a pass to save one — the frame rate is the section the owner
+        // refused to trade ("que no baje fps").
+        this.needsPresent = false;
+        this.render(true, true);
         this.scheduleNext();
       }
       scheduleNext() {
@@ -1600,68 +1547,23 @@ export default function LiquidEther({
         }
         rafRef.current = requestAnimationFrame(this._loop);
       }
-      /** Arms the next ambient present. One timer, cleared by every exit path. */
-      scheduleAmbient() {
-        if (!this.running || this.ambientTimer) return;
-        this.ambientTimer = window.setTimeout(() => {
-          this.ambientTimer = null;
-          this.ambientTick();
-        }, AMBIENT_INTERVAL_MS);
-      }
-      clearAmbient() {
-        if (!this.ambientTimer) return;
-        window.clearTimeout(this.ambientTimer);
-        this.ambientTimer = null;
-      }
-      /** One ambient present: the whole pipeline, once, then re-arm. */
-      ambientTick() {
-        if (!this.running || !this.ambient) return;
-        // Belt and braces on top of `pause()`: a timer that fires while the tab
-        // is hidden or the canvas is off-screen must not touch the GPU — and it
-        // must not leave the manager half-running either. Pausing here is the
-        // same state `visibilitychange` leaves behind (no timer, `running`
-        // false, phase untouched), so the resume path is the one `wake()` owns
-        // and there is no second way back into the cadence.
-        if (document.hidden || !isVisibleRef.current) {
-          this.pause();
-          return;
-        }
-        const idleMs = performance.now() - this.lastUserInteraction;
-        const phase = this.phaseFor(idleMs);
-        if (phase !== PHASE_AMBIENT) {
-          // The answer changed between ticks (an interaction we do not listen to,
-          // or `ambient` turned off): give the phase back to the frame loop
-          // instead of presenting the wrong one.
-          this.enterPhase(phase);
-          if (phase === PHASE_FROZEN) this.running = false;
-          else this.scheduleNext();
-          return;
-        }
-        this.enterPhase(PHASE_AMBIENT);
-        this.render(true, true);
-        this.scheduleAmbient();
-      }
-      /** Event-driven wake: the only way out of `settling`, `ambient` and `frozen`. */
+      /** Event-driven wake: the only way out of `dispersing` and `frozen`. */
       wake() {
-        const wasAmbient = this.phase === PHASE_AMBIENT;
         this.lastUserInteraction = performance.now();
-        this.phase = PHASE_ACTIVE;
-        this.clearAmbient();
+        // Through the phase, not around it: it restores the dye's dissipation and
+        // both feeds, so the values that define a live field can never be restored
+        // by one path and forgotten by another.
+        this.enterPhase(PHASE_ACTIVE);
+        // Stopped after the phase is entered, so a pointer that moves after a long
+        // rest takes the field over in the same event and with no takeover
+        // animation: the reader's hand always wins instantly.
         if (this.autoDriver) this.autoDriver.forceStop();
-        // Stopped before the pointer's own coordinates are read, so a pointer that
-        // moves after a long rest takes the field over in the same event and with
-        // no takeover animation: the reader's hand always wins instantly.
-        if (this.ambientDriver) this.ambientDriver.forceStop();
         if (!isVisibleRef.current || document.hidden) return;
         if (!this.running) this.start();
-        // An ambient timer is not a frame loop: promote back to display rate from
-        // the very next frame instead of waiting for the next present.
-        else if (wasAmbient) this.scheduleNext();
       }
       start() {
         if (this.running) return;
         this.running = true;
-        this.clearAmbient();
         // A restart (re-entering the viewport, tab visible again) always redraws
         // once, so the canvas can never stay stale while the simulation idles.
         this.needsPresent = true;
@@ -1669,7 +1571,6 @@ export default function LiquidEther({
       }
       pause() {
         this.running = false;
-        this.clearAmbient();
         if (rafRef.current) {
           cancelAnimationFrame(rafRef.current);
           rafRef.current = null;
@@ -1724,7 +1625,6 @@ export default function LiquidEther({
     try {
       webgl = new WebGLManager({
         $wrapper: container,
-        ambient,
         autoDemo,
         autoSpeed,
         autoIntensity,
@@ -1814,8 +1714,7 @@ export default function LiquidEther({
     // tear down the WebGL context, and the option-only props are deliberately
     // absent from this list for that reason. `pixelRatio` and `powerPreference`
     // are read here once (the context is built once) and then kept current by
-    // the effect below, which is why they are also not dependencies. `ambient` is
-    // read here once for the same reason: `setAmbient` flips it in place.
+    // the effect below, which is why they are also not dependencies.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     colors,
@@ -1850,7 +1749,6 @@ export default function LiquidEther({
       resolution,
       isBounce
     });
-    webgl.setAmbient(ambient);
     if (webgl.autoDriver) {
       webgl.autoDriver.enabled = autoDemo;
       webgl.autoDriver.speed = autoSpeed;
@@ -1887,8 +1785,7 @@ export default function LiquidEther({
     autoIntensity,
     takeoverDuration,
     autoResumeDelay,
-    autoRampDuration,
-    ambient
+    autoRampDuration
   ]);
 
   return (
