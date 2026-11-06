@@ -151,15 +151,27 @@ test("the blend is the only blend the field pays for on a coarse pointer", () =>
   assert.deepEqual(blended, [], `field layers outside the grain carry a blend: ${blended.join(", ")}`);
 });
 
-test("the strike itself is untouched: same bell, same peak, same easing", () => {
-  // C3 (peak 0.5 → 0.3) was measured and rejected: it cost the same 108-125 ms
-  // and would have dimmed the strike for nothing.
-  const peak = /@keyframes flare-6\s*\{[\s\S]*?50%\s*\{\s*opacity:\s*([\d.]+)/.exec(bare);
-  assert.ok(peak, "no 50% stop in @keyframes flare-6");
-  assert.equal(Number(peak[1]), 0.5, `the phone's strike peak is ${peak[1]}; 0.5 is the identity`);
-  const rest = /@keyframes flare-6\s*\{\s*0%,\s*[\d.]+%,\s*[\d.]+%,\s*100%\s*\{\s*opacity:\s*([\d.]+)/.exec(bare);
-  assert.ok(rest, "no rest stop in @keyframes flare-6");
+test("the strike is one slow bell, and reduced motion still drops it", () => {
+  // C3 (peak 0.5 → 0.3) was measured and rejected on cost, and it came back the
+  // long way round: four owner briefs later the peak is 0.6, because 0.18, 0.3,
+  // 0.45 and 0.5 read as tenue (L8–L12), and the bell is one keyframe for every
+  // band with a quarter-cycle up, a quarter down and half the cycle at rest. What
+  // this test keeps is the shape and the amplitude, so neither can drift back.
+  const peak = /@keyframes flare\s*\{[\s\S]*?50%\s*\{\s*opacity:\s*([\d.]+)/.exec(bare);
+  assert.ok(peak, "no 50% stop in @keyframes flare");
+  assert.equal(Number(peak[1]), 0.6, `the crest is ${peak[1]}; 0.6 is the bloom`);
+  const rest = /@keyframes flare\s*\{\s*0%,\s*100%\s*\{\s*opacity:\s*([\d.]+)/.exec(bare);
+  assert.ok(rest, "no rest stops in @keyframes flare");
   assert.ok(Number(rest[1]) > 0, "the field must never go fully dark");
+  // The crest is a bloom inside a slow tide, never a flat window: the tide stop
+  // (0.16 at 38 %/62 %) is what lets the motion stay slow while only a few dots
+  // are bright at once (L10).
+  const tide = /@keyframes flare\s*\{[\s\S]*?38%,\s*62%\s*\{\s*opacity:\s*([\d.]+)/.exec(bare);
+  assert.ok(tide, "no tide stops in @keyframes flare (38 %/62 %)");
+  assert.ok(
+    Number(tide[1]) > Number(rest[1]) && Number(tide[1]) < 0.25,
+    `the tide stop must sit between the rest and the crest, saw ${tide[1]}`,
+  );
 
   // Reduced motion still drops the strikes entirely — the one state the sheet is
   // allowed to remove them in, and it must not be the phone's own band.
