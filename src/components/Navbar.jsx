@@ -2,8 +2,8 @@
 
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
-import Magnetic from "@/components/Magnetic";
 import SiteLogo from "@/components/SiteLogo";
+import SwapArrow from "@/components/SwapArrow";
 import { NAV_LINKS } from "@/data/constants";
 import { useT } from "@/i18n/LocaleProvider";
 import { DURATION, EASE, STAGGER } from "@/motion/config";
@@ -110,17 +110,19 @@ const ContactButton = ({ scrollToSection, isMobile = false }) => {
   const { t } = useT();
 
   return (
-    <Magnetic>
-      <a
-        href="#contact"
-        onClick={(e) => scrollToSection(e, "#contact")}
-        data-nav-href="#contact"
-        data-menu-item={isMobile ? "" : undefined}
-        className={`nav-cta focus-ring ${isMobile ? "mt-8 w-full justify-center" : ""}`}
-      >
-        {t("nav.contact")}
-      </a>
-    </Magnetic>
+    <a
+      href="#contact"
+      onClick={(e) => scrollToSection(e, "#contact")}
+      data-nav-href="#contact"
+      data-menu-item={isMobile ? "" : undefined}
+      className={`nav-cta focus-ring ${isMobile ? "mt-8 w-full justify-center" : ""}`}
+    >
+      {/* The nav CTA carries the arrow swap and not the label roll: it is the same
+          box in the page's motion that the other buttons share, and the roll is the
+          one part it does not take (owner's brief). Only the arrow moves. */}
+      {t("nav.contact")}
+      <SwapArrow direction="r" size={14} />
+    </a>
   );
 };
 
@@ -278,14 +280,60 @@ const Navbar = () => {
     document.body.style.overflow = "hidden";
     lockSmoothScroll();
 
+    // A drawer that covers the page must take the page out of the tab order:
+    // focus behind an opaque panel is focus nobody can see. The header stays
+    // live because it owns the summary that closes the drawer.
+    const background = Array.from(document.querySelectorAll("main, footer"));
+    const previousInert = background.map((node) => node.inert);
+    background.forEach((node) => {
+      node.inert = true;
+    });
+
+    // The drawer is a disclosure, not a menu widget, so focus cycles between the
+    // summary that closes it and the items the panel reveals — never out into
+    // the page behind it.
+    const focusable =
+      'a[href], button:not([disabled]), summary, input, select, textarea, [tabindex]:not([tabindex="-1"])';
+
     const onKeyDown = (e) => {
-      if (e.key === "Escape") closeMenu();
+      if (e.key === "Escape") {
+        closeMenu();
+        return;
+      }
+      if (e.key !== "Tab") return;
+
+      const panel = panelRef.current;
+      const inPanel = panel
+        ? Array.from(panel.querySelectorAll(focusable)).filter(
+            (node) => node.getClientRects().length > 0,
+          )
+        : [];
+      const ring = [toggleRef.current, ...inPanel].filter(Boolean);
+      if (ring.length === 0) return;
+
+      const first = ring[0];
+      const last = ring[ring.length - 1];
+      const active = document.activeElement;
+      const outside = !ring.includes(active);
+
+      if (e.shiftKey && (outside || active === first)) {
+        e.preventDefault();
+        last.focus({ preventScroll: true });
+        return;
+      }
+      if (!e.shiftKey && (outside || active === last)) {
+        e.preventDefault();
+        first.focus({ preventScroll: true });
+      }
     };
     window.addEventListener("keydown", onKeyDown);
 
     return () => {
       html.style.overflow = previousHtmlOverflow;
       document.body.style.overflow = previousBodyOverflow;
+      background.forEach((node, index) => {
+        node.inert = previousInert[index];
+      });
       unlockSmoothScroll();
       window.removeEventListener("keydown", onKeyDown);
     };
@@ -510,9 +558,9 @@ const Navbar = () => {
       <div
         ref={panelRef}
         id={menuId}
-        className="mobile-menu-panel fixed inset-0 z-drawer nav:hidden"
+        className="mobile-menu-panel fixed inset-0 z-drawer overflow-y-auto nav:hidden"
       >
-        <div className="site-shell flex h-full flex-col justify-center pt-24">
+        <div className="site-shell flex min-h-full flex-col py-24 [justify-content:safe_center]">
           <NavLinks scrollToSection={scrollToSection} isMobile />
           <ContactButton scrollToSection={scrollToSection} isMobile />
           <div data-menu-item="" className="mt-6 flex justify-center">

@@ -14,8 +14,9 @@ const STACK = ["React", "Next.js", "Tailwind", "Python", "PostgreSQL"];
  *
  * A Server Component (audit.md §16.2): every word above the fold is copy and
  * CSS, and the reveal that used to hide it until hydration is a stylesheet
- * state now. Only the CTAs hydrate — `HeroActions` — because a magnetic anchor
- * and a smooth-scroll handler are the two things markup cannot do.
+ * state now. Only the CTAs hydrate — `HeroActions` — because a smooth-scroll
+ * handler is the one thing markup cannot do; their motion is the page's own
+ * button motion (`.lb` roll plus `SwapArrow`), not a hero-only effect.
  */
 const HeroSection = ({ locale = "en" }) => {
   const { t } = translator(locale);

@@ -572,17 +572,26 @@
 @utility nav-cta {
   display: inline-flex;
   align-items: center;
+  gap: 0.4rem;
   margin-left: 0.5rem;
   padding: 0.6875rem 1rem;
   border-radius: var(--radius-pill);
-  background-color: var(--color-white);
-  color: var(--color-on-solid);
+  /* The pill wears the ladder's `--hover` step over the field and white type,
+     not a solid white slab: the header's other boxes are a hairline pill and
+     bare links, and a white fill out of that row read as a second, louder
+     button (owner's brief). The fill moves to `--soft` under a pointer, so the
+     only new colour here is a ladder step that already existed. */
+  background-color: var(--hover);
+  color: var(--color-white);
   font-size: var(--text-ui-sm);
   font-weight: 600;
-  transition: box-shadow var(--duration-base) var(--ease-out-field);
+  transition:
+    background-color var(--duration-base) var(--ease-out-field),
+    box-shadow var(--duration-base) var(--ease-out-field);
 
   @variant pointer-fine {
     &:hover {
+      background-color: var(--soft);
       box-shadow: 0 10px 30px -10px
         color-mix(in srgb, var(--color-sky) 70%, transparent);
     }
@@ -1483,38 +1492,35 @@
     transform: translate(calc(var(--dx) * -1), calc(var(--dy) * -1));
   }
 
-  .btn:focus-visible .lb > span,
-  .work-row:focus-within .lb > span,
-  .bigmail:focus-visible .lb > span {
+  /* One motion, four boxes: every recipe that carries the roll and the arrow swap
+     lists its own trigger through `:is()`, so adding a box to the motion is one
+     name in one list (why, in docs/css-map.md §buttons). `nav-cta` appears in the
+     arrow lists only: its CTA swaps its arrow and does not roll its label. */
+  :is(.btn, .bigmail):focus-visible .lb > span,
+  .work-row:focus-within .lb > span {
     transform: translateY(-100%);
   }
 
-  .btn:focus-visible .ar > svg:first-child,
+  :is(.btn, .nav-cta):focus-visible .ar > svg:first-child,
   .work-row:focus-within .ar > svg:first-child {
     transform: translate(var(--dx), var(--dy));
   }
 
-  .btn:focus-visible .ar > svg + svg,
+  :is(.btn, .nav-cta):focus-visible .ar > svg + svg,
   .work-row:focus-within .ar > svg + svg {
     transform: none;
   }
 
   @variant pointer-fine {
-    .btn:hover .lb > span,
-    .bigmail:hover .lb > span,
-    .work-row:hover .lb > span {
+    :is(.btn, .bigmail, .work-row):hover .lb > span {
       transform: translateY(-100%);
     }
 
-    .btn:hover .ar > svg:first-child,
-    .bigmail:hover .ar > svg:first-child,
-    .work-row:hover .ar > svg:first-child {
+    :is(.btn, .nav-cta, .bigmail, .work-row):hover .ar > svg:first-child {
       transform: translate(var(--dx), var(--dy));
     }
 
-    .btn:hover .ar > svg + svg,
-    .bigmail:hover .ar > svg + svg,
-    .work-row:hover .ar > svg + svg {
+    :is(.btn, .nav-cta, .bigmail, .work-row):hover .ar > svg + svg {
       transform: none;
     }
   }
@@ -1658,6 +1664,9 @@
 
     @variant max-wide {
       translate: none;
+      /* Narrow layouts lose the fade too: on a short viewport the hero outgrows
+         `svh`, so `--hf` would reach the CTAs while the reader is on them. */
+      opacity: 1;
     }
   }
 
@@ -2501,7 +2510,6 @@
   }
 
   .btn,
-  .nav-cta,
   .nav-ind,
   .work-go,
   .glass,
