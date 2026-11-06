@@ -17,6 +17,17 @@ const isValidHash = (href) => typeof href === "string" && /^#[\w-]+$/.test(href)
 
 const SPY_SECTION_IDS = ["portfolio", "about", "contact"];
 
+/* Every read below costs a layout: `getBoundingClientRect` per section,
+   `scrollHeight` for the whole document, `offsetWidth`/`offsetLeft` for the pill.
+   On Android the URL bar collapsing resizes the body on scroll frames, so the
+   observer that watches the document re-asked for all of it inside a gesture —
+   a forced synchronous layout per frame, on the path that was already long. The
+   burst now waits for the same 200 ms `REFRESH_DEBOUNCE_MS` in
+   `src/motion/smoothScroll.js`, and whatever is left of it is coalesced into one
+   requestAnimationFrame. Nothing here delays a write: the pill is placed from
+   the scroll handler's cached geometry, and this only re-measures what moved. */
+const NAV_SETTLE_MS = 200;
+
 /**
  * Scroll-spy geometry, in document coordinates.
  *
@@ -198,29 +209,59 @@ const Navbar = () => {
     let geometry = null;
     let activeId = null; // last id written to the links
     let isScrolled = null; // last header state written
+    let settleFrame = 0; // the pending frame that re-measures
+    let settleTimer = 0; // the burst the observer is waiting out
+    let disposed = false; // `fonts.ready` cannot be unsubscribed
 
     const refreshGeometry = () => {
       geometry = measureNavSpy();
     };
 
     // The links and the indicator are only touched when the active section
-    // actually changes, not once per scroll frame.
-    const syncSpy = (scrollY = window.scrollY) => {
+    // actually changes, not once per scroll frame. `remeasured` is the one case
+    // where the section can stay the same and the pill still has to move: the
+    // layout above it did.
+    const syncSpy = (scrollY = window.scrollY, remeasured = false) => {
       const nextId = resolveSpyId(geometry, scrollY);
-      if (nextId === activeId) return;
-      activeId = nextId;
-      applySpyId(linkNodes, nextId);
+      const changed = nextId !== activeId;
+      if (changed) {
+        activeId = nextId;
+        applySpyId(linkNodes, nextId);
+      }
+      if (!changed && !remeasured) return;
 
       if (isHoveringRef.current) return;
       const active =
         linksRef.current?.querySelector(".nav-link.is-nav-active") ?? null;
       const href = active?.getAttribute("data-nav-href") ?? null;
-      if (href === activeHrefRef.current) return;
+      if (!remeasured && href === activeHrefRef.current) return;
       activeHrefRef.current = href;
       placeIndicator(active);
     };
 
     const syncFromScroll = () => syncSpy(window.scrollY);
+
+    /* One re-measure per frame, however many sources asked for it: the window
+       resize, the font swap and the body observer all land here. */
+    const settle = () => {
+      if (settleFrame || disposed) return;
+      settleFrame = requestAnimationFrame(() => {
+        settleFrame = 0;
+        if (disposed) return;
+        refreshGeometry();
+        syncSpy(window.scrollY, true);
+      });
+    };
+
+    // The observer's case is a burst, so it waits for the end of it instead of
+    // re-measuring the document on each of its frames.
+    const settleAfterBurst = () => {
+      if (settleTimer) clearTimeout(settleTimer);
+      settleTimer = window.setTimeout(() => {
+        settleTimer = 0;
+        settle();
+      }, NAV_SETTLE_MS);
+    };
 
     refreshGeometry();
     syncSpy();
@@ -230,8 +271,10 @@ const Navbar = () => {
       end: "max",
       invalidateOnRefresh: true,
       onRefresh() {
+        // A refresh has already measured the page; this rides it rather than
+        // scheduling a second pass.
         refreshGeometry();
-        syncFromScroll();
+        syncSpy(window.scrollY, true);
       },
       onUpdate(self) {
         const scrolled = self.scroll() > 24;
@@ -245,25 +288,34 @@ const Navbar = () => {
 
     ScrollTrigger.addEventListener("scrollEnd", syncFromScroll);
 
-    const placeOnActiveLink = () => placeIndicator(
-      linksRef.current?.querySelector(".nav-link.is-nav-active") ?? null,
-    );
+    /* Only a width change can move a section horizontally or re-wrap the pill. A
+    height-only resize is the URL bar showing or hiding mid-gesture, which this
+    component has no answer for and which arrives on scroll frames — the same
+    policy, and the same reason, as the resize handler in `smoothScroll.js`. */
+    let lastWidth = window.innerWidth;
     const onResize = () => {
-      refreshGeometry();
-      placeOnActiveLink();
+      if (window.innerWidth === lastWidth) return;
+      lastWidth = window.innerWidth;
+      settle();
     };
+    const onFontsReady = () => settle();
     window.addEventListener("resize", onResize);
-    if (document.fonts?.ready) document.fonts.ready.then(onResize);
+    if (document.fonts?.ready) document.fonts.ready.then(onFontsReady);
 
     // A work filter, a late image or a font swap moves everything below it, so
     // the cached offsets are re-measured when the document changes size.
-    const layoutObserver = new ResizeObserver(onResize);
+    const layoutObserver = new ResizeObserver(settleAfterBurst);
     layoutObserver.observe(document.body);
 
     return () => {
+      disposed = true;
       layoutObserver.disconnect();
       ScrollTrigger.removeEventListener("scrollEnd", syncFromScroll);
       window.removeEventListener("resize", onResize);
+      if (settleFrame) cancelAnimationFrame(settleFrame);
+      if (settleTimer) clearTimeout(settleTimer);
+      settleFrame = 0;
+      settleTimer = 0;
       trigger.kill();
       gsap.killTweensOf(header);
     };
