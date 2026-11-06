@@ -27,28 +27,45 @@
  *      imply (x < 8 / 21 / 33 / 40, y < 17 / 16 / 18 / 22) are narrowed to the
  *      intersection of the four so every **prefix** fits, not just its own band:
  *      x < 8 / 21 / 33 / 40, y < 16 / 16 / 18 / 22.
- *   2. Inside a band, the cells are cut into strata of roughly square size
- *      (`cols ≈ √(count · width / height)`), the strata are walked in a
- *      low-discrepancy order (golden-ratio rank of their index), and each one
- *      contributes the free cell nearest a low-discrepancy jitter point (the R2
- *      sequence of the plastic constant) inside it. Any prefix is therefore
- *      spread over its band instead of filling it row by row, and no cell is
- *      used twice.
+ *   2. Inside a band the new cells go to the **starved thirds** of that band's
+ *      width first (every third of the band must hold its share of the dots), and
+ *      inside a third each cell lands on a low-discrepancy jitter point (the R2
+ *      sequence of the plastic constant). Two hard constraints hold over the whole
+ *      table: no two flares share a cell or touch (Chebyshev distance ≥ 2), and
+ *      cells three or fewer apart never fire within eight slots of each other. The
+ *      first version of this table was stratified only, and because the ladder is
+ *      cumulative the six a phone shows stayed pinned to x < 8 and the rest piled
+ *      up behind them: on a 1920 field the dots “caían por grupos mayormente en el
+ *      lado izquierdo” (owner report, L9). Balancing the thirds is what fixes that
+ *      — the 36 now sit 12/12/12 across the width.
  *   3. `slot` is the phase of the whole field: one slot per flare out of the 64
- *      that a breath holds, walked in golden-ratio order, so that **every
- *      prefix** — the six a phone shows as much as the 36 a wide screen does —
- *      comes out spread over the breath instead of bunched at its start. The
- *      delay is `slot * --grid`, and `--grid` is a 32nd note at `--bpm: 128`
- *      (58.59 ms), so every flare leaves its rest and reaches its peak *on the
- *      song's grid*: one breath is 8 beats, its peak sits at 4 of them, and both
- *      are whole beats away from the slot.
+ *      that a breath holds, dealt in golden-ratio order through a deterministic
+ *      permutation of the table (so the order is reproducible and testable), which
+ *      keeps **every prefix** — the six a phone shows as much as the 36 a wide
+ *      screen does — spread over the breath and keeps neighbours apart in time. The
+ *      delay is `slot * --grid`, and `--grid` is `--breath / 64` (87.89 ms at
+ *      the shipped tempo): the cycle divided by the slots the table uses, so the
+ *      phases cover the whole breath whatever its length is. Derive the grid from
+ *      the beat instead and it silently stops covering the cycle as soon as the
+ *      breath changes — that is the trap this file is written around.
  *
- * One strike is a soft swell, not a blink: `@keyframes flare` rests at 0.04
- * (never 0), peaks at 0.5 and is eased on both flanks by `--ease-in-out-field`.
- * The slice of the cycle above the 0.05 "lit" threshold is what the cadence
- * budget counts, and it is set per density band so that 1–4 flares are lit at
- * once however many dots the viewport carries (`flare`, `flare-22`, `flare-12`,
- * `flare-6` in `globals.css`). `field-flares.test.js` pins all of it in numbers.
+ * One strike is a tide with a bloom on top: `@keyframes flare` rests at 0.02 (never
+ * 0), drifts to 0.16 by 38 % of the cycle, blooms to 0.6 at the middle and is back
+ * down by 62 %, all eased by `--ease-in-out-field`. The shape is what keeps a slow
+ * swell and a low lit count at once: a flat window makes the lit population
+ * `count × duty`, and with a 24 % crest only ~4 of 36 dots are bright at any
+ * instant while the dot still moves for most of its 5.6 s breath (L10). The
+ * amplitude is the knob the brightness briefs turn (L8–L12) and the rest state is
+ * not one of them: a stronger parked footprint is the semi-transparent disc the
+ * owner rejected (L11). There is
+ * one bell for every density: the
+ * band decides how many dots are painted, never how they breathe (`flare` in
+ * `globals.css`). The per-band windows and the “1–4 lit at once” budget they
+ * served were retired by the owner's briefs (L6, L8, L9) — a narrow window is a
+ * sparkle whatever the period around it is, a window covering the whole cycle
+ * reads as one slow body instead of a field, and the amplitude is what makes the
+ * dot read as light.
+ * `field-flares.test.js` pins all of it in numbers.
  */
 
 /** Side of one lattice cell, in CSS pixels. Must equal the `48px` in `globals.css`. */
@@ -71,44 +88,41 @@ export const DOT_INSET_PX = 24;
  */
 export const FIELD_FLARES = Object.freeze(
   [
-    [5, 7, 0],
-    [1, 0, 34],
-    [4, 14, 13],
-    [3, 6, 47],
-    [2, 14, 26],
-    [5, 1, 60],
-    // 12 — inside 1024×768
-    [0, 15, 5],
-    [5, 3, 39],
-    [17, 8, 18],
-    [16, 5, 52],
-    [7, 9, 31],
-    [12, 6, 10],
-    // 22 — inside 1600×900
-    [21, 8, 44],
-    [27, 17, 23],
-    [25, 2, 57],
-    [6, 12, 2],
-    [4, 3, 36],
-    [10, 7, 15],
-    [17, 16, 49],
-    [23, 1, 28],
-    [29, 11, 62],
-    [2, 8, 7],
-    // 36 — inside 1920×1080
-    [8, 7, 41],
-    [14, 19, 20],
-    [28, 1, 54],
-    [26, 12, 33],
-    [1, 2, 12],
-    [31, 21, 46],
-    [5, 10, 25],
-    [3, 14, 59],
-    [17, 4, 4],
-    [23, 8, 38],
-    [21, 20, 17],
-    [35, 2, 51],
-    [33, 13, 30],
-    [15, 3, 9],
+    [1, 15, 42],
+    [0, 8, 43],
+    [4, 15, 55],
+    [4, 8, 1],
+    [6, 14, 8],
+    [7, 7, 37],
+    [12, 14, 18],
+    [10, 7, 6],
+    [9, 1, 58],
+    [15, 13, 4],
+    [19, 7, 24],
+    [18, 1, 38],
+    [19, 15, 54],
+    [17, 8, 39],
+    [14, 1, 25],
+    [23, 15, 41],
+    [31, 8, 2],
+    [28, 1, 3],
+    [26, 10, 23],
+    [23, 3, 49],
+    [31, 13, 34],
+    [29, 5, 16],
+    [6, 19, 36],
+    [3, 10, 9],
+    [0, 1, 51],
+    [23, 19, 19],
+    [20, 10, 53],
+    [16, 1, 59],
+    [28, 19, 11],
+    [38, 10, 56],
+    [35, 1, 20],
+    [33, 13, 50],
+    [28, 3, 26],
+    [38, 16, 33],
+    [35, 7, 21],
+    [32, 19, 7]
   ].map(([cx, cy, slot]) => Object.freeze({ cx, cy, slot })),
 );
