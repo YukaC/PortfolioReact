@@ -9,6 +9,29 @@ import {
 const BASE_SPEED = 48;
 const SPEED_FROM_SCROLL = 0.5;
 const MAX_SKEW = 8;
+/**
+ * The band lies down when the page accelerates: 8° on a desktop, where the text is
+ * large and the gesture is watched. On a phone the same 8° lands on much narrower
+ * type at DPR 3 and reads as the words squashing, not as speed, so the tilt is
+ * capped at a third of it — the band still leans into a flick, it just stays
+ * readable. The numbers are the owner's phone report of 6 nov 2026.
+ */
+const MAX_SKEW_COARSE = 2.5;
+
+/** Asked once: `matchMedia` inside the loop is a query per frame for a value that
+    only changes when the OS flips the pointer. */
+let coarseCache = null;
+const coarsePointer = () => {
+  if (coarseCache === null) {
+    try {
+      coarseCache = window.matchMedia("(pointer: coarse)").matches;
+    } catch {
+      coarseCache = false;
+    }
+  }
+  return coarseCache;
+};
+
 
 /**
  * The technology band's movement, as an island.
@@ -73,7 +96,8 @@ const MarqueeMotion = () => {
         row.el.style.transform = `translate3d(${row.x.toFixed(1)}px,0,0)`;
       });
 
-      const skew = Math.min(MAX_SKEW, Math.max(-MAX_SKEW, velocity * -0.008));
+      const ceiling = coarsePointer() ? MAX_SKEW_COARSE : MAX_SKEW;
+      const skew = Math.min(ceiling, Math.max(-ceiling, velocity * -0.008));
       inner.style.transform = `skewX(${skew.toFixed(2)}deg)`;
 
       frame = running ? requestAnimationFrame(loop) : 0;
