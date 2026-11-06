@@ -98,7 +98,9 @@ El árbol sucio se contradecía a sí mismo. Las tres quedaron arregladas:
 2. `scripts/measure-idle.mjs` afirmaba **cuatro** keyframes de flare (`flare`,
    `flare-22`, `flare-12`, `flare-6`); `globals.css` tiene **uno**. → S3.
 3. `docs/css-map.md:138` decía que la cresta se queda **entre 0.25 y 0.4**;
-   `field-flares.test.js:436` fija `0.5–0.7` y el CSS entrega `0.6`. → S8.
+   `field-flares.test.js:436` fija `0.5–0.7` y el CSS entrega `0.6`. → el commit de docs que contiene este archivo:
+   la primera pasada del audit lo marcó y S8 no lo corrigió; lo encontró la review
+   de reliability (`R3-crest-doc-drift`) después del cierre.
 
 En el caso de `SETTLE_MS` no era sólo prosa: valía `4200` (350 + 3200 + 650) y con
 la dispersión real de 3700 ms la ventana de medición arrancaba 150 ms antes de que

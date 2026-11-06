@@ -135,7 +135,7 @@ hand-tuned cycles of 8.7–9.3 s; it now carries one, and it is the song's:
 
 `src/lib/field-flares.js` holds the table and its generator notes;
 `src/lib/field-flares.test.js` pins the contract: one bell whose window is half the
-cycle, a peak between 0.25 and 0.4 for the certified minute at every density band,
+cycle, a crest between 0.5 and 0.7 (the sheet ships 0.6) at every density band,
 the never-zero floor, and the tempo
 chain the stylesheet declares.
 
