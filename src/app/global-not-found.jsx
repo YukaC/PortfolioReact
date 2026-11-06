@@ -56,7 +56,7 @@ export default function GlobalNotFound() {
         >
           <main
             id="main-content"
-            className="flex min-h-[100dvh] w-full flex-col items-center justify-center"
+            className="flex min-h-svh w-full flex-col items-center justify-center"
           >
             <section className="relative flex min-h-svh items-center pt-[8.125rem] pb-[4.375rem]">
               <div className="site-shell">

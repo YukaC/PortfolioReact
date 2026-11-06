@@ -171,3 +171,8 @@ La clase `fling` tampoco sobrevive al silencio: si la capa se traba (o la pesta�
 en segundo plano) no llegan más eventos y el latch la dejaba puesta, así que los bloques
 siguientes perdían el entrance. La baja un watchdog que re-chequea el hueco real, y
 `lockSmoothScroll()` la baja con la capa.
+
+El campo también deja de pintar durante el fling: `html.fling .flare { animation-play-state:
+paused }` (L13 ya había medido que apagar los 36 destellos gana todos los pares en el
+teléfono: p95 92,1 → 66,6 ms). En carga, el shell pasa de `100dvh` a `svh` para que no
+cambie de alto cuando la barra de Brave se esconde — el hero ya usaba `svh`.
