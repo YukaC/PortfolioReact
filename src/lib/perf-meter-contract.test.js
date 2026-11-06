@@ -60,6 +60,26 @@ test("S7: the phone proxy serves this file and not a copy of it", () => {
   );
 });
 
+test("S9: every sampled row carries the scroll its own box was read at", () => {
+  const source = readFileSync(METER, "utf8");
+
+  // One `scrollY` per pass is what made the phone report 21 jitter entries that
+  // were the sampler's own lag: a row read late in the pass paired a box with a
+  // scroll position from earlier in the pass, and the jitter detector read that
+  // lag as content moving while the reader was still. The loop walks up to 160
+  // nodes, so on a flick the page moves between the first and the last.
+  assert.match(
+    source,
+    /let syNode = sy;[\s\S]{0,500}?syNode = Math\.round\(window\.scrollY\);/,
+    "the scan must read scrollY again for the node it is about to measure",
+  );
+
+  const push = /rows\.push\(\[([\s\S]*?)\]\);/.exec(source);
+  assert.ok(push, "no rows.push([...]) in the meter");
+  assert.match(push[1], /\bsyNode\b/, "the row must store the node's own scroll");
+  assert.doesNotMatch(push[1], /\bsy,/, "the row must not store the pass-level scroll");
+});
+
 test("S7: the proxy still posts to its own report path", () => {
   const proxy = readFileSync(path.join(ROOT, "scripts/perf/remote-proxy.mjs"), "utf8");
 
