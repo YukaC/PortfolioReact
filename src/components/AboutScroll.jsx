@@ -44,10 +44,17 @@ const AboutScroll = () => {
     const items = [...timeline.querySelectorAll(".timeline-item")];
 
     let viewportHeight = window.innerHeight;
-    const measureViewport = () => {
+    /* The rail resolves the same geometry on every scrub frame. Measuring a rect
+       inside the callback is a forced layout per frame — the one cost a
+       scroll-driven handler must never pay — so the offsets are cached in
+       document coordinates and re-measured only when ScrollTrigger refreshes the
+       page, which already happens on resize, on a late font and on load. */
+    let itemTops = items.map((item) => item.getBoundingClientRect().top + window.scrollY);
+    const measure = () => {
       viewportHeight = window.innerHeight;
+      itemTops = items.map((item) => item.getBoundingClientRect().top + window.scrollY);
     };
-    window.addEventListener("resize", measureViewport);
+    window.addEventListener("resize", measure);
 
     const lastOpacity = words.map(() => null);
     const lastColor = words.map(() => null);
@@ -81,16 +88,16 @@ const AboutScroll = () => {
       start: "top 72%",
       end: "bottom 60%",
       scrub: true,
-      onRefresh: measureViewport,
+      onRefresh: measure,
       onUpdate(self) {
         const progress = self.progress.toFixed(3);
         if (progress !== lastRailProgress) {
           lastRailProgress = progress;
           timeline.style.setProperty("--tlp", progress);
         }
-        const line = viewportHeight * 0.72;
-        items.forEach((item) => {
-          const isOn = item.getBoundingClientRect().top < line;
+        const line = window.scrollY + viewportHeight * 0.72;
+        items.forEach((item, index) => {
+          const isOn = itemTops[index] < line;
           if (item.classList.contains("is-on") !== isOn) {
             item.classList.toggle("is-on", isOn);
           }
@@ -99,7 +106,7 @@ const AboutScroll = () => {
     });
 
     return () => {
-      window.removeEventListener("resize", measureViewport);
+      window.removeEventListener("resize", measure);
       wordTrigger.kill();
       railTrigger.kill();
     };
