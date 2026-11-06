@@ -166,3 +166,8 @@ las miniaturas reservan 16:9; el marquee no escala y su skew está clampeado a �
 Lenis no secuestra el touch; el reveal nunca desmonta. La emulación **no reproduce** el
 defecto (el toque sintético de CDP no tiene inercia), así que medir con dedo real en el
 teléfono queda pendiente.
+
+La clase `fling` tampoco sobrevive al silencio: si la capa se traba (o la pestaña queda
+en segundo plano) no llegan más eventos y el latch la dejaba puesta, así que los bloques
+siguientes perdían el entrance. La baja un watchdog que re-chequea el hueco real, y
+`lockSmoothScroll()` la baja con la capa.

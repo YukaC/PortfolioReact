@@ -31,3 +31,16 @@ test("the fling latch outlives a phone frame", () => {
   assert.ok(Number(gap[1]) >= 250, `${gap[1]} ms is under the 84-109 ms p95 frame measured on the phone`);
   assert.match(code, /FLING_ENTER_PX_PER_S = \d+/, "the threshold must be a speed, not a delta per frame");
 });
+
+test("the fling class cannot outlive the movement", () => {
+  // The latch reads scroll events, so silence is the one case it cannot see: a
+  // locked layer or a backgrounded tab leaves it on and every block past the
+  // next viewport loses its entrance until the reader scrolls again.
+  const lock = code.slice(code.indexOf("export function lockSmoothScroll"), code.indexOf("export function unlockSmoothScroll"));
+  assert.match(lock, /clearFling\(\)/, "a stopped layer must drop the class with it");
+  assert.match(
+    code,
+    /performance\.now\(\) - lastFlingTime <= FLING_GAP_MS/,
+    "the watchdog must re-check the real gap, not fire once after a fixed delay",
+  );
+});
