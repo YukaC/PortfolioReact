@@ -794,6 +794,18 @@
         /* Nothing is written to the DOM in this pass, so one clean layout serves
            every read and the style call cannot force a re-layout per node. */
         const css = getComputedStyle(el);
+        /* `sy` is read once for the pass, but this loop walks up to 160 nodes and a
+           flick keeps moving the page between them: pairing one node's box with a
+           `scrollY` sampled earlier in the pass is exactly the lag the jitter
+           detector then reads as the element moving on its own. One scroll read
+           per node costs the layout the `getBoundingClientRect` below forces
+           anyway. */
+        let syNode = sy;
+        try {
+          syNode = Math.round(window.scrollY);
+        } catch {
+          syNode = sy;
+        }
         const box = el.getBoundingClientRect();
         const rawOpacity = parseFloat(css.opacity);
         rows.push([
@@ -804,7 +816,7 @@
           Math.round(box.y * 10) / 10,
           Math.round(box.width * 10) / 10,
           Math.round(box.height * 10) / 10,
-          sy,
+          syNode,
         ]);
       } catch {
         /* one detached or hostile node must never stop the scan */
