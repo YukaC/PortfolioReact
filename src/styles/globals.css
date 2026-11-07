@@ -2275,17 +2275,8 @@
     color: var(--color-paper);
   }
 
-  /* No fine pointer: `AboutScroll` bails before either scrub starts, so the
-     statement is owed its lit state — the same one the `(scripting: none)` block
-     below promises. Nested inside the rule because a block-level `@variant` for a
-     pointer condition is dropped by the compiler (only the width ones survive
-     there). The rail gets the same treatment at `.timeline::after`. */
   .statement .sw {
     opacity: 0.16;
-
-    @variant pointer-coarse {
-      opacity: 1;
-    }
   }
 
   /* The words are lit by a scroll trigger; with no script nothing would ever
@@ -2344,13 +2335,6 @@
     background: linear-gradient(var(--color-sky), var(--color-paper));
     transform-origin: top;
     transform: scaleY(var(--tlp));
-
-    /* Nothing writes `--tlp` without the scrub, so the rail is owed its drawn
-       state. Measured: this draw was the section's whole frame bill — p95
-       50.1 ms against 33.4 with the rail static (DPR 3, software raster). */
-    @variant pointer-coarse {
-      transform: scaleY(1);
-    }
   }
 
   .timeline-item {
@@ -2373,13 +2357,6 @@
     background-color: var(--field-ink);
     border: 1px solid var(--color-dim);
     transition: var(--duration-slower) var(--ease-out-field);
-
-    /* The scrub is what adds `.is-on`; with no scrub, no dot would ever light. */
-    @variant pointer-coarse {
-      border-color: var(--color-sky);
-      background-color: var(--color-sky);
-      box-shadow: 0 0 0 6px color-mix(in srgb, var(--color-sky) 14%, transparent);
-    }
   }
 
   .timeline-item.is-on::before {

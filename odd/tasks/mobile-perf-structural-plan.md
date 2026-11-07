@@ -34,6 +34,8 @@ píxeles de decode por portada). Falta la traza de Fase 0 para decidir entre ras
 
 **Corregido (7 nov, traza en el g82 real por adb).** El reset táctil del halo (`.site-shell`) perdía por especificidad contra `.section-y .site-shell` / `.site-footer .site-shell`: el blur de 24 px seguía en 897 nodos. Con los selectores iguales: GPU 1130 → 600 ms, tarea GPU máx. 85 → 13-23 ms, frames con huecos 17 → 8 %. El arnés de 4 MB medía falta de memoria, no el teléfono (con memoria realista no reproduce). Receta y ficha: `testinG82.md`.
 
+**Devuelto al teléfono (7 nov, mismas trazas).** Destellos animados, scrubs de About (frase y riel), subida del wordmark y miniaturas a `100vw`: baldosas faltantes ~106 → ~124, GPU ~600 → ~810 ms. Siguen fuera, por costo medido: grano (+60 % GPU), halo de 2 px (+45 % baldosas) y humo WebGL (el watchdog lo baja en el primer flick, frames de 122 ms).
+
 
 **Inferido.** El cuello está en raster/GPU, no en el hilo principal. A DPR 3 el viewport
 son 1053×2244 px de dispositivo (2,36 Mpx) y cada capa a pantalla completa —campo,
