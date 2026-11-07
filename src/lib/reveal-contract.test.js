@@ -165,22 +165,23 @@ test("the decorations a scroll trigger owns still resolve without a script", () 
   );
 });
 
-test("a phone gets a shorter entrance than a desktop", () => {
-  // A finger scrolls through the entrance instead of watching it. Sixteen pixels of
-  // rise on several blocks entering at once is what the 6 nov 2026 phone report
-  // reads as the page wobbling; the desktop keeps the full rise because there it is
-  // watched. The rise lives in a token so the variant shortens it without a second
-  // copy of the rule.
-  const hidden = ruleFor('html.js [data-r]:not(.is-in):not([data-r="paint"])');
+test("a phone never hides reveal content behind the observer", () => {
+  // An Android fling scrolls on the compositor thread while the main thread is
+  // screens behind, so the tiles shown for the next screen were painted while the
+  // nodes were still hidden: the 9 nov 2026 phone recording shows whole screens of
+  // field and no copy. On a coarse pointer the hidden state must not hide anything,
+  // neither the block nor the words of a split heading.
+  const coarse = css.slice(css.indexOf("@variant pointer-coarse", css.indexOf("html.js .is-in .w > span")));
+  const block = coarse.slice(0, coarse.indexOf("\n  }\n"));
   assert.match(
-    hidden,
-    /translateY\(var\(--reveal-rise,\s*16px\)\)/,
-    "the hidden state must take its rise from --reveal-rise, so one variant can shorten it",
+    block,
+    /html\.js \[data-r\]:not\(\.is-in\):not\(\[data-r="paint"\]\) \{\s*opacity:\s*1;\s*transform:\s*none;/,
+    "a coarse pointer must show an unrevealed block as it is",
   );
   assert.match(
-    css,
-    /@variant pointer-coarse \{\s*html\.js \{\s*--reveal-rise:\s*6px;/,
-    "a coarse pointer must shorten the reveal rise to 6 px",
+    block,
+    /html\.js \.w > span \{\s*transform:\s*none;/,
+    "a coarse pointer must keep every heading word inside its box before the reveal",
   );
 });
 

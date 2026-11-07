@@ -1573,7 +1573,7 @@
      GPU, and it is gone from the entrance, not merely narrowed. */
   html.js [data-r]:not(.is-in):not([data-r="paint"]) {
     opacity: 0;
-    transform: translateY(var(--reveal-rise, 16px));
+    transform: translateY(16px);
   }
 
   [data-r].is-in {
@@ -1635,19 +1635,6 @@
        with a page that already arrived — the lines overlap. */
   }
 
-  /* One coarse-pointer block for the scroll-driven text: the reveal starts a third
-     of a viewport early with a six-pixel rise, and a heading word never drifts.
-     Both are decisions about a finger, not about a screen width. */
-  @variant pointer-coarse {
-    html.js {
-      --reveal-rise: 6px;
-    }
-
-    .w {
-      translate: none;
-    }
-  }
-
   /* No script: the word sits in its box, still — there is nothing to release. */
   .w > span {
     display: inline-block;
@@ -1663,6 +1650,32 @@
 
   html.js .is-in .w > span {
     transform: none;
+  }
+
+  /* One coarse-pointer block for the scroll-driven text: a heading word never
+     drifts, and nothing waits for the observer to be seen. An Android fling
+     scrolls on the compositor thread while the main thread is still several
+     screens behind, so the tiles it shows for the next screen were painted
+     while those nodes were `opacity: 0` (or their words still 112 % down their
+     boxes): the reader saw the field and no copy — the "components disappear on
+     a flick" report — and only the hero (a CSS keyframe) and About's statement
+     (no `data-r`) survived. A main-thread sampler never sees it, because it
+     reads at the main thread's offset, where `.is-in` has already landed. A
+     finger scrolls through the entrance rather than watching it, so on a coarse
+     pointer the content is simply there; the desktop keeps the entrance. */
+  @variant pointer-coarse {
+    .w {
+      translate: none;
+    }
+
+    html.js [data-r]:not(.is-in):not([data-r="paint"]) {
+      opacity: 1;
+      transform: none;
+    }
+
+    html.js .w > span {
+      transform: none;
+    }
   }
 
   html.js [data-r="paint"] .w > span {
