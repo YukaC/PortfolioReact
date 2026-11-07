@@ -114,6 +114,13 @@ export function startSmoothScroll() {
     mountScroll();
   };
 
+  /* A reload hands back the offset the reader had before it, and that is a scroll
+     nobody asked for on the page they just opened: the 8 nov recording shows a page
+     that loads ~16 px down — a sliver of the progress bar, the hero a hair higher,
+     the ghost CTA crossing the fold — and snaps to the top on the first gesture. */
+  if ("scrollRestoration" in history) history.scrollRestoration = "manual";
+  if (!window.location.hash) window.scrollTo(0, 0);
+
   syncPreference(prefersReducedMotion());
   const unsubscribe = subscribeReducedMotion(syncPreference);
 

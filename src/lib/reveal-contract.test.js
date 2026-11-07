@@ -234,13 +234,19 @@ test("a phone reveals a third of a viewport early, a desktop does not", () => {
   );
 });
 
-test("a fling drops the copy halo", () => {
-  // A 24 px blurred shadow on every line is rastered at the device pixel ratio
-  // (72 device px on a DPR-3 phone): the most expensive thing each entering
-  // section asks for, charged while the page is already behind.
+test("a coarse pointer keeps the short halo, and nothing toggles it", () => {
+  // The 24 px blur is 72 device pixels per line at DPR 3, and a touch device runs the
+  // `static` tier with no canvas, so there is no plume for it to protect copy from.
+  // It was a `fling` toggle first: flipping `text-shadow` repaints every copy wrapper
+  // twice per flick, which is the blank the owner kept reporting.
   assert.match(
     bare,
-    /html\.fling :is\(\.hero-copy,\s*\.site-shell\) \{\s*text-shadow:\s*none;/,
-    "a fling must drop the halo: it is the copy's whole raster bill",
+    /@variant pointer-coarse \{[\s\S]{0,400}?text-shadow:\s*0 1px 2px/,
+    "a coarse pointer must keep a constant short halo",
+  );
+  assert.doesNotMatch(
+    bare,
+    /html\.fling :is\(\.hero-copy/,
+    "the halo must never be toggled: each toggle repaints the whole page's text mid-flick",
   );
 });
