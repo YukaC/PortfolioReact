@@ -44,3 +44,13 @@ test("the fling class cannot outlive the movement", () => {
     "the watchdog must re-check the real gap, not fire once after a fixed delay",
   );
 });
+
+test("the open drawer locks the page on every pointer, Lenis or not", () => {
+  // A coarse pointer never mounts Lenis, so `lockSmoothScroll()` stops nothing there:
+  // the lock is the `overflow: hidden` the drawer puts on <html> and <body> while it
+  // is open (verified with real touch drags: the page moves closed, stays open).
+  const navbar = readFileSync(path.join(ROOT, "src/components/Navbar.jsx"), "utf8");
+  const open = navbar.slice(navbar.indexOf("if (!isMenuOpen) return undefined;"));
+  assert.match(open, /html\.style\.overflow = "hidden";/, "the drawer must lock <html>");
+  assert.match(open, /document\.body\.style\.overflow = "hidden";/, "the drawer must lock <body>");
+});
