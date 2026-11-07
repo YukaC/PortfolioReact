@@ -53,7 +53,7 @@ const BREATH_DECL = declared("--breath");
 const GRID_DECL = declared("--grid");
 
 const BPM = Number(BPM_DECL);
-/** The multiplier in `--breath: calc(12 * var(--beat))` — three 4/4 bars (S2). */
+/** The multiplier in `--breath: calc(10 * var(--beat))` — 10 beats since 7 nov (S2). */
 const BREATH_BEATS = Number(/calc\(\s*([\d.]+)\s*\*\s*var\(--beat\)/.exec(BREATH_DECL)?.[1]);
 /** The divisor in `--grid: calc(var(--breath) / 64)` — the slots a breath holds. */
 const GRID_SLOTS = Number(/calc\(\s*var\(--breath\)\s*\/\s*([\d.]+)\s*\)/.exec(GRID_DECL)?.[1]);
@@ -308,7 +308,7 @@ test("no two flares share a cell", () => {
   assert.deepEqual(duplicates, [], `cells used twice: ${duplicates.join(" ")}`);
 });
 
-test("the tempo is the song's: 128 BPM, one breath every 12 beats", () => {
+test("the tempo is the song's: 128 BPM, one breath every 10 beats", () => {
   // S1: 128 is the number the owner named, and it is the same number the sworn
   // script resolves — the sheet states it once and everything else is a `calc`
   // off it, so there is no second copy of the tempo to drift.
@@ -321,15 +321,18 @@ test("the tempo is the song's: 128 BPM, one breath every 12 beats", () => {
   // point where a breath is slow enough to be one and still visibly happening.
   // One breath per beat would be 2.13 Hz, and 36 dots cannot pulse that fast and
   // stay calm.
-  assert.equal(BREATH_BEATS, 12, "one breath must be three 4/4 bars");
-  assert.ok(Math.abs(BREATH_S - 5.625) < 1e-9, `a breath must be 5.625 s, saw ${BREATH_S}`);
-  assert.equal(BREATH_BEATS % 4, 0, "a breath has to be whole bars, or its peak leaves the beat");
+  // Then (7 nov) the owner asked for the midpoint between the deployed shader's
+  // flash rate (~10/s at 1920x1080) and the 12-beat breath (6.4/s) while keeping
+  // 128 BPM: 10 beats is the nearest (7.7/s). It gives up whole bars, not the beat.
+  assert.equal(BREATH_BEATS, 10, "one breath must be 10 beats");
+  assert.ok(Math.abs(BREATH_S - 4.6875) < 1e-9, `a breath must be 4.6875 s, saw ${BREATH_S}`);
+  assert.equal(BREATH_BEATS % 2, 0, "the crest (50 %) has to land on a beat");
   // S3: the phases are dealt on 64 slots of the breath, and the grid is derived
   // from the cycle itself. Deriving it from the beat is the bug this pins: at 16
   // beats a `--beat / 4` grid covered only the first half of the cycle and the
   // field went dark for the other half (0 lit, then 6 lit at once).
   assert.equal(GRID_SLOTS, 64, "a breath's phases are dealt over 64 slots");
-  assert.ok(Math.abs(GRID_S - 0.087890625) < 1e-9, `one grid step must be 87.89 ms, saw ${GRID_S}`);
+  assert.ok(Math.abs(GRID_S - 0.0732421875) < 1e-9, `one grid step must be 73.24 ms, saw ${GRID_S}`);
   assert.ok(
     Math.abs((BREATH_S / GRID_S) - 64) < 1e-9,
     `a breath must hold exactly 64 grid slots, saw ${(BREATH_S / GRID_S).toFixed(3)}`,
@@ -434,21 +437,22 @@ test("the pulse is one slow breath: eased, low peak, never zero", () => {
   // the crest is the bright value and this band is what stops it drifting back
   // down.
   assert.ok(peak >= 0.5 && peak <= 0.7, `the crest must sit between 0.5 and 0.7, saw ${peak}`);
-  // The shape is a tide with a bloom on top: the dim swell opens at 38 %, the crest
-  // closes at 62 %. A flat window cannot give both a long swell and a low lit
+  // The shape is a tide with a bloom on top: the dim swell opens at 33 %, the crest
+  // closes at 67 %. A flat window cannot give both a long swell and a low lit
   // count (that is `count × duty`), which is why the crest is short and the tide is
   // long (L10).
   assert.deepEqual(
     stops.map(([percent]) => percent),
-    [0, 38, 50, 62, 100],
+    [0, 33, 50, 67, 100],
     "the bell must be tide → crest → tide, with the crest centred in the cycle",
   );
-  const crestS = (BREATH_S * (62 - 38)) / 100;
-  assert.ok(Math.abs(crestS - 1.35) < 1e-9, `the crest must last 1.35 s, saw ${crestS}`);
-  // And the tide covers most of the cycle: the dot is moving for ~5.6 s, not
-  // sitting still and then blinking.
-  const tideS = (BREATH_S * (100 - 62 + 38)) / 100;
-  assert.ok(tideS > 4, `the dim swell must span most of the breath, saw ${tideS.toFixed(2)} s`);
+  const crestS = (BREATH_S * (67 - 33)) / 100;
+  // 7 nov: "se encienden y se apagan muy rápido" — the crest widened from 24 % to 34 %.
+  assert.ok(Math.abs(crestS - 1.59375) < 1e-9, `the crest must last 1.59 s, saw ${crestS}`);
+  // And the tide covers most of the cycle: the dot is moving for ~3.1 s of its
+  // 4.7 outside the crest, not sitting still and then blinking.
+  const tideS = (BREATH_S * (100 - 67 + 33)) / 100;
+  assert.ok(tideS / BREATH_S >= 0.6, `the dim swell must span most of the breath, saw ${tideS.toFixed(2)} s`);
   // The bell climbs once and comes down once: no second hump to read as a double
   // blink.
   const values = stops.map(([, opacity]) => opacity);
@@ -470,16 +474,21 @@ test("the field breathes as one body: seconds-long swell, never fully dark", () 
     // L10: "que no se prendan tantas a la vez". The bright population is the
     // number this pins — about four of the 36 in its crest at any instant, and
     // never a full side of the field at once.
+    // 7 nov: the owner asked for a longer crest at the same flash rate ("se encienden
+    // y se apagan muy rápido"), and lit-at-once is rate × crest, so the cap moves
+    // from a fifth to 30 % of the band (the linear model reads ~27 %).
     assert.ok(
-      band.mean <= band.count * 0.2,
-      `${band.count} flares: mean bright ${band.mean.toFixed(2)} is more than a fifth of the band`,
+      band.mean <= band.count * 0.3,
+      `${band.count} flares: mean bright ${band.mean.toFixed(2)} is more than 30 % of the band`,
     );
     // A phone carries six dots, so a mean below one is arithmetic and not a bug;
     // what must hold at every density is that the crest does light somebody.
     assert.ok(band.mean > 0, `${band.count} flares: nobody is ever lit`);
     assert.ok(band.max >= 1, `${band.count} flares: no crest ever reaches the threshold`);
+    // Same 7 nov trade: a longer crest lets a peak instant reach half the band
+    // (6 of 12 at the tablet density); it was a third before.
     assert.ok(
-      band.max <= Math.ceil(band.count * 0.35),
+      band.max <= Math.ceil(band.count * 0.5),
       `${band.count} flares: ${band.max} lit at once is a crowd`,
     );
     // The floor that holds at every density and at every instant: every flare

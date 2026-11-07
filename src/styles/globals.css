@@ -273,12 +273,15 @@
      breath per beat would be 2.13 Hz, and 36 dots cannot pulse that fast and stay
      calm. `--grid` is the subdivision the 36 phases are dealt on, derived straight
      from the cycle: the table deals its slots over **64 of them per breath**, so
-     the grid is `--breath / 64` (87.89 ms here) whatever the cycle's length is —
+     the grid is `--breath / 64` (73.24 ms here) whatever the cycle's length is —
      derive it from the beat instead and the phases silently stop covering the
      cycle the moment the breath changes. */
   --bpm: 128;
   --beat: calc(60s / var(--bpm));
-  --breath: calc(12 * var(--beat));
+  /* 10 beats (4.69 s), not 12: the owner asked for the midpoint between the
+     deployed shader's flash rate and the 12-beat breath, at the song's 128 BPM.
+     The peak (50 %) still lands on a beat; the cycle is no longer whole bars. */
+  --breath: calc(10 * var(--beat));
   --grid: calc(var(--breath) / 64);
   /* The curves the sheet owns. The springs stay in `motion/config.js`:
      they are sampled CustomEases, not cubic-beziers (§14.4). */
@@ -2639,13 +2642,14 @@
    that asks for it.
 
    The flare's bell is one keyframe for every density band, and it is a tide with a
-   bloom on top: a long dim swell (0.02 → 0.16 between 0 % and 38 %) and a short,
-   bright crest in the middle of it (0.6 at 50 %, back to 0.16 by 62 %). That shape
+   bloom on top: a long dim swell (0.02 → 0.16 between 0 % and 33 %) and a
+   bright crest in the middle of it (0.6 at 50 %, back to 0.16 by 67 %; it was
+   38–62 % until the owner read the crest as too quick, 7 nov). That shape
    is the answer to L10 — “el ritmo está bien pero que no se prendan tantas a la
    vez” — and it is arithmetic, not taste: with a flat window the number of dots
    lit at any instant is `count × duty`, so a long swell and a low count cannot both
    come from the window alone. Splitting it into a dim tide and a brief crest keeps
-   the slow motion (5.6 s per breath) and drops the bright population to ~4 of 36,
+   the slow motion (4.7 s per breath) and drops the bright population to ~4 of 36,
    without shortening the swell into the sparkle of L6. The amplitude is the one
    knob the brightness briefs turn (L8–L12), and it turns on the two lit states
    only: the rest stays at 0.02, because a stronger parked footprint is the
@@ -2658,8 +2662,8 @@
     transform: scale(0.97);
   }
 
-  38%,
-  62% {
+  33%,
+  67% {
     opacity: 0.16;
     transform: scale(1.01);
   }
