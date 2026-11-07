@@ -142,7 +142,7 @@ const en = {
     copied: "Copied ✓",
     manual: "Select it above",
     copiedAnnouncement: "Email copied to the clipboard",
-    manualAnnouncement: "Copy blocked. Select the email above.",
+    manualAnnouncement: "Could not copy. Select the email above.",
     mailSubject: "Project inquiry",
   },
   footer: {
