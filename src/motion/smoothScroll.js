@@ -174,18 +174,16 @@ function mountScroll() {
 /**
  * The coarse path: one passive listener and no ticker.
  *
- * Everything else this module owns is kept — the `fling` latch the reveal, the
- * halo drop and the paused flares depend on, the cached position
- * `getScrollPosition()` answers from, and the lock the drawer calls.
+ * It keeps the cached position `getScrollPosition()` answers from and the lock
+ * the drawer calls, but not the `fling` latch: on a coarse pointer nothing reads
+ * the class (the reveal never hides there), and each toggle on <html> re-styled
+ * 418 elements, ~20 ms on the moto g82, at the start and end of every flick.
  */
 function mountNative() {
   nativeScrollY = window.scrollY;
-  lastFlingPosition = nativeScrollY;
-  lastFlingTime = 0;
 
   nativeListener = () => {
     nativeScrollY = window.scrollY;
-    syncFling();
   };
   window.addEventListener("scroll", nativeListener, { passive: true });
 }
