@@ -276,6 +276,39 @@ test("the reveal is cheap: no blur, a short beat, a tight stagger", () => {
   assert.ok(parseFloat(stagger[1]) <= 50, `the word stagger is ${stagger[1]}ms; 50 ms is the ceiling`);
 });
 
+test("the scrolled pill fades a composited pseudo, never a painted property", () => {
+  // The pill transitioned `background-color`, `border-color` and `box-shadow`.
+  // Those repaint: the transition re-rastered the root content layer on every
+  // frame of the 0.5 s it ran, and a fling covers 5000 px in that time, so the
+  // tiles ahead of it never arrived — the owner's "whole screens with only the
+  // field" report. Measured in `.perf/flick-trace.mjs`: `#document` painted 60×
+  // during one gesture, 8× once only an opacity moves. The fill therefore lives
+  // on a pseudo-element and only its opacity is transitioned, which the
+  // compositor can run without touching the layer below.
+  const start = bare.indexOf("@utility nav-pill {");
+  assert.notEqual(start, -1, "@utility nav-pill is missing from globals.css");
+  const block = blockAt(bare.indexOf("{", start));
+  const pseudoAt = block.indexOf("&::before");
+  assert.notEqual(pseudoAt, -1, "the scrolled fill is not a pseudo-element");
+  const surface = block.slice(0, pseudoAt);
+  const fill = block.slice(pseudoAt);
+  assert.equal(
+    /transition:\s*[^;]*(background|border|box-shadow)/.test(surface),
+    false,
+    "the pill still transitions a painted property",
+  );
+  assert.match(
+    fill,
+    /opacity:\s*0;/,
+    "the pill's fill is no longer transparent at rest",
+  );
+  assert.match(
+    fill,
+    /\.site-header\.is-scrolled &::before\s*\{[^}]*opacity:\s*1/,
+    "the scrolled state no longer fades the pseudo-element's fill",
+  );
+});
+
 /* ===========================================================================
    §13.3 S3–S7 (spec S14) — the invariants the Tailwind migration created.
    Text-only like the rest of the suite: no build, no browser, so a regression

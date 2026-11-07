@@ -18,6 +18,8 @@ caliente.
 
 **Corregido (9 nov).** La lectura de arriba estaba mal: el sampler mide en el hilo principal, donde `.is-in` ya llegó; el compositor scrollea por delante con tiles pintados cuando esos nodos todavía eran `opacity: 0`. Reproducido en Chromium (gesto sintético + CPU 8× + screencast): sin el fix hay pantallas de sólo fondo, con el fix no. En puntero grueso el reveal ya no oculta nada (`globals.css`, bloque `pointer-coarse` tras `.is-in .w > span`); desktop conserva la entrada.
 
+**Corregido (traza de pintado del flick).** `node .perf/flick-trace.mjs` contaba el repintado por nodo durante los dos gestos: `#document` 60 veces y `HEADER.site-header` 55. El dueño de esas pintadas era la transición del pill del nav — `background-color`, `border-color` y `box-shadow` sobre un elemento `fixed`, o sea medio segundo repintando la capa raíz completa justo mientras el flick la necesita para rasterizar lo que viene. El relleno pasa a un `::before` y entre los dos estados sólo cambia su `opacity` (compuesta, con `will-change` para que la promoción no rasterice al empezar el fade): 7 pintadas de `#document` y 0 del header, mismas medidas que la ablación `.nav-pill{visibility:hidden}`. En reposo y con la página movida el pixel box y el color del pill son los mismos (sonda de estilo computado + diff de capturas: 97 % de los píxeles idénticos, el resto ±1-6 niveles en los bordes).
+
 
 **Inferido.** El cuello está en raster/GPU, no en el hilo principal. A DPR 3 el viewport
 son 1053×2244 px de dispositivo (2,36 Mpx) y cada capa a pantalla completa —campo,
