@@ -36,6 +36,8 @@ píxeles de decode por portada). Falta la traza de Fase 0 para decidir entre ras
 
 **Devuelto al teléfono (7 nov, mismas trazas).** Destellos animados, scrubs de About (frase y riel), subida del wordmark y miniaturas a `100vw`: baldosas faltantes ~106 → ~124, GPU ~600 → ~810 ms. Siguen fuera, por costo medido: grano (+60 % GPU), halo de 2 px (+45 % baldosas) y humo WebGL (el watchdog lo baja en el primer flick, frames de 122 ms).
 
+**Medido (7 nov).** Núcleo pálido de la lattice movido de 96 px (entre dos puntos) a 24 px (sobre un punto). Cadencia: teléfono 58 fps en scroll tranquilo, pero Brave da 60 Hz aunque la pantalla esté fija en 120; PC 1920×1080 60/60 con mouse y scroll. Carga en el g82 por LAN: LCP 364-444 ms en frío, TBT ~0.
+
 
 **Inferido.** El cuello está en raster/GPU, no en el hilo principal. A DPR 3 el viewport
 son 1053×2244 px de dispositivo (2,36 Mpx) y cada capa a pantalla completa —campo,
