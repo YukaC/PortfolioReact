@@ -497,6 +497,7 @@
    scrolled state belongs to the header, so it is nested here — a rule in the
    components layer would lose to this utility's `border` shorthand. */
 @utility nav-pill {
+  position: relative;
   width: min(calc(var(--shell) + 1rem), 100% - 1.5rem);
   margin-inline: auto;
   display: flex;
@@ -504,12 +505,10 @@
   justify-content: space-between;
   padding: 0.5rem 0.5rem 0.5rem 1.25rem;
   border-radius: var(--radius-pill);
+  /* The hairline's geometry, never its colour: the box stays one pixel inset so
+     the fill below can sit exactly where the border was. */
   border: 1px solid transparent;
   pointer-events: auto;
-  transition:
-    background-color var(--duration-slow) var(--ease-out-field),
-    border-color var(--duration-slow) var(--ease-out-field),
-    box-shadow var(--duration-slow) var(--ease-out-field);
 
   /*
    * Scrolled, the pill is solid ink — not glass, and not a near-opaque mix.
@@ -525,11 +524,40 @@
    * behind it still read through the fill. Everything else in the page stands on
    * solid ink with a hairline, so the pill now does the same and keeps only the
    * hairline, the shadow and the geometry.
+   *
+   * The fill is a pseudo-element, and only its `opacity` moves between the two
+   * states. Transitioning `background-color`, `border-color` and `box-shadow`
+   * was a paint per property per frame for the whole half second the transition
+   * ran, and the pill is `fixed` inside the scrolling document layer: each of
+   * those frames re-rastered the root content layer, which starved the raster of
+   * the tiles a fling had not reached yet — the reader saw whole screens with
+   * the field and no copy. Opacity is composited (`will-change` keeps the layer
+   * alive before the first fade, so the promotion itself never re-rasters), so
+   * the two states are one fill fading in over the other and the layer below is
+   * never touched. `inset: -1px` puts the hairline on the transparent border's
+   * line, so the settled box is the same pixel box it always was.
    */
-  .site-header.is-scrolled & {
+  &::before {
+    content: "";
+    position: absolute;
+    inset: -1px;
+    /* Below the pill's own content: negative z-index paints under in-flow text
+       but inside the header's stacking context, which is above the field. */
+    /* literal: not a page layer, so it is not on the ladder — it is one step
+       under this pill's own content (a local stack, §14.4). */
+    z-index: -1;
+    border-radius: var(--radius-pill);
+    border: 1px solid var(--line);
     background-color: var(--color-ink);
-    border-color: var(--line);
     box-shadow: var(--shadow-nav);
+    opacity: 0;
+    transition: opacity var(--duration-slow) var(--ease-out-field);
+    will-change: opacity;
+    pointer-events: none;
+  }
+
+  .site-header.is-scrolled &::before {
+    opacity: 1;
   }
 }
 
