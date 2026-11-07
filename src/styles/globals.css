@@ -2584,6 +2584,22 @@
     text-shadow: none;
   }
 
+  /* A coarse pointer keeps the short shadow and never the 24 px one. The blur is 72
+     device pixels per line at DPR 3 — the most expensive thing each entering section
+     asks for — and what it protects from, the plume blooming white behind copy, does
+     not exist on a touch device: the quality tier there is `static` and mounts no
+     canvas. This used to be a `fling` toggle instead, which was worse than useless:
+     flipping `text-shadow` on every copy wrapper repaints all the text at the start
+     and at the end of every flick, and that repaint is the blank the owner kept
+     seeing. Square text on the phone is the fix. */
+  @variant pointer-coarse {
+    .hero-copy,
+    .site-shell {
+      /* literal: the shallower half of the halo above, ink with alpha. */
+      text-shadow: 0 1px 2px rgb(3 8 22 / 0.9);
+    }
+  }
+
   /* A fling drops the halo. Those two shadows are a 24 px blur over every line of
      copy, rastered at the device pixel ratio (3 on the owner's phone, so 72
      device pixels): it is the most expensive thing each newly-entering section
@@ -2594,9 +2610,6 @@
      copy changes: same colour, same weight, same box. `.site-shell` is every
      copy wrapper that carries the halo, so one selector covers the sections, the
      footer and the pill. */
-  html.fling :is(.hero-copy, .site-shell) {
-    text-shadow: none;
-  }
 
   /* `.sr-only` is Tailwind's own utility — the hand-written copy here was a
      second definition of it (and a second place to forget the `clip-path`
