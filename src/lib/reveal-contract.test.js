@@ -235,16 +235,30 @@ test("a phone reveals a third of a viewport early, a desktop does not", () => {
   );
 });
 
-test("a coarse pointer keeps the short halo, and nothing toggles it", () => {
+test("a coarse pointer carries no halo, and nothing toggles it", () => {
   // The 24 px blur is 72 device pixels per line at DPR 3, and a touch device runs the
   // `static` tier with no canvas, so there is no plume for it to protect copy from.
   // It was a `fling` toggle first: flipping `text-shadow` repaints every copy wrapper
-  // twice per flick, which is the blank the owner kept reporting.
-  assert.match(
-    bare,
-    /@variant pointer-coarse \{[\s\S]{0,400}?text-shadow:\s*0 1px 2px/,
-    "a coarse pointer must keep a constant short halo",
-  );
+  // twice per flick, which is the blank the owner kept reporting. The 2 px half went
+  // the same way: the flicks show whole screens with the field and no copy while every
+  // on-screen node reads `opacity: 1` (`.perf/phone/flick-*.json`), so what is missing
+  // is paint, and a per-glyph shadow blur is paint.
+  // Present is not enough: the reset has to win the cascade. A shorter selector
+  // (`.site-shell` against `.section-y .site-shell`) loses on specificity and left the
+  // full blur on every section on the phone. Same selector, later in the file, wins.
+  const selectorsOf = (list) => list.split(",").map((s) => s.trim()).filter(Boolean);
+  const halo = bare.match(/([^{}]+)\{\s*text-shadow:\s*0 1px 2px[^}]*0 0 24px/);
+  assert.ok(halo, "the halo rule is missing");
+  const reset = bare.match(/@variant pointer-coarse \{\s*([^{}]+)\{\s*text-shadow:\s*none/);
+  assert.ok(reset, "a coarse pointer must drop the halo entirely");
+  const resetSelectors = selectorsOf(reset[1]);
+  for (const selector of selectorsOf(halo[1])) {
+    assert.ok(
+      resetSelectors.includes(selector),
+      `the coarse reset must repeat \`${selector}\` or the halo outranks it on the phone`,
+    );
+  }
+  assert.ok(reset.index > halo.index, "the coarse reset must come after the halo");
   assert.doesNotMatch(
     bare,
     /html\.fling :is\(\.hero-copy/,

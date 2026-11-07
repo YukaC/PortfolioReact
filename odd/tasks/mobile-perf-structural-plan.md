@@ -16,11 +16,23 @@ a través. Esa es la firma de *checkerboarding* — el compositor llega antes qu
 `RasterTask` / `GpuRasterBuffer::Playback` (87-88 ms) con la CPU 66 % ociosa: no hay JS
 caliente.
 
+**Observado (video del dueño, 6 nov 23:11).** Con los recortes de A ya aplicados el
+síntoma sigue, y el sampler de los cinco flicks (`.perf/phone/flick-*.json`) da
+`opacity: 1` en los 14 nodos con reveal en pantalla durante todo el flick: el DOM está
+opaco y lo que falta es el pintado. En los frames vacíos sólo sobreviven el hero (entra
+por keyframe) y la declaración de About (no lleva `data-r`) — consistente con raster, no
+con el reveal. **Cortado sobre eso, sin medir:** el halo entero en puntero grueso
+(`text-shadow: none`, era 0 1px 2px) y el ancho que piden las miniaturas de WorkList
+(`100vw` → `70vw`: en el teléfono pasa de la variante de 1080 w a la de 828 w, 41 % menos
+píxeles de decode por portada). Falta la traza de Fase 0 para decidir entre raster y GPU.
+
 **Corregido (9 nov).** La lectura de arriba estaba mal: el sampler mide en el hilo principal, donde `.is-in` ya llegó; el compositor scrollea por delante con tiles pintados cuando esos nodos todavía eran `opacity: 0`. Reproducido en Chromium (gesto sintético + CPU 8× + screencast): sin el fix hay pantallas de sólo fondo, con el fix no. En puntero grueso el reveal ya no oculta nada (`globals.css`, bloque `pointer-coarse` tras `.is-in .w > span`); desktop conserva la entrada.
 
 **Corregido (traza de pintado del flick).** `node .perf/flick-trace.mjs` contaba el repintado por nodo durante los dos gestos: `#document` 60 veces y `HEADER.site-header` 55. El dueño de esas pintadas era la transición del pill del nav — `background-color`, `border-color` y `box-shadow` sobre un elemento `fixed`, o sea medio segundo repintando la capa raíz completa justo mientras el flick la necesita para rasterizar lo que viene. El relleno pasa a un `::before` y entre los dos estados sólo cambia su `opacity` (compuesta, con `will-change` para que la promoción no rasterice al empezar el fade): 7 pintadas de `#document` y 0 del header, mismas medidas que la ablación `.nav-pill{visibility:hidden}`. En reposo y con la página movida el pixel box y el color del pill son los mismos (sonda de estilo computado + diff de capturas: 97 % de los píxeles idénticos, el resto ±1-6 niveles en los bordes).
 
 **Corregido (10 nov, campo en puntero grueso).** `.flare` no anima y `.field-grain` no se pinta en puntero grueso (`animation: none`, `display: none`): el campo fijo se rasteriza una vez y no cambia más. Medido con `.perf/flick-checker.mjs` (412×915 @2.625, GPU, 1 raster thread, 4 MB, throttle 20×, cinco flicks de 9000 px a 30000 px/s, 3 corridas): 6589 → 1425 checkerboards (−78 %); la inyección equivalente dio 1425 antes de tocar el CSS. El latch `html.fling` no sirve para esto: necesita dos eventos de scroll a menos de 250 ms en el hilo principal, que es justo el hilo que se queda corto en un flick.
+
+**Corregido (7 nov, traza en el g82 real por adb).** El reset táctil del halo (`.site-shell`) perdía por especificidad contra `.section-y .site-shell` / `.site-footer .site-shell`: el blur de 24 px seguía en 897 nodos. Con los selectores iguales: GPU 1130 → 600 ms, tarea GPU máx. 85 → 13-23 ms, frames con huecos 17 → 8 %. El arnés de 4 MB medía falta de memoria, no el teléfono (con memoria realista no reproduce). Receta y ficha: `testinG82.md`.
 
 
 **Inferido.** El cuello está en raster/GPU, no en el hilo principal. A DPR 3 el viewport
