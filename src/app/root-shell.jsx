@@ -71,8 +71,6 @@ export const rootMetadata = {
   other: {
     "geo.region": PERSON_REGION,
     "geo.placename": PERSON_LOCALITY,
-    "geo.position": "-34.6037;-58.3816",
-    ICBM: "-34.6037, -58.3816",
   },
   icons: {
     icon: [

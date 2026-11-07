@@ -52,6 +52,38 @@ export const OG_IMAGE_HEIGHT = 630;
 /** The portrait stays a page asset; it is not the social card any more. */
 export const PORTRAIT_PATH = "/profile-hero.webp";
 
+/**
+ * The postal address the `Person` node publishes (S7).
+ *
+ * `PERSON_LOCALITY` is `Buenos Aires`, and that is the answer the *copy* gives
+ * to "where do you work from": the social card, the FAQ and the portrait line
+ * all say it. The address is more specific, and it is the one the brief gives —
+ * the town, the province it belongs to, and the country the constants already
+ * store. Two facts, two fields, so neither has to lie.
+ */
+export const PERSON_ADDRESS_LOCALITY = "Coronel Dorrego";
+export const PERSON_ADDRESS_REGION = "Buenos Aires";
+
+/**
+ * The six technologies the `Person` node claims (S7).
+ *
+ * Deliberately narrower than `SKILLS`, which is the visible chip row: the brief
+ * names these six, and it spells the runtime `Node.js` where the chip says
+ * `Node`. Nothing is invented — every entry is a `SKILLS` name or that same
+ * technology's fuller spelling, and the suite pins that.
+ */
+export const KNOWS_ABOUT = [
+  "React",
+  "Next.js",
+  "TypeScript",
+  "Node.js",
+  "Python",
+  "PostgreSQL",
+];
+
+/** The university `alumniOf` names, without the acronym the timeline appends. */
+export const ALUMNI_UNIVERSITY = "Universidad Provincial del Sudoeste";
+
 export const PERSON_ID = `${SITE_URL}/#person`;
 export const WEBSITE_ID = `${SITE_URL}/#website`;
 
@@ -142,6 +174,10 @@ export function homeMetadata(locale) {
   const { t } = translator(key);
   const title = t("meta.title");
   const description = t("meta.description");
+  // S7: the card's pair, which is shorter than the document's — a social card
+  // gets one line for the name and the role and one for the pitch.
+  const ogTitle = t("meta.ogTitle");
+  const ogDescription = t("meta.ogDescription");
   const alt = ogImageAlt();
 
   return {
@@ -155,8 +191,8 @@ export function homeMetadata(locale) {
       locale: OG_LOCALE_TAGS[key],
       alternateLocale: otherOgLocales(key),
       siteName: SITE_NAME,
-      title,
-      description,
+      title: ogTitle,
+      description: ogDescription,
       type: "website",
       url: localeUrl(key),
       images: [ogImage(key, alt)],
@@ -447,25 +483,45 @@ export function educationProgrammes() {
   });
 }
 
-/** The person, once, with the training the graph used to ignore (S4). */
+/**
+ * The person, once, with the training the graph used to ignore (S4, S7).
+ *
+ * S7 fixes every field. `jobTitle` comes from the Spanish dictionary's
+ * `about.role` — the line the portrait prints — because the brief makes Spanish
+ * the source of truth for the person's own description, and reading the
+ * dictionary means the graph and the page cannot drift apart.
+ *
+ * `sameAs` is the profile URLs `src/data/constants.js` already holds. The
+ * repository URL in `package.json` is a code repository, not a profile of the
+ * person, so it contributes nothing here and no handle is invented.
+ *
+ * `alumniOf` leads with the university the brief names and then carries the four
+ * programmes with their dates: who he graduated from, and what he studied.
+ */
 export function personNode() {
+  const { t } = translator("es");
+
   return {
     "@type": "Person",
     "@id": PERSON_ID,
     name: SITE_NAME,
-    jobTitle: PERSON_JOB_TITLE,
+    jobTitle: t("about.role"),
     url: SITE_URL,
     email: `mailto:${CONTACT_EMAIL}`,
     image: `${SITE_URL}${PORTRAIT_PATH}`,
     address: {
       "@type": "PostalAddress",
-      addressLocality: PERSON_LOCALITY,
+      addressLocality: PERSON_ADDRESS_LOCALITY,
+      addressRegion: PERSON_ADDRESS_REGION,
       addressCountry: PERSON_COUNTRY,
     },
     sameAs: SOCIAL_LINKS.map((link) => link.href),
-    knowsAbout: SKILLS.map((skill) => skill.name),
+    knowsAbout: KNOWS_ABOUT,
     knowsLanguage: ["en", "es", "pt"],
-    alumniOf: educationProgrammes(),
+    alumniOf: [
+      { "@type": "EducationalOrganization", name: ALUMNI_UNIVERSITY },
+      ...educationProgrammes(),
+    ],
   };
 }
 
