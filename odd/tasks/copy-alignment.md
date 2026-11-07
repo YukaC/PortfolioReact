@@ -156,12 +156,17 @@ already exist in the repository.
 
 | ID | Task | Specs | Route | Commit |
 |---|---|---|---|---|
-| T1 | Hero: copy, name+role heading, subtitle accent, tech and focus tags | S2 | delegated writer A | _(pending)_ |
-| T2 | Projects: card data, section copy, filters, demo/GitHub labels | S3 | delegated writer A | _(pending)_ |
-| T3 | About: intro, work subsection with code block, skills, four education entries | S4 | delegated writer B | _(pending)_ |
-| T4 | Contact and footer copy | S1, S5, S6 | delegated writer B | _(pending)_ |
-| T5 | SEO surface: metadata, JSON-LD Person, canonical and languages, html lang, alts | S7 | delegated writer B | _(pending)_ |
-| T6 | Quality gates (`pnpm gate`) and close report | all | parent inline | _(pending)_ |
+| T1 | Hero: copy, name+role heading, subtitle accent, tech and focus tags | S2 | delegated writer A | `80ff932` |
+| T2 | Projects: card data, section copy, filters, demo/GitHub labels | S3 | delegated writer A | `80ff932` |
+| T3 | About: intro, work subsection with code block, skills, four education entries | S4 | delegated writer B | `80ff932` |
+| T4 | Contact and footer copy | S1, S5, S6 | delegated writer B | `80ff932` |
+| T5 | SEO surface: metadata, JSON-LD Person, canonical and languages, html lang, alts | S7 | delegated writer B + parent | `e2425a7` |
+| T6 | Quality gates (`pnpm gate`) and close report | all | parent inline | _(this commit)_ |
+
+Delivery strategy: `ask-on-risk`. Two work units, one commit each; the branch already
+carries 129 commits on top of `origin/main` from earlier features, so this feature adds
+no further slice boundary of its own — its own diff is ~840 lines across the two
+commits above.
 
 ## Log
 
@@ -172,3 +177,33 @@ already exist in the repository.
   Existing locale voice rules in `src/i18n/messages/index.js` stay.
 - L3 (decision): project repositories and demo URLs are not invented. Cards reuse the
   URLs already in `src/data/projects.js`.
+- L4 (evidence): `https://ciucani.vercel.app` answers 200; `https://agustinciucani.dev`
+  does not resolve. `SITE_URL` moved to the live origin, so canonical, sitemap,
+  `llms.txt` and the OG card host agree with S7. The dead origin was a site-wide defect,
+  not a copy change.
+- L5 (decision): `/en` is not a route — English is the bare root. `languages` points
+  `en` at the real route and keeps `x-default`, as S7 asks. A real `/en` is a separate
+  routing task, not metadata.
+- L6 (decision): the list's demo footnote is removed. S3's new lead already says the
+  demos run on sample data; two muted notes side by side were the weakest copy on the
+  page, and the project pages keep their own disclaimer.
+- L7 (decision): the About intro is the section's lit `.statement` — the signature
+  element of that section — rather than a plainer paragraph under the portrait. The
+  four education entries keep the en dash the brief writes; the SEO constant keeps the
+  ASCII range its date parser splits, and the duplication is deliberate.
+- L8 (decision): the `Sistemas` filter stays as S3 lists it, even though no brief card
+  carries that tag: a filter matching nothing is a data task, not a copy one.
+- L9 (deviation): project covers keep `alt=""` inside the `aria-hidden` decorations that
+  duplicate the adjacent row title. S7's checklist asks for a descriptive alt per
+  capture; on a decorative duplicate that alt would make the same image announce twice,
+  so the accessible name stays on the row. Recorded as a deliberate exception, not a
+  silent skip.
+- L10 (verification): `pnpm build` green; `pnpm gate` 5 pass, 0 fail (lint, unit, css,
+  motion, bebop). Browser check on `/es`, `/pt` and the root: one `h1` per page carrying
+  name + role, `<html lang>` per locale, canonical on the live origin, the brief's
+  section headings in order.
+- L11 (follow-ups for the owner, no site change): the brief's `Para verificar` list is
+  CV/LinkedIn work — the official technical-degree name, the CV role, the CV entries for
+  UTN and the municipal system, and the same handle in GitHub/LinkedIn/CV. Section 8's
+  open questions stay open: whether App Despensa also syncs with a server, and the CV
+  skills list.
