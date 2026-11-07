@@ -1,16 +1,29 @@
 import HeroActions from "@/components/HeroActions";
 import SplitHeading from "@/components/SplitHeading";
+import { TECH_TAGS } from "@/data/constants";
 import { translator } from "@/i18n/index.js";
-
-const STACK = ["React", "Next.js", "Tailwind", "Python", "PostgreSQL"];
 
 /**
  * HeroSection - the practice statement, carried by type.
  *
- * No card: a status line, the headline split word by word, the lead, two CTAs
- * and the stack line. The depth cluster on the right is ornament only — it
- * answers the pointer and the scroll in layers, so the page still breathes
- * without a panel cutting the welcome in half.
+ * No card: a status line, the heading, the subtitle, the lead, two CTAs and the
+ * two tag rows. The depth cluster on the right is ornament only — it answers the
+ * pointer and the scroll in layers, so the page still breathes without a panel
+ * cutting the welcome in half.
+ *
+ * The `h1` is the name with the role as its second line, inside the heading: the
+ * outline then reads "Agustín Ciucani desarrollador full-stack" as one entry, and
+ * the grey line is the secondary-type token rather than a separate paragraph. The
+ * sentence that used to be the headline is the subtitle now, and it keeps the
+ * word-by-word split and the sky accent — `SplitHeading` renders it as a heading
+ * of its own (`h2`), because it keeps the plain sentence as `aria-label` and marks
+ * its split words `aria-hidden`, and only an element that can carry a name is
+ * allowed to do that: as a `<p>` the subtitle would be silent to a screen reader.
+ * The page still has exactly one `h1`.
+ *
+ * The two tag rows are the hero half of the band's vocabulary (`Marquee` renders
+ * the same two lists at display size): one `stackline` recipe, two lines, the tech
+ * names from the shared constant and the focus words from the dictionary.
  *
  * A Server Component (audit.md §16.2): every word above the fold is copy and
  * CSS, and the reveal that used to hide it until hydration is a stylesheet
@@ -41,17 +54,25 @@ const HeroSection = ({ locale = "en" }) => {
             {t("hero.status")}
           </span>
 
-          <SplitHeading
-            as="h1"
+          <h1
             className="hero-title"
+            data-r="paint"
+            style={{ "--d": "120ms" }}
+          >
+            <span className="block">{t("hero.name")}</span>
+            <span className="block text-dim">{t("hero.role")}</span>
+          </h1>
+
+          <SplitHeading
+            as="h2"
+            className="font-heading text-work-title text-paper"
             text={t("hero.title")}
             accent={t("hero.accent")}
-            parallax
             reveal="paint"
-            delayMs={120}
+            delayMs={320}
           />
 
-          <p className="lead" data-r="paint" style={{ "--d": "520ms" }}>
+          <p className="lead mt-4" data-r="paint" style={{ "--d": "520ms" }}>
             {t("hero.lead")}
           </p>
 
@@ -59,15 +80,25 @@ const HeroSection = ({ locale = "en" }) => {
             <div>
               <HeroActions />
 
-              <p
+              {/* One recipe, two rows: the tech names are not copy (`TECH_TAGS`),
+                  the focus words are. Each row is its own line so the separator
+                  never opens a wrapped line. */}
+              <div
                 className="stackline"
                 data-r="paint"
                 style={{ "--d": "760ms" }}
               >
-                {STACK.map((item) => (
-                  <span key={item}>{item}</span>
-                ))}
-              </p>
+                <p>
+                  {TECH_TAGS.map((item) => (
+                    <span key={item}>{item}</span>
+                  ))}
+                </p>
+                <p className="mt-1.5">
+                  {t("hero.focus").map((item) => (
+                    <span key={item}>{item}</span>
+                  ))}
+                </p>
+              </div>
             </div>
 
             <div

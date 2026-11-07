@@ -1,19 +1,14 @@
 import MarqueeMotion from "@/components/MarqueeMotion";
+import { TECH_TAGS } from "@/data/constants";
 import { translator } from "@/i18n/index.js";
-
-/** Technology names stay as they are; only the second track is copy. */
-const STACK_WORDS = [
-  "React",
-  "Next.js",
-  "Tailwind",
-  "Python",
-  "PostgreSQL",
-  "Flask",
-  "Node",
-];
 
 /**
  * Technology band.
+ *
+ * Both tracks are the hero's own tag rows at display size: the tech names from
+ * `TECH_TAGS` (language-neutral, so they are a constant) outlined, and the focus
+ * words from the dictionary in the sky accent. One vocabulary on the page, two
+ * scales.
  *
  * Two tracks travelling in opposite directions whose speed follows the scroll
  * velocity, with the whole band skewing as it accelerates. Decorative: it is
@@ -28,8 +23,8 @@ const Marquee = ({ locale = "en" }) => {
   const { t } = translator(locale);
 
   const rows = [
-    { words: STACK_WORDS, dir: -1, variant: "mq-outline" },
-    { words: t("marquee.traits"), dir: 1, variant: "mq-accent" },
+    { words: TECH_TAGS, dir: -1, variant: "mq-outline" },
+    { words: t("hero.focus"), dir: 1, variant: "mq-accent" },
   ];
 
   return (

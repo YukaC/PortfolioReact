@@ -26,6 +26,12 @@ export const MAX_PINNED_PROJECTS = 6;
  * and what it proves, then a problem/outcome pair written as a claim the code
  * in that repository can back. No number that nobody measured.
  *
+ * `description` is the line the work row prints and the project page opens with;
+ * `problem`/`outcome` are the pair that page expands. Spanish is the source of
+ * truth for the copy (it is what the owner briefs in); the English fields and
+ * the `pt` block are translations of it, and `localizeProject` applies the
+ * per-locale ones at render time.
+ *
  * @type {Record<string, ProjectOverride>}
  */
 export const PROJECT_OVERRIDES = {
@@ -63,7 +69,7 @@ export const PROJECT_OVERRIDES = {
   MuniDgoSaaS: {
     title: "Turnos App",
     description:
-      "Multi-tenant appointment booking with live validation, an admin dashboard, and ECharts reporting.",
+      "Multi-tenant appointment booking for the different areas of my town's municipality: a portal for residents and an admin panel with live validation and ECharts metrics.",
     problem: "One municipality, several areas, no shared place to take appointments.",
     outcome: "Flask and React on MySQL: live validation, a dashboard, and ECharts.",
     imgSrc: "/munidgo.webp",
@@ -73,7 +79,7 @@ export const PROJECT_OVERRIDES = {
     i18n: {
       es: {
         description:
-          "Reserva de turnos multi-tenant con validación en vivo, panel de administración y reportes con ECharts.",
+          "Sistema de turnos multi-tenant para las distintas áreas de la municipalidad de mi pueblo. Tiene un portal para vecinos y un panel de admin con validación en tiempo real y métricas en ECharts.",
         problem:
           "Una municipalidad con varias áreas y ningún lugar común para sacar turnos.",
         outcome:
@@ -81,7 +87,7 @@ export const PROJECT_OVERRIDES = {
       },
       pt: {
         description:
-          "Agendamento multi-tenant com validação ao vivo, painel administrativo e relatórios com ECharts.",
+          "Sistema de agendamento multi-tenant para as diferentes secretarias da prefeitura da minha cidade. Tem um portal para os moradores e um painel de admin com validação em tempo real e métricas em ECharts.",
         problem:
           "Uma prefeitura com várias secretarias e nenhum lugar comum para agendar.",
         outcome:
@@ -92,7 +98,7 @@ export const PROJECT_OVERRIDES = {
   OpenBalance: {
     title: "OpenBalance",
     description:
-      "Month-first personal finance: income, expenses, categories, weekly breakdown. No account needed.",
+      "It came out of a need of my own: a budget that runs by the month, with an optional weekly mode for anyone paid by the week.",
     problem: "Most budgeting apps hide the month behind a week-based model.",
     outcome: "Local-first Next.js with Zustand persistence and no backend.",
     imgSrc: "/openbalance.webp",
@@ -102,14 +108,14 @@ export const PROJECT_OVERRIDES = {
     i18n: {
       es: {
         description:
-          "Finanzas personales por mes: ingresos, gastos, categorías y desglose semanal. Sin crear cuenta.",
+          "Nació de una necesidad propia: un presupuesto que va por mes, con modo semanal opcional para quien cobra por semana.",
         problem:
           "Casi todas las apps de presupuesto esconden el mes detrás de un modelo semanal.",
         outcome: "Next.js local-first con persistencia en Zustand y sin backend.",
       },
       pt: {
         description:
-          "Finanças pessoais por mês: receitas, despesas, categorias e detalhamento semanal. Sem criar conta.",
+          "Nasceu de uma necessidade minha: um orçamento que vai por mês, com modo semanal opcional para quem recebe por semana.",
         problem:
           "Quase todo app de orçamento esconde o mês atrás de um modelo semanal.",
         outcome: "Next.js local-first com persistência em Zustand e sem backend.",
@@ -119,7 +125,7 @@ export const PROJECT_OVERRIDES = {
   PelisEnCasa: {
     title: "Pelis en Casa",
     description:
-      "Movie catalog and reviews: search, genre and director filters, film detail, reader comments.",
+      "My 2022 final project (jQuery and Flask), migrated to React with animations in Motion.",
     problem: "A 2022 academic build (HTML, jQuery, Flask) nobody could show.",
     outcome: "Rebuilt as a static React app with embedded data and spring motion.",
     imgSrc: "/peliscasa.webp",
@@ -129,7 +135,7 @@ export const PROJECT_OVERRIDES = {
     i18n: {
       es: {
         description:
-          "Catálogo y reseñas de películas: búsqueda, filtros por género y director, ficha de cada película y comentarios.",
+          "Mi trabajo final de 2022 (jQuery y Flask), migrado a React con animaciones en Motion.",
         problem:
           "Un trabajo académico de 2022 (HTML, jQuery, Flask) que no se podía mostrar.",
         outcome:
@@ -137,7 +143,7 @@ export const PROJECT_OVERRIDES = {
       },
       pt: {
         description:
-          "Catálogo e resenhas de filmes: busca, filtros por gênero e diretor, ficha de cada filme e comentários.",
+          "Meu trabalho final de 2022 (jQuery e Flask), migrado para React com animações em Motion.",
         problem:
           "Um trabalho acadêmico de 2022 (HTML, jQuery, Flask) que não dava para mostrar.",
         outcome:
@@ -152,18 +158,18 @@ export const PROJECT_OVERRIDES = {
   MyrkStudio: {
     title: "Myrk Studio",
     description:
-      "Brand site for a narrative Minecraft series: single editorial scroll, WebGL hero, whitelist flow.",
+      "Site for a studio that makes Minecraft series, with 3D scenes in Three.js.",
     problem: "A fictional series needed a site that felt like a studio, not a template.",
     outcome:
       "React, Vite, and Tailwind with GSAP and Three, tuned for mobile scroll.",
     imgSrc: "/myrkstudio.webp",
     alt: "Myrk Studio home page screenshot",
-    tags: ["React", "Vite", "Tailwind CSS", "Three.js"],
+    tags: ["React", "Vite", "Tailwind", "Three.js"],
     isFeatured: true,
     i18n: {
       es: {
         description:
-          "Sitio de marca para una serie narrativa de Minecraft: scroll editorial de una sola pasada, hero en WebGL y flujo de whitelist.",
+          "Sitio para un estudio que hace series de Minecraft, con escenas 3D en Three.js.",
         problem:
           "Una serie ficticia necesitaba un sitio que se sintiera como un estudio y no como una plantilla.",
         outcome:
@@ -171,7 +177,7 @@ export const PROJECT_OVERRIDES = {
       },
       pt: {
         description:
-          "Site de marca para uma série narrativa de Minecraft: scroll editorial de página única, hero em WebGL e fluxo de whitelist.",
+          "Site para um estúdio que faz séries de Minecraft, com cenas 3D em Three.js.",
         problem:
           "Uma série fictícia precisava de um site que parecesse um estúdio, não um template.",
         outcome:
@@ -229,7 +235,7 @@ export const PROJECT_OVERRIDES = {
   AppDespensa: {
     title: "App Despensa",
     description:
-      "Local-first PWA point of sale for a pantry store: sales, cash drawer, products, and stock intake on React, Node, and PostgreSQL.",
+      "Point of sale for a pantry store: sales, cash drawer and stock. A local-first PWA built to work offline.",
     problem: "A pantry store needed sales, cash, and stock without a SaaS bill.",
     outcome: "A local-first PWA POS on React, Node, and PostgreSQL.",
     imgSrc: "/appdespensa.webp",
@@ -238,13 +244,13 @@ export const PROJECT_OVERRIDES = {
     i18n: {
       es: {
         description:
-          "Punto de venta PWA local-first para un almacén: ventas, caja, productos e ingreso de stock en React, Node y PostgreSQL.",
+          "Punto de venta para un almacén: ventas, caja y stock. PWA local-first, pensada para funcionar sin conexión.",
         problem: "Un almacén necesitaba ventas, caja y stock sin pagar un SaaS.",
         outcome: "Un POS PWA local-first sobre React, Node y PostgreSQL.",
       },
       pt: {
         description:
-          "Ponto de venda PWA local-first para uma mercearia: vendas, caixa, produtos e entrada de estoque em React, Node e PostgreSQL.",
+          "Ponto de venda para uma mercearia: vendas, caixa e estoque. PWA local-first, pensada para funcionar sem conexão.",
         problem: "Uma mercearia precisava de vendas, caixa e estoque sem pagar um SaaS.",
         outcome: "Um PDV PWA local-first em React, Node e PostgreSQL.",
       },
@@ -274,22 +280,22 @@ export const PROJECT_OVERRIDES = {
   AhorrAR: {
     title: "AhorrAR",
     description:
-      "Live price comparison across Argentine stores: ranked real offers with confirmed shipping (Scrapling, Express, React).",
+      "Argentine supermarket prices scraped live, ranked and verifiable.",
     problem: "Grocery prices scattered across store sites.",
     outcome: "A live ranking with confirmed shipping.",
     imgSrc: "/ahorrar.webp",
     alt: "AhorrAR price comparison landing page screenshot",
-    tags: ["React", "TypeScript", "Express"],
+    tags: ["React", "TypeScript", "Express", "Scrapling"],
     i18n: {
       es: {
         description:
-          "Comparación de precios en vivo entre comercios argentinos: ofertas reales ordenadas y envío confirmado (Scrapling, Express, React).",
+          "Precios de supermercados argentinos scrapeados en vivo, ordenados y verificables.",
         problem: "Los precios de los supermercados argentinos están dispersos entre sitios.",
         outcome: "Un ranking en vivo con el envío confirmado.",
       },
       pt: {
         description:
-          "Comparação de preços ao vivo entre lojas argentinas: ofertas reais ordenadas e frete confirmado (Scrapling, Express, React).",
+          "Preços de supermercados argentinos raspados ao vivo, ordenados e verificáveis.",
         problem: "Os preços dos mercados argentinos estão espalhados entre sites.",
         outcome: "Um ranking ao vivo com o frete confirmado.",
       },

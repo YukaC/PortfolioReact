@@ -26,19 +26,23 @@ const WORDMARK = "CIUCANI";
 const clamp01 = (value) => Math.min(1, Math.max(0, value));
 
 /**
- * The copyright year, as a constant instead of `new Date().getFullYear()`.
+ * The copyright year the prerendered HTML carries.
  *
- * This page is prerendered and revalidated every 6 h, and the footer is a
- * Client Component: the server computed the year at build time and the browser
- * recomputed it at hydration, so on 1 January the two disagreed for up to six
- * hours — a hydration mismatch and a visible "© 2025" under a page built in
- * 2026. A constant is the same string in the HTML and in the client bundle.
- *
- * It is the year the served snapshot belongs to (`generatedAt` in
- * `src/data/pinned-projects.json`): bump it with the first refresh of a new
- * year, in the same commit that moves the snapshot.
+ * The footer prints the current year, and it is a Client Component inside a
+ * page that is prerendered and revalidated every 6 h: asking
+ * `new Date().getFullYear()` on both sides made the build-time and the browser
+ * value disagree for up to six hours on 1 January — a hydration mismatch and a
+ * visible "© 2025" under a page built in 2026. So the server keeps answering
+ * with the year the served snapshot belongs to (`generatedAt` in
+ * `src/data/pinned-projects.json`: bump it with the first refresh of a new
+ * year, in the same commit that moves the snapshot) and the client answer is
+ * the current year, which lands as a post-hydration update instead of a
+ * mismatch.
  */
 const COPYRIGHT_YEAR = 2026;
+
+const currentYear = () => new Date().getFullYear();
+const buildYear = () => COPYRIGHT_YEAR;
 
 /**
  * "Is a script actually running?" — the honest answer for a control only a
@@ -66,6 +70,12 @@ const Footer = () => {
   // footer is about to be seen. The stylesheet starts on the system serif and
   // `is-serif` switches the family, which is what makes the browser fetch it.
   const [serif, setSerif] = useState(false);
+  // The year the reader sees: the client's own, once hydration is done.
+  const year = useSyncExternalStore(
+    subscribeToNothing,
+    currentYear,
+    buildYear,
+  );
   // Bebop is a script. The tagline is a button only in a document that can run
   // one; server-rendered and scriptless it stays the sentence it looks like, so
   // it is not a focusable control that cannot answer (audit.md §10 P1-7).
@@ -308,7 +318,7 @@ const Footer = () => {
           </nav>
 
           <p className="text-right text-sm text-dim max-wide:text-left">
-            {t("footer.copyright", { year: COPYRIGHT_YEAR })}
+            {t("footer.copyright", { year })}
           </p>
         </div>
       </div>

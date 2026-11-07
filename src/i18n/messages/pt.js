@@ -1,5 +1,5 @@
 /**
- * Brazilian Portuguese copy (neutral register).
+ * Brazilian Portuguese copy (neutral register), a translation of `es.js`.
  *
  * Any key missing here falls back to the English dictionary — that fallback is
  * explicit in `getMessages`, never silent in the components.
@@ -9,9 +9,14 @@
  */
 const pt = {
   meta: {
-    title: "Agustín Ciucani — Desenvolvedor full-stack em Buenos Aires",
+    // Uma tradução de `es.js`, que carrega as strings do brief na íntegra (S7).
+    // `ogTitle`/`ogDescription` são o par mais curto do card social.
+    title: "Agustín Ciucani · Desenvolvedor full-stack em Buenos Aires",
     description:
-      "Desenvolvedor full-stack em Buenos Aires. Levo produto React e Next.js do painel ao deploy: PWAs, painéis e as APIs por trás deles.",
+      "Desenvolvedor full-stack em Buenos Aires. Apps web, painéis e PWAs com React, Next.js, Node e Python. Disponível para freelance e tempo integral.",
+    ogTitle: "Agustín Ciucani · Desenvolvedor full-stack",
+    ogDescription:
+      "Desenvolvo seu software de ponta a ponta. React, Next.js, Node e Python.",
     imageAlt:
       "Retrato de Agustín Ciucani, desenvolvedor full-stack em Buenos Aires",
   },
@@ -38,24 +43,31 @@ const pt = {
   },
   hero: {
     status: "Disponível para freelance e tempo integral",
-    title: "Desenvolvo seu software,\nde ponta a ponta",
-    accent: "software",
+    // O título é o nome, com o cargo como segunda linha (dentro do h1).
+    name: "Agustín Ciucani",
+    role: "desenvolvedor full-stack",
+    // O subtítulo: uma frase, com o trecho final em destaque.
+    title: "Desenvolvo seu software de ponta a ponta.",
+    accent: "de ponta a ponta.",
     lead:
-      "Sou Agustín Ciucani, desenvolvedor full-stack em Buenos Aires. Construo produtos principalmente com React e Next.js, mas me adapto à stack que for preciso. Do visual ao servidor.",
+      "Moro em Coronel Dorrego, Buenos Aires. Faço interfaces e painéis com React, Next.js e Tailwind, e os backends que os sustentam com Node ou Flask sobre PostgreSQL.",
     seeWork: "Ver projetos",
-    getInTouch: "Vamos conversar",
+    getInTouch: "Me escreve",
     stackLabel: "Stack",
-  },
-  marquee: {
-    traits: ["Painéis", "APIs", "PWAs", "React", "Next.js", "Postgres"],
+    focus: [
+      "Interfaces",
+      "Painéis",
+      "PWAs",
+      "APIs",
+      "Acessível",
+      "Responsivo",
+    ],
   },
   work: {
-    eyebrow: "Trabalhos selecionados",
-    title: "Demos que funcionam, não maquetes",
-    accent: "maquetes",
-    lead: "Painéis, apps e ferramentas. Cada um com seu código-fonte.",
-    demoNotice:
-      "Cada link de \"Ver demo\" abre uma demo: uma versão de amostra que funciona, não o deploy de produção do projeto.",
+    eyebrow: "Projetos",
+    title: "O que venho construindo",
+    accent: "construindo",
+    lead: "Cada um tem demo com dados de exemplo e o código no GitHub.",
     filterLabel: "Filtrar projetos",
     filters: {
       all: "Todos",
@@ -69,45 +81,60 @@ const pt = {
     github: "GitHub",
     githubProfile: "Perfil no GitHub",
     repoAria: "{title} no GitHub",
-    demoAria: "{title} — ver demo",
+    demoAria: "Ver demo de {title}",
   },
   about: {
     eyebrow: "Sobre mim",
-    title: "Como eu trabalho: uma pessoa, o ciclo completo",
-    accent: "completo",
+    title: "Da oficina ao código",
+    accent: "código",
     statement:
-      "Levo interfaces, painéis e PWAs do brief ao deploy em React e Next.js: front, API e o servidor onde rodam.",
+      "Antes de programar trabalhei como operário metalúrgico, fazendo controle de qualidade sob normas como a ISO 9001, numa oficina mecânica e como repositor. Depois comecei o tecnólogo em programação na UTN de Bahía Blanca e terminei na UPSO. O App Despensa saiu desse caminho: estoque e caixa eu já conhecia do outro lado do balcão.",
     portraitAlt: "Retrato de {name}",
     role: "Desenvolvedor full-stack",
     socialAria: "{name} (abre em uma nova aba)",
     workTitle: "Como eu trabalho",
-    introStrong: "Trabalho em produção com React, Next.js e Tailwind.",
-    introRest: "Acessível, responsivo e previsível onde previsível é o certo.",
-    offClock: "Fora do horário: música, um Ford Fiesta 95 e o violão.",
+    workP1:
+      "Me importa que a interface responda rápido e se explique sozinha. Agora estou focado em levar meus projetos a um nível profissional e em dar o salto para o meu primeiro trabalho em TI.",
+    workP2: "Fora do computador: violão, música e MUITO mate.",
     skillsLabel: "Ferramentas",
     source: "Ver o código",
     educationTitle: "Formação",
+    // As mesmas quatro entradas de `EDUCATION` em src/data/constants.js (o
+    // JSON-LD e o llms.txt leem aquela); esta é a cópia que a linha do tempo
+    // renderiza.
     education: [
       {
+        period: "2024 – 2025",
         title: "Tecnólogo Universitário em Tecnologias da Programação",
         company: "Universidad Provincial del Sudoeste (UPSO)",
-        description:
-          "Desenvolvimento de software, bancos de dados, métodos ágeis e prática de programação.",
+        description: "Desenvolvimento de software, bancos de dados e métodos ágeis.",
       },
       {
+        period: "2021 – 2022",
+        title: "Tecnólogo Universitário em Programação (um ano e meio cursado)",
+        company:
+          "Universidad Tecnológica Nacional, Facultad Regional Bahía Blanca (UTN FRBB)",
+        description: "Primeira etapa do curso, que terminei na UPSO.",
+      },
+      {
+        period: "2018 – 2020",
         title: "Técnico em Informática Pessoal e Profissional",
-        company: "EEST N°1 / Instituto San José",
-        description:
-          "Fundamentos de programação, redes, hardware e suporte técnico.",
+        company: "Instituto San José",
+        description: "Programação, redes, hardware e suporte.",
+      },
+      {
+        period: "2014 – 2017",
+        title: "Eletrônica",
+        company: "EEST N°1",
       },
     ],
   },
   contact: {
     eyebrow: "Contato",
-    title: "Manda o problema. Eu devolvo o plano.",
-    accent: "plano.",
+    title: "Conta o que você está construindo",
+    accent: "construindo",
     lead:
-      "Freelance ou tempo integral. Com o objetivo, a stack e o prazo já dá para começar.",
+      "Freelance ou tempo integral. Me manda a ideia, a stack e para quando você precisa, e eu respondo como a gente desenvolveria.",
     copy: "Copiar e-mail",
     copied: "Copiado ✓",
     manual: "Selecione acima",
