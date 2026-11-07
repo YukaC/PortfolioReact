@@ -10,7 +10,6 @@ import { DURATION, EASE, STAGGER } from "@/motion/config";
 import { prefersReducedMotion } from "@/motion/prefersReducedMotion";
 import { gsap, registerMotion, ScrollTrigger } from "@/motion/register";
 import {
-  getScrollPosition,
   lockSmoothScroll,
   unlockSmoothScroll,
 } from "@/motion/smoothScroll";
@@ -41,6 +40,11 @@ const coarsePointer = () => {
    requestAnimationFrame. Nothing here delays a write: the pill is placed from
    the scroll handler's cached geometry, and this only re-measures what moved. */
 const NAV_SETTLE_MS = 200;
+/* A flick can end on the boundary between the two pill states, and then the last
+   event carries a value from before the reader arrived. This is how long the state
+   waits for silence before re-reading it: a missed event corrects itself instead of
+   sticking. */
+const STATE_SETTLE_MS = 140;
 
 /**
  * Scroll-spy geometry, in document coordinates.
@@ -225,6 +229,7 @@ const Navbar = () => {
     let isScrolled = null; // last header state written
     let settleFrame = 0; // the pending frame that re-measures
     let settleTimer = 0; // the burst the observer is waiting out
+    let stateTimer = 0; // the settled re-check of the pill's state
     let disposed = false; // `fonts.ready` cannot be unsubscribed
 
     const refreshGeometry = () => {
@@ -282,6 +287,7 @@ const Navbar = () => {
 
     let trigger = null;
     let onScroll = null;
+    let applyState = null;
 
     if (coarsePointer()) {
       /* On a coarse pointer there is no smoothed layer to borrow a trigger from: the
@@ -290,8 +296,14 @@ const Navbar = () => {
          scroll reader and a per-event update that resolves to a value already
          written. Only the boolean is written, and only when it changes; the spy
          resolves against geometry measured on a layout change, never per event. */
-      onScroll = () => {
-        const scrollY = getScrollPosition();
+      /* The state reads the offset the browser reports when the event arrives, never
+         a cached copy: a cache shared with the scroll layer is one frame behind, and a
+         flick that ends exactly on the boundary then leaves the pill solid for good —
+         the 8 nov report, "flick hacia la navbar y queda fijo el color oscuro". The
+         settled re-check on `scrollend` and after 140 ms of silence is what makes a
+         lost or stale event self-correcting rather than sticky. */
+      const applyScrollState = () => {
+        const scrollY = window.scrollY;
         const scrolled = scrollY > 24;
         if (scrolled !== isScrolled) {
           isScrolled = scrolled;
@@ -299,8 +311,15 @@ const Navbar = () => {
         }
         syncSpy(scrollY);
       };
+      onScroll = () => {
+        applyScrollState();
+        if (stateTimer) clearTimeout(stateTimer);
+        stateTimer = window.setTimeout(applyScrollState, STATE_SETTLE_MS);
+      };
       window.addEventListener("scroll", onScroll, { passive: true });
-      onScroll();
+      applyState = applyScrollState;
+      window.addEventListener("scrollend", applyState, { passive: true });
+      applyState();
     } else {
       trigger = ScrollTrigger.create({
         start: 0,
@@ -347,6 +366,11 @@ const Navbar = () => {
     return () => {
       disposed = true;
       layoutObserver.disconnect();
+      if (stateTimer) {
+        clearTimeout(stateTimer);
+        stateTimer = 0;
+      }
+      if (applyState) window.removeEventListener("scrollend", applyState);
       if (onScroll) {
         window.removeEventListener("scroll", onScroll);
       } else {
