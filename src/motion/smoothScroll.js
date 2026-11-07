@@ -174,8 +174,10 @@ function mountScroll() {
 /**
  * The coarse path: one passive listener and no ticker.
  *
- * It keeps the cached position `getScrollPosition()` answers from and the lock
- * the drawer calls, but not the `fling` latch: on a coarse pointer nothing reads
+ * It keeps the cached position `getScrollPosition()` answers from, but not the
+ * `fling` latch. The drawer's lock here is the `overflow: hidden` the Navbar puts
+ * on <html> and <body>: `lockSmoothScroll()` only stops Lenis, which this path
+ * never mounts. And no latch because on a coarse pointer nothing reads
  * the class (the reveal never hides there), and each toggle on <html> re-styled
  * 418 elements, ~20 ms on the moto g82, at the start and end of every flick.
  */
