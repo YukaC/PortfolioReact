@@ -173,10 +173,10 @@ test("the strike is one slow bell, and reduced motion still drops it", () => {
   assert.ok(rest, "no rest stops in @keyframes flare");
   assert.ok(Number(rest[1]) > 0, "the field must never go fully dark");
   // The crest is a bloom inside a slow tide, never a flat window: the tide stop
-  // (0.16 at 38 %/62 %) is what lets the motion stay slow while only a few dots
+  // (0.16 at 33 %/67 %) is what lets the motion stay slow while only a few dots
   // are bright at once (L10).
-  const tide = /@keyframes flare\s*\{[\s\S]*?38%,\s*62%\s*\{\s*opacity:\s*([\d.]+)/.exec(bare);
-  assert.ok(tide, "no tide stops in @keyframes flare (38 %/62 %)");
+  const tide = /@keyframes flare\s*\{[\s\S]*?33%,\s*67%\s*\{\s*opacity:\s*([\d.]+)/.exec(bare);
+  assert.ok(tide, "no tide stops in @keyframes flare (33 %/67 %)");
   assert.ok(
     Number(tide[1]) > Number(rest[1]) && Number(tide[1]) < 0.25,
     `the tide stop must sit between the rest and the crest, saw ${tide[1]}`,

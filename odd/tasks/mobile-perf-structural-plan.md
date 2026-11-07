@@ -38,6 +38,8 @@ píxeles de decode por portada). Falta la traza de Fase 0 para decidir entre ras
 
 **Medido (7 nov).** Núcleo pálido de la lattice movido de 96 px (entre dos puntos) a 24 px (sobre un punto). Cadencia: teléfono 58 fps en scroll tranquilo, pero Brave da 60 Hz aunque la pantalla esté fija en 120; PC 1920×1080 60/60 con mouse y scroll. Carga en el g82 por LAN: LCP 364-444 ms en frío, TBT ~0.
 
+**Tempo de los destellos (7 nov).** Pedido: punto medio entre el deploy (shader, ~10 destellos/s a 1920×1080) y hoy (6,4/s), respetando 128 BPM. `--breath` 12 → 10 tiempos (4,69 s): 7,7/s en desktop, 1,28/s en el teléfono; se cede "compases enteros", el pico sigue en un tiempo. Después: "se encienden y se apagan muy rápido" → cresta 38–62 % → 33–67 % (rampas 0,56 → 0,8 s); encendidos en promedio 6,9 → 9,7 de 36, topes del test 20 % → 30 % (media) y 35 % → 50 % (instante).
+
 
 **Inferido.** El cuello está en raster/GPU, no en el hilo principal. A DPR 3 el viewport
 son 1053×2244 px de dispositivo (2,36 Mpx) y cada capa a pantalla completa —campo,
