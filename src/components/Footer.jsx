@@ -8,6 +8,7 @@ import {
   useSyncExternalStore,
 } from "react";
 import dynamic from "next/dynamic";
+import { BUILD_YEAR, currentYear } from "@/lib/copyright-year";
 import { SOCIAL_LINKS } from "@/data/constants";
 import { useBebopAnimation } from "@/hooks/useBebopAnimation";
 import { useT } from "@/i18n/LocaleProvider";
@@ -28,21 +29,13 @@ const clamp01 = (value) => Math.min(1, Math.max(0, value));
 /**
  * The copyright year the prerendered HTML carries.
  *
- * The footer prints the current year, and it is a Client Component inside a
- * page that is prerendered and revalidated every 6 h: asking
- * `new Date().getFullYear()` on both sides made the build-time and the browser
- * value disagree for up to six hours on 1 January — a hydration mismatch and a
- * visible "© 2025" under a page built in 2026. So the server keeps answering
- * with the year the served snapshot belongs to (`generatedAt` in
- * `src/data/pinned-projects.json`: bump it with the first refresh of a new
- * year, in the same commit that moves the snapshot) and the client answer is
+ * Both answers live in `src/lib/copyright-year.js` (and are pinned in its test):
+ * the server keeps answering with the year the served snapshot belongs to
+ * (`generatedAt` in `src/data/pinned-projects.json`) and the client answer is
  * the current year, which lands as a post-hydration update instead of a
- * mismatch.
+ * hydration mismatch on 1 January. See that module for the why.
  */
-const COPYRIGHT_YEAR = 2026;
-
-const currentYear = () => new Date().getFullYear();
-const buildYear = () => COPYRIGHT_YEAR;
+const buildYear = () => BUILD_YEAR;
 
 /**
  * "Is a script actually running?" — the honest answer for a control only a

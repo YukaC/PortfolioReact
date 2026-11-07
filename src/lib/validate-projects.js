@@ -492,7 +492,7 @@ export function formatErrors(errors) {
 export const SNAPSHOT_PROVENANCE = [
   "Generated file — do not edit by hand.",
   "Every entry is a pinned repository from the profile, with copy and screenshots from PROJECT_OVERRIDES in src/data/projects.js; the file was first seeded from that same set.",
-  "The projects-sync CI job runs scripts/sync-projects.mjs every 6 h, and every network refresh must pass validate() before it can touch this file.",
+  "The projects-sync CI job runs scripts/sync-projects.mjs every 6 h, and the documented manual refresh is `node scripts/sync-projects.mjs --public` (README); every network refresh, scheduled or local, must pass validate() before it can touch this file.",
 ].join(" ");
 
 /** Deterministic bytes for a snapshot: fixed key order, 2-space JSON, one newline. */

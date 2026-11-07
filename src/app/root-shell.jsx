@@ -2,7 +2,7 @@ import "lenis/dist/lenis.css";
 import "@/styles/globals.css";
 import { Fraunces, Manrope, Space_Grotesk } from "next/font/google";
 import { DEFAULT_LOCALE, normalizeLocale } from "@/i18n/locale";
-import { PERSON_LOCALITY, PERSON_REGION, SITE_URL } from "@/data/constants";
+import { SITE_URL } from "@/data/constants";
 
 const manrope = Manrope({
   subsets: ["latin"],
@@ -68,10 +68,6 @@ const MARK_JS = 'document.documentElement.classList.add("js")';
 export const rootMetadata = {
   metadataBase: new URL(SITE_URL),
   authors: [{ name: "Agustín Ciucani" }],
-  other: {
-    "geo.region": PERSON_REGION,
-    "geo.placename": PERSON_LOCALITY,
-  },
   icons: {
     icon: [
       { url: "/favicon.svg?v=2", type: "image/svg+xml" },
