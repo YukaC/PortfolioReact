@@ -40,6 +40,7 @@ píxeles de decode por portada). Falta la traza de Fase 0 para decidir entre ras
 
 **Tempo de los destellos (7 nov).** Pedido: punto medio entre el deploy (shader, ~10 destellos/s a 1920×1080) y hoy (6,4/s), respetando 128 BPM. `--breath` 12 → 10 tiempos (4,69 s): 7,7/s en desktop, 1,28/s en el teléfono; se cede "compases enteros", el pico sigue en un tiempo. Después: "se encienden y se apagan muy rápido" → cresta 38–62 % → 33–67 % (rampas 0,56 → 0,8 s); encendidos en promedio 6,9 → 9,7 de 36, topes del test 20 % → 30 % (media) y 35 % → 50 % (instante).
 
+**Latch `fling` fuera del camino táctil (7 nov).** Cada toggle en `<html>` recalculaba 418 elementos (~20 ms en el g82) al empezar y terminar el flick, y en táctil nada lo lee. `mountNative` ya no lo llama: recálculos >300 elementos en los flicks 8 → 0. Desktop (Lenis) lo conserva.
 
 **Inferido.** El cuello está en raster/GPU, no en el hilo principal. A DPR 3 el viewport
 son 1053×2244 px de dispositivo (2,36 Mpx) y cada capa a pantalla completa —campo,

@@ -265,3 +265,15 @@ test("a coarse pointer carries no halo, and nothing toggles it", () => {
     "the halo must never be toggled: each toggle repaints the whole page's text mid-flick",
   );
 });
+
+test("the touch scroll path never toggles a class on <html>", () => {
+  // Traced on the moto g82 (testinG82.md): each `fling` toggle on <html> re-styles
+  // every reveal, every heading word and every flare — 418 elements, ~20 ms on the
+  // phone, at the start and at the end of each flick. On a coarse pointer nothing
+  // reads the class (the reveal never hides there), so the native path skips it.
+  const scroll = readFileSync(path.join(ROOT, "src/motion/smoothScroll.js"), "utf8");
+  const start = scroll.indexOf("function mountNative()");
+  const body = scroll.slice(start, scroll.indexOf("\n}\n", start));
+  assert.ok(start >= 0, "mountNative is missing");
+  assert.doesNotMatch(body, /syncFling\(/, "the coarse scroll listener must not run the fling latch");
+});
