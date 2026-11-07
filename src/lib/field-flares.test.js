@@ -561,6 +561,13 @@ test("the lattice is one viewport-sized raster in every state", () => {
   assert.match(rule, /contain:\s*strict/, "the lattice must be contained from the document");
   assert.match(rule, /background-size:\s*192px 192px,\s*48px 48px/, "one shared 48px cell");
   assert.match(rule, /background-position:\s*0 0/, "the tile origin must be pinned at 0 0");
+  // The pale core marks a dot, so its centre is a dot centre (24 + 48n). At the
+  // 192 px tile's 50 % it sat at 96 px, halfway between two dots: a stray white dot.
+  const core = rule.match(/radial-gradient\(circle 2px at (\d+)px (\d+)px/);
+  assert.ok(core, "the pale core must name its centre in px");
+  for (const c of [core[1], core[2]]) {
+    assert.equal((Number(c) - 24) % 48, 0, `the pale core at ${c}px misses the dot centres`);
+  }
   // The shader's grid left the shader in the same change; two lattices never
   // share an origin (§18.2). Named in comments, never defined or called.
   const ether = readFileSync(path.join(ROOT, "src/components/LiquidEther.jsx"), "utf8");

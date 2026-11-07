@@ -1293,7 +1293,7 @@
     /* literal: the drop of pale pink at the dot core is the lattice's own mark,
        somewhere between --color-coral and white; §14.6 keeps it literal. */
     background-image:
-      radial-gradient(circle 2px at 50% 50%, rgb(255 226 228 / 0.9), transparent 100%),
+      radial-gradient(circle 2px at 24px 24px, rgb(255 226 228 / 0.9), transparent 100%),
       radial-gradient(var(--color-coral) 1.5px, transparent 1.7px);
     background-size:
       192px 192px,
