@@ -206,4 +206,14 @@ commits above.
   CV/LinkedIn work — the official technical-degree name, the CV role, the CV entries for
   UTN and the municipal system, and the same handle in GitHub/LinkedIn/CV. Section 8's
   open questions stay open: whether App Despensa also syncs with a server, and the CV
-  skills list.
+  skills list. Those items stay out of this repository.
+- L12 (review): the closed review of the three commits left six non-blocking findings and
+  no correction. Five became work in this follow-up: the leftover `geo.region` /
+  `geo.placename` tags left the root metadata (nothing consumed them and they were the
+  only reason those two imports existed); the About timeline falls back to `EDUCATION`
+  when a locale dictionary loses the array; a test pins the dictionary periods against
+  `EDUCATION` so the duplicated training cannot drift; the footer year answers moved to
+  `src/lib/copyright-year.js` with a test that pins the build year to the snapshot's
+  `generatedAt`; and the snapshot's provenance comment now names the documented manual
+  refresh, regenerated so the committed file matches its generator. The `generatedAt`
+  finding keeps no action: it is the sync's own stamp.

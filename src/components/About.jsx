@@ -5,6 +5,7 @@ import SplitHeading from "@/components/SplitHeading";
 import SwapArrow from "@/components/SwapArrow";
 import AboutScroll from "@/components/AboutScroll";
 import {
+  EDUCATION,
   PERSON_LOCALITY,
   SITE_NAME,
   SKILLS,
@@ -34,10 +35,12 @@ const ABOUT_CODE = `const agustin = {
  * the section reads as one gesture. The portrait lives here now that the hero
  * belongs to the type.
  *
- * The timeline reads `about.education` from the dictionary, not `EDUCATION` from
- * `src/data/constants.js`: the visible range carries an en dash and the fourth
- * entry has no detail line, and the constant is the copy the JSON-LD graph and
- * `llms.txt` publish (it needs the ASCII range the date parser splits).
+ * The timeline prefers `about.education` from the dictionary and falls back to
+ * `EDUCATION` from `src/data/constants.js` when the translated array is missing
+ * or empty, so a locale that lost the array still draws four entries. The
+ * dictionary is the display copy (the visible range carries an en dash and the
+ * fourth entry has no detail line); the constant is the copy the JSON-LD graph
+ * and `llms.txt` publish, and it needs the ASCII range the date parser splits.
  *
  * A Server Component (audit.md §16.2): the statement, the chips, the portrait
  * and the timeline are copy, and all the scroll does is set two custom
@@ -50,9 +53,10 @@ const About = ({ locale = "en" }) => {
   const statement = t("about.statement");
   const statementWords = statement.split(/\s+/);
   const translatedEducation = t("about.education");
-  const educationItems = Array.isArray(translatedEducation)
-    ? translatedEducation
-    : [];
+  const educationItems =
+    Array.isArray(translatedEducation) && translatedEducation.length > 0
+      ? translatedEducation
+      : EDUCATION;
 
   return (
     <section

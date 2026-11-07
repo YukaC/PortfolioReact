@@ -631,6 +631,44 @@ test("the training the graph used to ignore is in it, dated", () => {
   assert.deepEqual(profile.mainEntity, { "@id": `${SITE_URL}/#person` });
 });
 
+/** The three dictionaries, by locale, as the timeline reads them. */
+const DICTIONARIES = { en, es, pt };
+
+/**
+ * A period with the visible en dash flattened and its spacing collapsed, so the
+ * display copy and the machine copy are comparable: `2024 – 2025` and
+ * `2024 - 2025` are the same range.
+ */
+const normalizedPeriod = (period) =>
+  period.replace(/–/g, "-").replace(/\s+/g, " ").trim();
+
+/**
+ * The training is duplicated on purpose and the two copies are pinned together.
+ *
+ * `EDUCATION` in `src/data/constants.js` is the machine copy: the JSON-LD graph
+ * and `llms.txt` publish it, and it needs the ASCII range the date parser splits
+ * on. Each dictionary carries the same four entries as the copy the timeline
+ * renders, with the en dash the reader sees. They drift the moment a school year
+ * moves and only one copy is edited — the timeline then prints one range while
+ * the graph dates another, and nothing in a screenshot shows it. Titles are
+ * translated on purpose and are not compared here.
+ */
+test("the dictionary timeline and EDUCATION carry the same dates", () => {
+  for (const [locale, messages] of Object.entries(DICTIONARIES)) {
+    const entries = messages.about.education;
+    assert.equal(
+      entries.length,
+      EDUCATION.length,
+      `${locale} lists every entry EDUCATION has`,
+    );
+    assert.deepEqual(
+      entries.map((item) => normalizedPeriod(item.period)),
+      EDUCATION.map((item) => normalizedPeriod(item.period)),
+      `${locale} keeps the same ranges, entry by entry`,
+    );
+  }
+});
+
 /**
  * S7's `Person` node, as the brief states it.
  *
