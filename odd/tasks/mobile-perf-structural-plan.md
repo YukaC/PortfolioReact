@@ -16,6 +16,9 @@ a través. Esa es la firma de *checkerboarding* — el compositor llega antes qu
 `RasterTask` / `GpuRasterBuffer::Playback` (87-88 ms) con la CPU 66 % ociosa: no hay JS
 caliente.
 
+**Corregido (9 nov).** La lectura de arriba estaba mal: el sampler mide en el hilo principal, donde `.is-in` ya llegó; el compositor scrollea por delante con tiles pintados cuando esos nodos todavía eran `opacity: 0`. Reproducido en Chromium (gesto sintético + CPU 8× + screencast): sin el fix hay pantallas de sólo fondo, con el fix no. En puntero grueso el reveal ya no oculta nada (`globals.css`, bloque `pointer-coarse` tras `.is-in .w > span`); desktop conserva la entrada.
+
+
 **Inferido.** El cuello está en raster/GPU, no en el hilo principal. A DPR 3 el viewport
 son 1053×2244 px de dispositivo (2,36 Mpx) y cada capa a pantalla completa —campo,
 lattice, grain, contenido, header— se dibuja en cada frame.

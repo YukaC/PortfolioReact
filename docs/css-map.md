@@ -28,11 +28,13 @@ phone stayed invisible for 13.7 s in dev (P0-1).
 **Reworked in T12 (owner report: "el reveal sigue deficiente").** The entrance was
 `opacity + translateY(28px) + blur(6px)` over 1.1 s with a 70 ms per-word
 stagger. It is now `opacity + translateY(16px)` over 0.45 s with a 45 ms
-stagger, and no blur at all. On a coarse pointer it is `translateY(6px)` with no
-stagger: a finger scrolls through the entrance instead of watching it, so the rise
-has to be small enough that several blocks entering at once do not read as the
-page wobbling (`R3`-era phone report, 6 nov 2026 — the reveal was the only
-surviving anomaly once the meter's own sampling lag was fixed):
+stagger, and no blur at all. On a coarse pointer there is no entrance at all: an
+Android fling scrolls on the compositor thread while the main thread (and the
+observer) is screens behind, so the tiles it showed for unrevealed nodes were
+empty and the reader saw only the field (phone report, 9 nov 2026). A finger
+scrolls through the entrance instead of watching it, so unrevealed content is
+simply visible there. Before that it was a `translateY(6px)` rise (`R3`-era phone
+report, 6 nov 2026):
 
 - `filter: blur()` on a reveal is the single most expensive thing one entrance
   asks of a phone GPU — a mid-range Android renders it smeared for seconds,
