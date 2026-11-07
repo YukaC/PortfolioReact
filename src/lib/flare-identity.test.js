@@ -111,24 +111,33 @@ test("the grain keeps its tile and its weight", () => {
   assert.match(grain, /position:\s*absolute/, "the grain must still cover the field");
 });
 
-test("a coarse pointer drops the grain's blend", () => {
+test("a coarse pointer hides the grain outright", () => {
   // `pointer-coarse` is the variant, not a hand-written query: the repo's one
   // vocabulary of pointer states (§13.3 S5), and it is the condition the owner
   // asked for ("en puntero grueso").
+  //
+  // The blend override (`mix-blend-mode: normal`) was the T6 answer, and the
+  // checker-counting harness (.perf/flick-checker.mjs, the compositor's own
+  // "AppendQuads checkerboard") says it is not enough under raster pressure:
+  // the grain's viewport-sized turbulence tile alone accounts for 3321 of 8194
+  // checker frames and 59 % of the missing tiles, because it is a full-viewport
+  // source-over paint on the one fixed layer that must stay resident. At 0.06
+  // over a navy field at DPR 3 the grain is invisible anyway, so on a coarse
+  // pointer it goes: 6589 -> 1425 checker frames with the flares also stopped.
   const coarse = coarseBlock(grain);
-  assert.notEqual(coarse, "", ".field-grain has no pointer-coarse block: the blend is still paid");
+  assert.notEqual(coarse, "", ".field-grain has no pointer-coarse block: the tile is still painted");
   assert.match(
     coarse,
-    /mix-blend-mode:\s*normal/,
-    "the coarse-pointer grain must fall back to source-over",
+    /display:\s*none/,
+    "the coarse-pointer grain must not be painted at all",
   );
-  // Nothing else may change in that block: this is a compositing fix, and a
-  // second declaration there would be an invitation to hide the grain instead.
+  // Nothing else may change in that block: the grain is gone there, so there is
+  // no blend left to override.
   const declarations = [...coarse.matchAll(/([a-z-]+)\s*:/g)].map((match) => match[1]);
   assert.deepEqual(
     declarations,
-    ["mix-blend-mode"],
-    `the coarse-pointer block must declare mix-blend-mode only, saw ${declarations.join(", ")}`,
+    ["display"],
+    `the coarse-pointer block must declare display only, saw ${declarations.join(", ")}`,
   );
 });
 
@@ -179,6 +188,25 @@ test("the strike is one slow bell, and reduced motion still drops it", () => {
   assert.notEqual(at, -1, "no reduced-motion block");
   const reduced = blockAt(bare.indexOf("{", at));
   assert.match(reduced, /\.flare\s*\{\s*display:\s*none/, "reduced motion must still drop the strikes");
+});
+
+test("a coarse pointer keeps the flare breath", () => {
+  // The breath was stopped on a coarse pointer under a desktop harness that starved
+  // GPU memory to 4 MB. Traced on the phone itself (testinG82.md), the animated
+  // strikes leave a flick's missing tiles unchanged, as the table above already
+  // said for `animation: none`; the grain was the cost. The phone gets the bell.
+  const flares = ruleFor(".flare");
+  assert.notEqual(flares, "", "no .flare rule: the identity layer is missing");
+  assert.doesNotMatch(
+    coarseBlock(flares),
+    /animation:\s*none/,
+    "a coarse pointer must keep the flare animation the desktop runs",
+  );
+  assert.match(
+    flares,
+    /opacity:\s*var\(--flare-rest/,
+    "a still flare must show its rest value, never the keyframe's first frame",
+  );
 });
 
 test("the flares stop painting while the reader is flinging", () => {
