@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { BREAKPOINT, isAtMost } from "@/lib/breakpoints";
 import { MOTION_MEDIA } from "@/motion/config";
 import { damp } from "@/motion/damp";
 import {
@@ -81,19 +82,46 @@ const CHANNELS = {
   my: { prop: "--my", precision: 1, selectors: [".field-glow"] },
 };
 
+/**
+ * Which channels have a reader right now.
+ *
+ * A custom property written on `.hero-copy` is inherited by every split word, so a
+ * channel nobody reads there still dirties the whole hero subtree on every scroll
+ * event. The binding is therefore resolved against the conditions the stylesheet
+ * actually uses — and they are not the same one:
+ *
+ *   --scy  `.hero-copy` stops reading it under `max-wide` (globals.css §hero), the
+ *          split words `.w` only under `pointer-coarse`. A phone at 390 px reads
+ *          neither; a narrow *desktop* window still drifts, by `0.056 × the offset`
+ *          (`.w`'s `--k` at the fourth word, -0.014 each), which is 22 px at 400 px
+ *          of scroll.
+ *   --hf   only `.hero-copy`'s `opacity` reads it, and `max-wide` pins that to 1.
+ *   --p    not listed: the progress bar reads it at every width.
+ */
+const readsAt = (wide, fine) => ({ scy: wide || fine, hf: wide });
+
 /** Readers, resolved once per loop start: one query per channel, deduped. */
-const bindChannels = () =>
-  Object.fromEntries(
-    Object.entries(CHANNELS).map(([name, { prop, precision, selectors }]) => {
-      const elements = new Set();
-      for (const selector of selectors) {
-        for (const element of document.querySelectorAll(selector)) {
-          elements.add(element);
+const bindChannels = (fine) => {
+  /* Asked through `src/lib/breakpoints.js`, the one place a script reads a width:
+     `isAtMost(wide)` is the `max-wide` condition the stylesheet switches at, so the
+     channels and the CSS that reads them can never disagree. A rotation, a resize
+     or a pointer change re-binds through `scheduleMeasure(true)` and
+     `bindPointer()`. */
+  const reads = readsAt(!isAtMost(BREAKPOINT.wide), fine);
+  return Object.fromEntries(
+    Object.entries(CHANNELS)
+      .filter(([name]) => reads[name] !== false)
+      .map(([name, { prop, precision, selectors }]) => {
+        const elements = new Set();
+        for (const selector of selectors) {
+          for (const element of document.querySelectorAll(selector)) {
+            elements.add(element);
+          }
         }
-      }
-      return [name, { prop, precision, elements: [...elements], last: null }];
-    }),
+        return [name, { prop, precision, elements: [...elements], last: null }];
+      }),
   );
+};
 
 /**
  * One write per channel that actually changed, at the precision the CSS was
@@ -101,6 +129,8 @@ const bindChannels = () =>
  * recalculating style 60 times a second and lets the loop end silently.
  */
 const write = (channel, value) => {
+  // A channel that is not bound at this width has nothing to write to.
+  if (!channel) return;
   const text = value.toFixed(channel.precision);
   if (text === channel.last) return;
   channel.last = text;
@@ -121,7 +151,8 @@ const write = (channel, value) => {
 export function useFieldMotion() {
   useEffect(() => {
     const root = document.documentElement;
-    let channels = bindChannels();
+    const pointerQuery = window.matchMedia(MOTION_MEDIA.finePointer);
+    let channels = bindChannels(pointerQuery.matches);
 
     // Viewport and scroll extent are measured on a resize and on a real layout
     // change, never inside the frame: reading them per frame forced layout.
@@ -235,6 +266,10 @@ export function useFieldMotion() {
     const bindPointer = (fine) => {
       if (fine === pointerBound) return;
       pointerBound = fine;
+      /* The split words are the other reader of `--scy` and they stop with the
+         pointer, so the channel is re-bound with it instead of staying written for
+         a subtree that no longer moves. */
+      channels = bindChannels(fine);
       if (fine) {
         window.addEventListener("pointermove", onPointerMove, { passive: true });
         return;
@@ -257,7 +292,7 @@ export function useFieldMotion() {
         measure();
         if (pendingRebind) {
           pendingRebind = false;
-          channels = bindChannels();
+          channels = bindChannels(pointerQuery.matches);
         }
         // The extent and the viewport changed: the scroll channels are wrong
         // even though nobody scrolled.
@@ -277,8 +312,6 @@ export function useFieldMotion() {
         : null;
 
     const onResize = () => scheduleMeasure(true);
-    const pointerQuery = window.matchMedia(MOTION_MEDIA.finePointer);
-
 
     const stop = () => {
       cancelAnimationFrame(raf);

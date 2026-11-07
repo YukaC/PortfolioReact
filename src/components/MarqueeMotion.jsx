@@ -5,6 +5,7 @@ import {
   prefersReducedMotion,
   subscribeReducedMotion,
 } from "@/motion/prefersReducedMotion";
+import { getScrollPosition } from "@/motion/smoothScroll";
 
 const BASE_SPEED = 48;
 const SPEED_FROM_SCROLL = 0.5;
@@ -115,7 +116,11 @@ const MarqueeMotion = () => {
       const delta = lastTime ? Math.min(64, time - lastTime) : 16;
       lastTime = time;
 
-      const scrollY = window.scrollY;
+      /* The position comes from the scroll layer, not from the document: on a
+         coarse pointer `window.scrollY` here was a second read of a value one
+         passive listener had already cached for this frame, and this loop runs
+         for as long as the band is on screen. */
+      const scrollY = getScrollPosition();
       velocity +=
         (((scrollY - lastScroll) / Math.max(1, delta)) * 1000 - velocity) * 0.09;
       lastScroll = scrollY;
@@ -145,7 +150,7 @@ const MarqueeMotion = () => {
       running = entry.isIntersecting;
       if (running && !frame) {
         lastTime = 0;
-        lastScroll = window.scrollY;
+        lastScroll = getScrollPosition();
         frame = requestAnimationFrame(loop);
       }
     });
@@ -154,7 +159,7 @@ const MarqueeMotion = () => {
       // A track that restarts must not inherit the scroll velocity it measured
       // before the OS switch asked it to stop.
       velocity = 0;
-      lastScroll = window.scrollY;
+      lastScroll = getScrollPosition();
       observer.observe(root);
     };
 
