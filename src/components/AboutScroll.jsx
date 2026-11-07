@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { prefersReducedMotion, hasFinePointer } from "@/motion/prefersReducedMotion";
+import { prefersReducedMotion } from "@/motion/prefersReducedMotion";
 import { registerMotion, ScrollTrigger } from "@/motion/register";
 
 const clamp01 = (value) => Math.min(1, Math.max(0, value));
@@ -19,13 +19,9 @@ const clamp01 = (value) => Math.min(1, Math.max(0, value));
  * The rules it keeps, unchanged from when this lived inside `About`:
  *   • nothing runs under reduced motion — CSS leaves the statement lit and the
  *     rail settled, which is the state the no-script stylesheet promises;
- *   • nothing runs on a coarse pointer either. Two scrubs that write per frame to
- *     light words and draw a rail are a desktop reading gesture; a phone scrolls
- *     with its thumb and gets the finished state instead. That is not only taste:
- *     the drawn rail was this section's entire frame bill (p95 50.1 ms against
- *     33.4 with the rail static, DPR 3, software raster), and the stylesheet's
- *     `pointer-coarse` block is what owes the lit statement and the drawn rail
- *     once this returns early;
+ *   • a coarse pointer runs both scrubs too. They were cut on a software-raster
+ *     emulation (p95 50.1 against 33.4 ms); traced on the real phone (moto g82,
+ *     testinG82.md) they leave the missing tiles of a flick within noise;
  *   • the viewport height is read once per resize, not once per scrub frame;
  *   • a frame that changes nothing writes nothing, so a still page costs no
  *     style invalidation.
@@ -36,7 +32,6 @@ const AboutScroll = () => {
     const timeline = document.querySelector(".timeline");
     if (!statement || !timeline) return undefined;
     if (prefersReducedMotion()) return undefined;
-    if (!hasFinePointer()) return undefined;
 
     registerMotion();
 
