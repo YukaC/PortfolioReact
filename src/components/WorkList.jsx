@@ -121,7 +121,12 @@ const WorkRow = ({ project, index, labels, href }) => {
             {project.title}
           </Link>
         </h3>
-        <p className="work-problem">{project.problem ?? project.description}</p>
+        {/* The row prints the card's own line — the project's description — and
+            falls back to the problem statement only when there is none. The
+            problem/outcome pair is the project page's copy, not the list's. */}
+        <p className="work-problem">
+          {project.description ?? project.problem}
+        </p>
         {project.tags?.length ? (
           <p className="work-tags">{project.tags.join(" · ")}</p>
         ) : null}
@@ -237,13 +242,6 @@ const WorkList = ({ projects, locale = "en" }) => {
             {t("work.lead")}
           </Reveal>
         </div>
-
-        {/* Said once, above the list, in every language: these are demos, not
-            client systems. Saying it here keeps each card free to describe the
-            build without repeating the disclaimer. */}
-        <Reveal as="p" className="work-note" delayMs={200}>
-          {t("work.demoNotice")}
-        </Reveal>
 
         <WorkFilters rows={rows} previewLayers={previewLayers} />
 
