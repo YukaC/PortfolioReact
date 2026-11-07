@@ -20,6 +20,8 @@ caliente.
 
 **Corregido (traza de pintado del flick).** `node .perf/flick-trace.mjs` contaba el repintado por nodo durante los dos gestos: `#document` 60 veces y `HEADER.site-header` 55. El dueño de esas pintadas era la transición del pill del nav — `background-color`, `border-color` y `box-shadow` sobre un elemento `fixed`, o sea medio segundo repintando la capa raíz completa justo mientras el flick la necesita para rasterizar lo que viene. El relleno pasa a un `::before` y entre los dos estados sólo cambia su `opacity` (compuesta, con `will-change` para que la promoción no rasterice al empezar el fade): 7 pintadas de `#document` y 0 del header, mismas medidas que la ablación `.nav-pill{visibility:hidden}`. En reposo y con la página movida el pixel box y el color del pill son los mismos (sonda de estilo computado + diff de capturas: 97 % de los píxeles idénticos, el resto ±1-6 niveles en los bordes).
 
+**Corregido (10 nov, campo en puntero grueso).** `.flare` no anima y `.field-grain` no se pinta en puntero grueso (`animation: none`, `display: none`): el campo fijo se rasteriza una vez y no cambia más. Medido con `.perf/flick-checker.mjs` (412×915 @2.625, GPU, 1 raster thread, 4 MB, throttle 20×, cinco flicks de 9000 px a 30000 px/s, 3 corridas): 6589 → 1425 checkerboards (−78 %); la inyección equivalente dio 1425 antes de tocar el CSS. El latch `html.fling` no sirve para esto: necesita dos eventos de scroll a menos de 250 ms en el hilo principal, que es justo el hilo que se queda corto en un flick.
+
 
 **Inferido.** El cuello está en raster/GPU, no en el hilo principal. A DPR 3 el viewport
 son 1053×2244 px de dispositivo (2,36 Mpx) y cada capa a pantalla completa —campo,

@@ -151,6 +151,36 @@ hand-tuned cycles of 8.7–9.3 s; it now carries one, and it is the song's:
   one flat wash. The pattern repeats every breath by design — that is what being in
   tempo means.
 
+**A coarse pointer stops the field dead** (owner report, 9 nov 2026: a phone fling
+shows the fixed field and none of the content). The cause is raster/GPU-memory
+pressure, not a hidden DOM node, so the answer is fewer resident pixels on the one
+fixed layer, and a fixed layer is only rastered once if nothing in it animates:
+
+- `.flare` keeps its breath on a coarse pointer. It was stopped here first, but the
+  4 MB harness below measures GPU-memory starvation the phone does not have: traced
+  on the moto g82 itself (`testinG82.md`), the animated strikes leave a flick's
+  missing tiles unchanged (~105 either way), so the phone runs the bell again;
+- `.field-grain` is `display: none` there, replacing T6's `mix-blend-mode: normal`.
+  The blend fix was right and not enough: the source-over tile is still a
+  full-viewport paint on the resident layer, and the checkerboard harness
+  (`.perf/flick-checker.mjs`, counting the compositor's own
+  `TileBasedLayerImpl::AppendQuads checkerboard` events) puts it at **3321 of 8194**
+  checker frames and 59 % of the missing tiles. 0.06 of 160 px noise over navy is
+  invisible at DPR 3, so this costs nothing anyone can see;
+- (historical, desktop harness — see the caveat on the flares above) measured on
+  the prod build at 412×915 @DPR 2.625, GPU raster, 1 raster thread,
+  4 MB GPU budget, 20× throttle, five 9000 px flings at 30000 px/s, three runs:
+  **6589 → 1425** checkerboard draws (−78 %), and the injected equivalent
+  (`.flare { animation: none }` + `.field-grain { display: none }`) measured 1425
+  before the sheet changed.
+
+The `html.fling` latch that used to pause the strikes is not a phone mechanism and
+the phone no longer depends on it. It needs two scroll events less than
+`FLING_GAP_MS` (250 ms) apart on the **main thread**, and during a phone fling the
+main thread is the starved thing, so the latch never fires under load (measured:
+`.perf/flick-checker.mjs` and the latch probe). It stays for wheel and trackpad
+devices, where the main thread is not the bottleneck.
+
 `src/lib/field-flares.js` holds the table and its generator notes;
 `src/lib/field-flares.test.js` pins the contract: one bell whose window is half the
 cycle, a crest between 0.5 and 0.7 (the sheet ships 0.6) at every density band,

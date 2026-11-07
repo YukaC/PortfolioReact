@@ -1251,14 +1251,15 @@
 
     /* A blend reads its backdrop, so this tile turns the whole field group into
        one raster unit and every frame the strikes move re-rasterises it through
-       a raster worker. On a coarse pointer — the device where that is the frame
-       budget — the grain keeps its tile and its 0.06 and drops to source-over:
-       measured on the owner's phone with the six strikes still painting and
-       animating, p95 108.9 → 83.7 ms and long tasks 3 → 0 (§T6, `.perf/phone/`).
-       Promotion (`will-change`), density and peak opacity were all measured too
-       and bought nothing: it was never the flares' own paint. */
+       a raster worker (hence `normal` on a coarse pointer in T6). The
+       checkerboard harness then showed the source-over tile is still the single
+       biggest thing the field asks for — 3321 of 8194 checker frames, 59 % of
+       the missing tiles — because it is a full-viewport paint on the fixed layer
+       that has to stay resident, and 0.06 of 160 px noise over navy is invisible
+       at DPR 3. So on a coarse pointer it is not painted at all; the desktop
+       keeps the grain. Numbers in docs/css-map.md §identity. */
     @variant pointer-coarse {
-      mix-blend-mode: normal;
+      display: none;
     }
   }
 
@@ -1342,18 +1343,20 @@
       );
     opacity: var(--flare-rest, 0.02);
     animation: flare var(--breath) var(--ease-in-out-field) var(--delay, 0s) infinite;
+
+    /* A coarse pointer keeps the breath: traced on the phone the animated strikes
+       leave a flick's missing tiles unchanged (testinG82.md). The grain was the
+       field's cost, not this. */
   }
 
-  /* While the reader is flinging, the field stops painting. The flares are 36
-     elements on a FIXED, viewport-sized layer, each one breathing opacity and
-     scale for its whole life: that is the largest per-frame raster this page
-     asks for, and it asks for it exactly when the compositor is already behind.
-     Turning them off won every paired test on the phone (p95 92,1 -> 66,6 ms,
-     long tasks 3-10 -> 0 — odd/tasks/mobile-motion-perf.md L13), and frames that
-     slow are what leaves a flick showing only the background: the page cannot
-     paint the new tiles in time. Paused, not removed: the bell resumes where it
-     was, `--fp` and the lattice are untouched, and at reading speed nothing
-     changes. The class is the scroll layer's (`smoothScroll.js`). */
+  /* While the reader is *not* on a coarse pointer, a fling pauses the field for
+     the wheel and trackpad devices that still run this animation. This pause is
+     not what protects a phone any more: it needs two scroll events less than
+     FLING_GAP_MS (250 ms) apart on the main thread, and during a phone fling the
+     main thread is the starved thing, so the latch never fires under load. The
+     coarse pointer above cannot depend on it and does not. Where the latch does
+     fire, the bell resumes where it was: `--fp` and the lattice are untouched.
+     The class is the scroll layer's (`smoothScroll.js`). */
   html.fling .flare {
     animation-play-state: paused;
   }
