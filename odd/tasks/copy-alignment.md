@@ -217,3 +217,8 @@ commits above.
   `generatedAt`; and the snapshot's provenance comment now names the documented manual
   refresh, regenerated so the committed file matches its generator. The `generatedAt`
   finding keeps no action: it is the sync's own stamp.
+- L13 (translation audit): a key-by-key comparison of `en` and `pt` against the Spanish
+  source (91 keys × 2 locales) found one drifted string and no missing fact: the English
+  clipboard announcement said "Copy blocked", a cause the Spanish never states. It now
+  reads "Could not copy", like the Portuguese and the Spanish. Proper nouns, the four
+  education periods and every technology, city and number were checked and agree.
