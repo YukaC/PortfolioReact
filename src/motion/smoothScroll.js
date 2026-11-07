@@ -47,8 +47,29 @@ const FLING_EXIT_PX_PER_S = 900;
    a fling that keeps the class a quarter of a second too long costs nothing. */
 const FLING_GAP_MS = 250;
 
+/* A coarse pointer never got smoothing from Lenis: with its defaults it copies the
+native scroll instead of interpolating it, so the phone paid for `lenis.raf` on the
+GSAP ticker every frame, plus `onNativeScroll` → `onScroll` and `ScrollTrigger.update`
+per scroll event, to reproduce a position the browser had already settled. On that
+pointer this module mounts one passive listener instead, which keeps the two things
+every other reader asks it for — the position and the `fling` latch — and reads
+`window.scrollY` once per event, in one place. Asked the way `useRevealOnEnter.js`
+and `quality-tier.js` ask it, and once: the answer only changes when the OS flips
+the pointer. */
+const coarsePointer = () => {
+  try {
+    return window.matchMedia("(pointer: coarse)").matches;
+  } catch {
+    return false;
+  }
+};
+
 let lenisInstance = null;
 let tickerCallback = null;
+/* The native path's cache: the offset the last scroll event reported. Kept here so
+   no reader has to ask the document again inside a handler (`getScrollPosition`). */
+let nativeScrollY = 0;
+let nativeListener = null;
 let refreshTimer = 0;
 let lastFlingPosition = 0;
 let lastFlingTime = 0;
@@ -59,17 +80,20 @@ export function getLenis() {
 }
 
 /**
- * The scroll position the smooth layer has settled on.
+ * The scroll position the page has settled on.
  *
- * This is the single source of truth for the motion channel: with Lenis mounted
- * it is the value Lenis reports (already smoothed, frame-rate independent), and
- * without it — reduced motion, or a script that runs before the layer mounts —
- * it is the native offset. Reading it here keeps `useFieldMotion` from applying
- * a second lerp on top of a value that is already interpolated.
+ * This is the single source of truth for the motion channel: with Lenis mounted it
+ * is the value Lenis reports (already smoothed, frame-rate independent); on a
+ * coarse pointer it is the offset the one native listener cached, so a reader that
+ * asks once per frame never touches the document; and before either is mounted —
+ * reduced motion, or a script that runs first — it is the native offset. Reading it
+ * here keeps `useFieldMotion` from applying a second lerp on top of a value that is
+ * already interpolated.
  */
 export function getScrollPosition() {
   if (typeof window === "undefined") return 0;
-  return lenisInstance ? lenisInstance.scroll : window.scrollY;
+  if (lenisInstance) return lenisInstance.scroll;
+  return nativeListener ? nativeScrollY : window.scrollY;
 }
 
 export function startSmoothScroll() {
@@ -87,7 +111,7 @@ export function startSmoothScroll() {
       document.documentElement.style.scrollBehavior = "auto";
       return;
     }
-    mountLenis();
+    mountScroll();
   };
 
   syncPreference(prefersReducedMotion());
@@ -127,10 +151,40 @@ export function startSmoothScroll() {
   };
 }
 
-function mountLenis() {
-  if (lenisInstance) return;
+function mountScroll() {
+  if (lenisInstance || nativeListener) return;
 
   document.documentElement.style.scrollBehavior = "auto";
+
+  if (coarsePointer()) {
+    mountNative();
+    return;
+  }
+
+  mountLenis();
+}
+
+/**
+ * The coarse path: one passive listener and no ticker.
+ *
+ * Everything else this module owns is kept — the `fling` latch the reveal, the
+ * halo drop and the paused flares depend on, the cached position
+ * `getScrollPosition()` answers from, and the lock the drawer calls.
+ */
+function mountNative() {
+  nativeScrollY = window.scrollY;
+  lastFlingPosition = nativeScrollY;
+  lastFlingTime = 0;
+
+  nativeListener = () => {
+    nativeScrollY = window.scrollY;
+    syncFling();
+  };
+  window.addEventListener("scroll", nativeListener, { passive: true });
+}
+
+function mountLenis() {
+  if (lenisInstance) return;
 
   const lenis = new Lenis({
     autoRaf: false,
@@ -157,6 +211,11 @@ function stopSmoothScroll() {
     tickerCallback = null;
   }
   gsap.ticker.lagSmoothing(500, 33);
+
+  if (nativeListener) {
+    window.removeEventListener("scroll", nativeListener);
+    nativeListener = null;
+  }
 
   if (lenisInstance) {
     lenisInstance.off("scroll", syncFling);
@@ -217,7 +276,7 @@ const armFlingWatchdog = () => {
 const syncFling = () => {
   if (typeof document === "undefined") return;
   const root = document.documentElement;
-  const position = lenisInstance ? lenisInstance.scroll : window.scrollY;
+  const position = getScrollPosition();
   const now = performance.now();
   const elapsed = lastFlingTime ? now - lastFlingTime : 0;
 

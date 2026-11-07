@@ -118,3 +118,27 @@ test("S10: a phases artifact only carries the rows of its own run", () => {
     "postPhases must build its payload from the rows it was given, never from the meter's state",
   );
 });
+
+test("S11: a coarse pointer pays only for the observers until the panel asks", () => {
+  const source = readFileSync(METER, "utf8");
+
+  // The PerformanceObservers and the frame push in `tick` name a long frame for
+  // one callback each, so they stay on everywhere. The sampler, the field pass and
+  // the badge repaint are forced style/layout reads, and on the phone they were
+  // 814-948 ms of a 13-15 s window measured. They hang off the flag the panel
+  // toggle already owns, so a diagnostic run gets them back
+  // (`__perfMeterPanel(true)` before `start()`).
+  assert.match(
+    source,
+    /let panelOn = !COARSE_POINTER;/,
+    "the heavy passes must be off by default on the pointer that pays for them",
+  );
+
+  for (const pass of ["sample", "sampleField", "paintLive"]) {
+    assert.match(
+      source,
+      new RegExp(`const ${pass} = \\(\\) => \\{\\n\\s*if \\(!panelOn\\) return;`),
+      `${pass} must not run while the panel is off`,
+    );
+  }
+});

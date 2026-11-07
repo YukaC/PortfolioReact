@@ -117,6 +117,13 @@ const Footer = () => {
 
     registerMotion();
 
+    /* A coarse pointer does not get the scrub. `--fp` keeps its default (1) in
+       `globals.css`, which is the settled state: the wordmark is visible and still,
+       the way a scriptless reader sees it. The letter wave below is a pointer
+       affordance and was already fine-pointer-only, so on a coarse pointer there is
+       nothing left for this effect to wire. */
+    if (!hasFinePointer()) return undefined;
+
     /* `--fp` drives `opacity` and `translate` on the 70 px `background-clip:
        text` wordmark, so every write is a recalc of the footer subtree and a
        repaint of that text. A scrub reports its progress on every frame of a
@@ -137,10 +144,6 @@ const Footer = () => {
         footer.style.setProperty("--fp", progress);
       },
     });
-
-    if (!hasFinePointer()) {
-      return () => rise.kill();
-    }
 
     const letters = [...mark.children];
     // `scale` is a CSSPlugin alias that expands into scaleX/scaleY, so a quickTo()

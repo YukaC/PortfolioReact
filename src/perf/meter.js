@@ -57,6 +57,11 @@
    *     pass in twelve frames, and a quarter of the watchlist. The verdicts keep
    *     their meaning — the field history is still 90 samples, it simply covers
    *     more scroll — and the probe stops being the loudest thing in the report.
+   *
+   * Even at that schedule the three passes that read the document are the meter's
+   * own bill, and they start OFF on this pointer: see `panelOn` below. The
+   * PerformanceObservers and the frame push in `tick` are what NAME a long frame,
+   * they cost one callback each, and they stay on everywhere.
    */
   const COARSE_POINTER = (() => {
     try {
@@ -185,9 +190,15 @@
   let sampleTimer = 0;
   let frameParity = 0;
 
-  /** The field panel, the sparklines and the artifact all follow this flag. It is a
-      module variable on purpose: a reload forgets it and a probe carries no storage. */
-  let panelOn = true;
+  /** The heavy passes all follow this flag: the 500 ms sampler, the field pass and
+      the badge repaint. It starts OFF on a coarse pointer — those three are forced
+      style/layout reads, and on the phone they charged 814-948 ms of a 13-15 s
+      window measured, which is an instrument loud enough to change the thing it
+      measures. The panel toggle turns them back on (`__perfMeterPanel(true)`, or
+      `Fondo: OFF` in the badge, before `start()`), and the report says which meter
+      produced it through `window.panelOn`. A module variable on purpose: a reload
+      forgets it and a probe carries no storage. */
+  let panelOn = !COARSE_POINTER;
 
   /* The meter's own bill. One performance.now() pair per pass, never per watched
      node: the accounting must not materially change what it measures. */
@@ -863,6 +874,7 @@
   };
 
   const sample = () => {
+    if (!panelOn) return;
     if (S.state !== "recording") return;
     M.samples += 1;
     meterPass(sampleOnce);
@@ -1712,6 +1724,7 @@
 
   /** Bubble label and the window numbers; runs on a timer, so it writes little. */
   const paintLive = () => {
+    if (!panelOn) return;
     M.repaints += 1;
     meterPass(() => {
       try {
@@ -1728,9 +1741,10 @@
   };
 
   /**
-   * The field-pass toggle. It is refused while a window is open: the report carries
-   * one `window.panelOn` for one window, and a mid-window flip would make the
-   * artifact describe two different meters.
+   * The heavy-pass toggle: the field panel, the sampler and the badge repaint, one
+   * flag. It is refused while a window is open: the report carries one
+   * `window.panelOn` for one window, and a mid-window flip would make the artifact
+   * describe two different meters.
    */
   const setPanel = (on) => {
     if (S.state === "recording" || panelOn === on) return panelOn;

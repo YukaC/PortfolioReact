@@ -9,13 +9,27 @@ import { useT } from "@/i18n/LocaleProvider";
 import { DURATION, EASE, STAGGER } from "@/motion/config";
 import { prefersReducedMotion } from "@/motion/prefersReducedMotion";
 import { gsap, registerMotion, ScrollTrigger } from "@/motion/register";
-import { lockSmoothScroll, unlockSmoothScroll } from "@/motion/smoothScroll";
+import {
+  getScrollPosition,
+  lockSmoothScroll,
+  unlockSmoothScroll,
+} from "@/motion/smoothScroll";
 import { willChangeVars } from "@/motion/willChange";
 import { scrollToSectionByHash } from "@/utils/scroll-to-section";
 
 const isValidHash = (href) => typeof href === "string" && /^#[\w-]+$/.test(href);
 
 const SPY_SECTION_IDS = ["portfolio", "about", "contact"];
+
+/** Asked once per mount, the way `useRevealOnEnter.js` and `quality-tier.js` ask it:
+    a media query inside a scroll handler is a query per event. */
+const coarsePointer = () => {
+  try {
+    return window.matchMedia("(pointer: coarse)").matches;
+  } catch {
+    return false;
+  }
+};
 
 /* Every read below costs a layout: `getBoundingClientRect` per section,
    `scrollHeight` for the whole document, `offsetWidth`/`offsetLeft` for the pill.
@@ -266,27 +280,50 @@ const Navbar = () => {
     refreshGeometry();
     syncSpy();
 
-    const trigger = ScrollTrigger.create({
-      start: 0,
-      end: "max",
-      invalidateOnRefresh: true,
-      onRefresh() {
-        // A refresh has already measured the page; this rides it rather than
-        // scheduling a second pass.
-        refreshGeometry();
-        syncSpy(window.scrollY, true);
-      },
-      onUpdate(self) {
-        const scrolled = self.scroll() > 24;
+    let trigger = null;
+    let onScroll = null;
+
+    if (coarsePointer()) {
+      /* On a coarse pointer there is no smoothed layer to borrow a trigger from: the
+         scroll arrives on the one passive listener `smoothScroll.js` mounts, so the
+         pill reads the same cached offset from there instead of paying for a second
+         scroll reader and a per-event update that resolves to a value already
+         written. Only the boolean is written, and only when it changes; the spy
+         resolves against geometry measured on a layout change, never per event. */
+      onScroll = () => {
+        const scrollY = getScrollPosition();
+        const scrolled = scrollY > 24;
         if (scrolled !== isScrolled) {
           isScrolled = scrolled;
           header.classList.toggle("is-scrolled", scrolled);
         }
-        syncSpy(self.scroll());
-      },
-    });
+        syncSpy(scrollY);
+      };
+      window.addEventListener("scroll", onScroll, { passive: true });
+      onScroll();
+    } else {
+      trigger = ScrollTrigger.create({
+        start: 0,
+        end: "max",
+        invalidateOnRefresh: true,
+        onRefresh() {
+          // A refresh has already measured the page; this rides it rather than
+          // scheduling a second pass.
+          refreshGeometry();
+          syncSpy(window.scrollY, true);
+        },
+        onUpdate(self) {
+          const scrolled = self.scroll() > 24;
+          if (scrolled !== isScrolled) {
+            isScrolled = scrolled;
+            header.classList.toggle("is-scrolled", scrolled);
+          }
+          syncSpy(self.scroll());
+        },
+      });
 
-    ScrollTrigger.addEventListener("scrollEnd", syncFromScroll);
+      ScrollTrigger.addEventListener("scrollEnd", syncFromScroll);
+    }
 
     /* Only a width change can move a section horizontally or re-wrap the pill. A
     height-only resize is the URL bar showing or hiding mid-gesture, which this
@@ -310,13 +347,17 @@ const Navbar = () => {
     return () => {
       disposed = true;
       layoutObserver.disconnect();
-      ScrollTrigger.removeEventListener("scrollEnd", syncFromScroll);
+      if (onScroll) {
+        window.removeEventListener("scroll", onScroll);
+      } else {
+        ScrollTrigger.removeEventListener("scrollEnd", syncFromScroll);
+      }
       window.removeEventListener("resize", onResize);
       if (settleFrame) cancelAnimationFrame(settleFrame);
       if (settleTimer) clearTimeout(settleTimer);
       settleFrame = 0;
       settleTimer = 0;
-      trigger.kill();
+      if (trigger) trigger.kill();
       gsap.killTweensOf(header);
     };
   }, [placeIndicator]);
