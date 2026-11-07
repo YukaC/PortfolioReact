@@ -15,6 +15,9 @@ import {
   SOCIAL_LINKS,
 } from "../data/constants.js";
 import { translator } from "../i18n/index.js";
+import en from "../i18n/messages/en.js";
+import es from "../i18n/messages/es.js";
+import pt from "../i18n/messages/pt.js";
 import { DEFAULT_LOCALE, SUPPORTED_LOCALES } from "../i18n/locale.js";
 import {
   SLUG_PATTERN,
@@ -24,9 +27,14 @@ import {
   repoName,
 } from "./project-slugs.js";
 import {
+  ALUMNI_UNIVERSITY,
   FAQ_COPY,
+  KNOWS_ABOUT,
   OG_IMAGE_HEIGHT,
   OG_IMAGE_WIDTH,
+  OG_LOCALE_TAGS,
+  PERSON_ADDRESS_LOCALITY,
+  PERSON_ADDRESS_REGION,
   PORTRAIT_PATH,
   PROJECT_PAGE_COPY,
   applicationCategoryFor,
@@ -37,6 +45,7 @@ import {
   homePageDescriptor,
   localeUrl,
   ogImageUrl,
+  personNode,
   projectAlternates,
   projectMetadata,
   projectPageCopy,
@@ -359,7 +368,21 @@ test(
   },
   () => {
     for (const locale of SUPPORTED_LOCALES) {
-      const text = visibleText(prerendered.get(locale));
+      const html = prerendered.get(locale);
+      const text = visibleText(html);
+
+      // S7's document checklist, on the artefact a crawler receives: the
+      // language is in the first byte and the page carries exactly one h1.
+      assert.match(
+        html,
+        new RegExp(`<html[^>]+lang="${locale}"`),
+        `${locale}: <html lang> is not the document's language`,
+      );
+      assert.equal(
+        (html.match(/<h1[\s>]/g) ?? []).length,
+        1,
+        `${locale}: the page must have exactly one h1`,
+      );
 
       for (const { question, answer } of faqEntries(locale)) {
         assert.ok(
@@ -396,6 +419,7 @@ const SCHEMA_PROPERTIES = new Set([
   "address",
   "addressCountry",
   "addressLocality",
+  "addressRegion",
   "alumniOf",
   "applicationCategory",
   "author",
@@ -585,12 +609,16 @@ test("the training the graph used to ignore is in it, dated", () => {
   });
   const person = graph["@graph"].find((node) => node["@type"] === "Person");
 
-  assert.equal(person.alumniOf.length, EDUCATION.length);
+  const programmes = person.alumniOf.filter(
+    (node) => node["@type"] === "EducationalOccupationalProgram",
+  );
+
+  assert.equal(programmes.length, EDUCATION.length);
   assert.deepEqual(
-    person.alumniOf.map((programme) => programme.name),
+    programmes.map((programme) => programme.name),
     EDUCATION.map((item) => item.title),
   );
-  for (const [index, programme] of person.alumniOf.entries()) {
+  for (const [index, programme] of programmes.entries()) {
     const [start, end] = EDUCATION[index].period.split("-").map((part) => part.trim());
     assert.equal(programme["@type"], "EducationalOccupationalProgram");
     assert.equal(programme.provider.name, EDUCATION[index].company);
@@ -601,6 +629,65 @@ test("the training the graph used to ignore is in it, dated", () => {
   const profile = graph["@graph"].find((node) => node["@type"] === "ProfilePage");
   assert.equal(profile.dateModified, snapshot.generatedAt);
   assert.deepEqual(profile.mainEntity, { "@id": `${SITE_URL}/#person` });
+});
+
+/**
+ * S7's `Person` node, as the brief states it.
+ *
+ * Every field below is either the brief's own string or a value the repository
+ * already holds, and the assertions say which: the job title is the Spanish
+ * `about.role` the portrait prints, `knowsAbout` is the brief's six technologies
+ * drawn from the visible chip row, and `sameAs` is exactly the profiles
+ * `src/data/constants.js` ships. A handle nobody verified cannot get in here.
+ */
+test("the Person node publishes the brief's identity, unaltered", () => {
+  const person = personNode();
+
+  assert.equal(person.name, "Agustín Ciucani");
+  assert.equal(person.jobTitle, "Desarrollador full-stack");
+  assert.equal(person.url, SITE_URL);
+  assert.equal(person.email, "mailto:agusyuk25@gmail.com");
+  assert.deepEqual(person.address, {
+    "@type": "PostalAddress",
+    addressLocality: "Coronel Dorrego",
+    addressRegion: "Buenos Aires",
+    addressCountry: "AR",
+  });
+
+  const university = person.alumniOf.filter(
+    (node) => node["@type"] === "EducationalOrganization",
+  );
+  assert.deepEqual(university, [
+    { "@type": "EducationalOrganization", name: ALUMNI_UNIVERSITY },
+  ]);
+  assert.equal(ALUMNI_UNIVERSITY, "Universidad Provincial del Sudoeste");
+
+  assert.deepEqual(person.knowsAbout, [
+    "React",
+    "Next.js",
+    "TypeScript",
+    "Node.js",
+    "Python",
+    "PostgreSQL",
+  ]);
+  // Each claim is a chip the page shows, or that chip's fuller spelling.
+  const chips = SKILLS.map((skill) => skill.name);
+  for (const name of person.knowsAbout) {
+    assert.ok(
+      chips.includes(name) || (name === "Node.js" && chips.includes("Node")),
+      `${name} is not a technology the page shows`,
+    );
+  }
+
+  assert.deepEqual(person.sameAs, SOCIAL_LINKS.map((link) => link.href));
+  for (const url of person.sameAs) {
+    assert.match(url, /^https:\/\//, `${url} is not an absolute profile URL`);
+  }
+  assert.equal(
+    new Set(person.sameAs).size,
+    person.sameAs.length,
+    "a profile cannot be listed twice",
+  );
 });
 
 // ——— 5. the head (S2, S3) ——————————————————————————————————————————————————
@@ -625,10 +712,87 @@ test("the home keeps its canonical, its hreflang map and its Open Graph block", 
     assert.equal(metadata.openGraph.type, "website");
     assert.equal(metadata.openGraph.url, localeUrl(locale));
     assert.equal(metadata.openGraph.siteName, SITE_NAME);
-    assert.equal(metadata.openGraph.title, metadata.title);
-    assert.equal(metadata.openGraph.description, metadata.description);
+    assert.equal(metadata.openGraph.title, t("meta.ogTitle"));
+    assert.equal(metadata.openGraph.description, t("meta.ogDescription"));
+    assert.equal(metadata.openGraph.locale, OG_LOCALE_TAGS[locale]);
     assert.equal(metadata.twitter.card, "summary_large_image");
   }
+});
+
+/**
+ * S7, as the owner wrote it. Spanish is the source, so these four strings are
+ * compared literally: a reworded title is a change to the brief, not a fix.
+ */
+const BRIEF_META = {
+  title: "Agustín Ciucani · Desarrollador full-stack en Buenos Aires",
+  description:
+    "Desarrollador full-stack en Buenos Aires. Apps web, paneles y PWAs con React, Next.js, Node y Python. Disponible para freelance y full-time.",
+  ogTitle: "Agustín Ciucani · Desarrollador full-stack",
+  ogDescription:
+    "Armo tu software de punta a punta. React, Next.js, Node y Python.",
+};
+
+test("the Spanish head is the brief's text, verbatim", () => {
+  const metadata = homeMetadata("es");
+
+  assert.equal(metadata.title, BRIEF_META.title);
+  assert.equal(metadata.description, BRIEF_META.description);
+  assert.ok(metadata.description.endsWith("Disponible para freelance y full-time."));
+  assert.equal(metadata.openGraph.title, BRIEF_META.ogTitle);
+  assert.equal(metadata.openGraph.description, BRIEF_META.ogDescription);
+  assert.equal(metadata.openGraph.locale, "es_AR");
+  assert.equal(metadata.openGraph.type, "website");
+  assert.equal(metadata.openGraph.url, localeUrl("es"));
+
+  // The canonical is the site's own origin, and `languages` names the three
+  // documents that actually exist — `/en` is not a route, `/` is English.
+  assert.equal(metadata.alternates.canonical, `${SITE_URL}/es`);
+  assert.deepEqual(metadata.alternates.languages, {
+    en: SITE_URL,
+    es: `${SITE_URL}/es`,
+    pt: `${SITE_URL}/pt`,
+    "x-default": SITE_URL,
+  });
+});
+
+test("every language carries the same meta keys, translated", () => {
+  const keys = Object.keys(en.meta).sort();
+
+  for (const [locale, dictionary] of [
+    ["es", es],
+    ["pt", pt],
+  ]) {
+    assert.deepEqual(Object.keys(dictionary.meta).sort(), keys, `${locale}: meta keys`);
+    assert.notEqual(dictionary.meta.ogTitle, en.meta.ogTitle, `${locale}: ogTitle`);
+    assert.notEqual(
+      dictionary.meta.ogDescription,
+      en.meta.ogDescription,
+      `${locale}: ogDescription`,
+    );
+    assert.notEqual(
+      dictionary.meta.description,
+      en.meta.description,
+      `${locale}: description`,
+    );
+  }
+
+  // S7's shape: name, a middle dot, role — never the em dash the old copy used.
+  for (const dictionary of [en, es, pt]) {
+    assert.ok(dictionary.meta.title.includes(" · "), dictionary.meta.title);
+    assert.equal(dictionary.meta.title.includes("—"), false, dictionary.meta.title);
+    assert.ok(dictionary.meta.ogTitle.includes(" · "), dictionary.meta.ogTitle);
+  }
+});
+
+test("the portrait's alt text names the person, in every language", () => {
+  for (const locale of SUPPORTED_LOCALES) {
+    const { t } = translator(locale);
+    assert.ok(t("about.portraitAlt", { name: SITE_NAME }).includes(SITE_NAME), locale);
+  }
+  assert.equal(
+    translator("es").t("about.portraitAlt", { name: SITE_NAME }),
+    "Retrato de Agustín Ciucani",
+  );
 });
 
 test("the Open Graph image is the language's 1200×630 card, not the portrait", () => {
@@ -687,20 +851,23 @@ test("the graph keeps every node, and every field, the page already had", () => 
 
   const person = graph["@graph"].find((node) => node["@type"] === "Person");
   assert.equal(person.name, SITE_NAME);
-  assert.equal(person.jobTitle, PERSON_JOB_TITLE);
+  assert.equal(person.jobTitle, translator("es").t("about.role"));
+  assert.notEqual(
+    person.jobTitle,
+    PERSON_JOB_TITLE,
+    "S7's jobTitle is the Spanish one, not the English constant",
+  );
   assert.equal(person.url, SITE_URL);
   assert.equal(person.email, `mailto:${CONTACT_EMAIL}`);
   assert.equal(person.image, `${SITE_URL}${PORTRAIT_PATH}`);
   assert.deepEqual(person.address, {
     "@type": "PostalAddress",
-    addressLocality: PERSON_LOCALITY,
+    addressLocality: PERSON_ADDRESS_LOCALITY,
+    addressRegion: PERSON_ADDRESS_REGION,
     addressCountry: "AR",
   });
   assert.deepEqual(person.sameAs, SOCIAL_LINKS.map((link) => link.href));
-  assert.deepEqual(
-    person.knowsAbout,
-    SKILLS.map((skill) => skill.name),
-  );
+  assert.deepEqual(person.knowsAbout, KNOWS_ABOUT);
   assert.deepEqual(person.knowsLanguage, ["en", "es", "pt"]);
 
   const website = graph["@graph"].find((node) => node["@type"] === "WebSite");
