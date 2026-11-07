@@ -2081,6 +2081,9 @@
   /* Hidden until the touch layout gives it a row of its own. */
   .work-thumb {
     display: none;
+    /* The cover is a `fill` image: its box is this one at every width, hidden or
+       not, or next/image warns that the parent is `static` on the wide layout. */
+    position: relative;
 
     /* On a touch-sized viewport the cover rides inline above the row instead of
        in the floating preview. */
@@ -2091,7 +2094,6 @@
       aspect-ratio: 16 / 9;
       border-radius: var(--radius-thumb);
       overflow: hidden;
-      position: relative;
       background-color: var(--color-deep);
     }
 

@@ -756,3 +756,12 @@ test("the breakpoints are the module's, and the module is their only reader (S9)
     assert.equal(toPixels(match[1], match[2]), fallback, `${token} and its fallback disagree`);
   });
 });
+
+test("the inline work cover is positioned at every width, not only the narrow one", () => {
+  // The cover is a next/image `fill`: its parent has to be positioned whenever the
+  // image loads. Declared only under `max-wide`, the wide layout left it `static`
+  // and next/image warned on /munidgo.webp.
+  const open = bare.indexOf("{", bare.indexOf(".work-thumb {"));
+  const base = blockAt(open).split("@variant")[0];
+  assert.match(base, /position:\s*relative/, ".work-thumb must be positioned outside its variants");
+});
