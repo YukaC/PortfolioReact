@@ -2,7 +2,7 @@
   "note": "Baseline of the compiled stylesheet for `pnpm check:css`. The number is measured from the source, not from a build: src/styles/globals.css compiled in-process with @tailwindcss/postcss (the plugin the app itself uses), so any machine and any CI job gets the same byte count. The guard fails when the compiled sheet grows more than `growthAllowance` over `compiledBytes` (audit.md §13.3 S7 / §21.3), and when `@layer components` exceeds `componentsCeiling` (§14.3, spec S14). Raising either number is a decision that belongs in the same commit as the CSS that makes it grow, with the reason in the feature doc.",
   "compiledBytes": 77888,
   "componentsBytes": 29645,
-  "componentsCeiling": 30350,
+  "componentsCeiling": 30450,
   "growthAllowance": 0.05,
   "history": [
     {
@@ -76,6 +76,11 @@
       "stage": "phone flick — the reveal never hides on a coarse pointer",
       "componentsBytes": 30287,
       "source": "odd/tasks/mobile-perf-structural-plan.md (9 nov 2026 log): an Android fling scrolls on the compositor while the main thread is screens behind, so the prepainted tiles of unrevealed nodes were empty and the reader saw only the field. Two selectors under pointer-coarse show an unrevealed block and its heading words as they are (+145 B, the --reveal-rise token left). Ceiling 30250 -> 30350."
+    },
+    {
+      "stage": "phone flick — the coarse halo reset wins the cascade",
+      "componentsBytes": 30379,
+      "source": "odd/tasks/mobile-perf-structural-plan.md (7 nov 2026 log): the coarse reset named a bare `.site-shell`, which loses to `.section-y .site-shell` and `.site-footer .site-shell` on specificity, so the 24 px halo stayed on every section on the phone (traced on the g82: GPU 1130 -> 600 ms, max GPU task 85 -> 13-23 ms). The reset now repeats the halo's selectors (+92 B). Ceiling 30350 -> 30450."
     }
   ]
 }

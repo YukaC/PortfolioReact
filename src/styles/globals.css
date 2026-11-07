@@ -2628,32 +2628,27 @@
     text-shadow: none;
   }
 
-  /* A coarse pointer keeps the short shadow and never the 24 px one. The blur is 72
-     device pixels per line at DPR 3 — the most expensive thing each entering section
-     asks for — and what it protects from, the plume blooming white behind copy, does
-     not exist on a touch device: the quality tier there is `static` and mounts no
-     canvas. This used to be a `fling` toggle instead, which was worse than useless:
-     flipping `text-shadow` on every copy wrapper repaints all the text at the start
-     and at the end of every flick, and that repaint is the blank the owner kept
-     seeing. Square text on the phone is the fix. */
+  /* A coarse pointer carries no halo at all. The blur is 72 device pixels per line
+     at DPR 3 — the most expensive thing every entering section asks a raster worker
+     for, on the device where that worker *is* the frame budget — and what the halo
+     protects from, the plume blooming white behind copy, does not exist on a touch
+     device: the quality tier there is `static` and mounts no canvas. The 2 px half
+     was the last step in that direction; the owner's flick still shows whole screens
+     with the field and no copy, and the sampler over five flicks
+     (`.perf/phone/flick-*.json`) puts every on-screen node at `opacity: 1` during the
+     flick — the DOM is opaque, what is missing is the paint, and a shadow that needs
+     a blur per glyph run is paint. This used to be a `fling` toggle instead, which was
+     worse than useless: flipping `text-shadow` on every copy wrapper repaints all the
+     text at the start and at the end of every flick. Square text on the phone is the
+     fix. Same selectors as the halo, or specificity keeps it. */
   @variant pointer-coarse {
     .hero-copy,
-    .site-shell {
-      /* literal: the shallower half of the halo above, ink with alpha. */
-      text-shadow: 0 1px 2px rgb(3 8 22 / 0.9);
+    .section-y .site-shell,
+    .site-footer .site-shell,
+    .nav-pill {
+      text-shadow: none;
     }
   }
-
-  /* A fling drops the halo. Those two shadows are a 24 px blur over every line of
-     copy, rastered at the device pixel ratio (3 on the owner's phone, so 72
-     device pixels): it is the most expensive thing each newly-entering section
-     asks for, and it is asked for at exactly the moment the page cannot keep up
-     — a flick that outruns the raster is the "solo se ve el fondo con puntos"
-     report. At flick speed nobody reads, and the halo's whole job is legibility
-     while reading; when the scroll settles it comes back. Nothing else about the
-     copy changes: same colour, same weight, same box. `.site-shell` is every
-     copy wrapper that carries the halo, so one selector covers the sections, the
-     footer and the pill. */
 
   /* `.sr-only` is Tailwind's own utility — the hand-written copy here was a
      second definition of it (and a second place to forget the `clip-path`
