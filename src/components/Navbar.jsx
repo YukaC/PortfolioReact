@@ -469,23 +469,43 @@ const Navbar = () => {
       // The panel is `visibility: hidden` until the reveal renders its first
       // frame, and a hidden node refuses focus, so the first link is focused as
       // soon as the panel accepts it — under reduced motion that is the very
-      // first frame (the reveal is an instant set).
+      // first frame (the reveal is an instant set), and with motion it is the
+      // frame the entrance tween first renders.
       const focusable =
         'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])';
+      /* The budget is counted in frames, not milliseconds, because what it waits
+         for is the reveal's first rendered frame and that advances on the same
+         rAF clock. One hundred and twenty frames (~2 s at 60 Hz) is far more
+         than the one or two frames the reveal needs, and it still ends on its
+         own when the panel never becomes focusable, instead of polling for the
+         life of the drawer.
+
+         The count is carried by the closure and never taken from the callback.
+         `requestAnimationFrame` hands its own timestamp to whatever it calls, and
+         a timestamp read as an attempt count exceeds any sane budget on the very
+         first frame — that is how this loop came to give up after one try, which
+         is exactly the frame the panel is still hidden on. `focusFirst` therefore
+         takes no parameter, so there is nothing for the timestamp to land in. */
+      const RETRY_FRAMES = 120;
       let frame = 0;
-      const focusFirst = (attempt = 0) => {
+      let attempt = 0;
+      const focusFirst = () => {
         const target = panel?.querySelector(focusable);
         if (!target) return;
         target.focus({ preventScroll: true });
         if (document.activeElement === target) return;
         // Retry only while focus sits where the reader already put it — the
-        // toggle they pressed, or the body — so the loop can never fight a Tab
-        // the reader made while the panel was still revealing.
+        // toggle they pressed, or nowhere at all — so the loop can never fight a
+        // Tab the reader made while the panel was still revealing.
         const active = document.activeElement;
-        const untouched = !active || active === document.body || active === toggle;
-        if (untouched && attempt < 30) {
-          frame = requestAnimationFrame(() => focusFirst(attempt + 1));
-        }
+        const untouched =
+          !active ||
+          active === document.body ||
+          active === document.documentElement ||
+          active === toggle;
+        if (!untouched || attempt >= RETRY_FRAMES) return;
+        attempt += 1;
+        frame = requestAnimationFrame(focusFirst);
       };
       frame = requestAnimationFrame(focusFirst);
       return () => cancelAnimationFrame(frame);
