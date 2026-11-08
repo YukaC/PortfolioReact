@@ -1026,10 +1026,10 @@
   }
 }
 
-/* The timeline and portrait type recipes: box and colour, nothing this layer is
-   allowed to keep (§13.2). They live here so the components layer can hold the
-   four things it is actually for — keyframes, composition, script-owned state and
-   conditions with no variant. */
+/* The timeline type recipes: box and colour, nothing this layer is allowed to
+   keep (§13.2). They live here so the components layer can hold the four things
+   it is actually for — keyframes, composition, script-owned state and conditions
+   with no variant. */
 @utility timeline-org {
   display: block;
   font-size: var(--text-ui-sm);
@@ -1043,9 +1043,157 @@
   max-width: 46ch;
 }
 
-@utility about-portrait-role {
+/* ===========================================================================
+   ProfileCard — the identity card the About section ships.
+
+   `ProfileCard` was deleted in `8369d5d` and recovered byte-exact, so its class
+   names cannot become utilities in the JSX: they are declared here instead. The
+   rules are ported from the last revision that still carried them
+   (`8db7b0b^:src/styles/globals.css` — by `8369d5d^` the sheet had already
+   dropped them) and re-expressed on today's tokens: no colour literal, no
+   hand-written media query. They are `@utility` and not a components block for
+   two reasons: `@layer components` has its own ceiling, and every one of these
+   is a recipe with a name.
+
+   Consumers: `ProfileCard` for all of it, and `About` for `.link-underline` on
+   the source link.
+   ======================================================================== */
+
+/* The frosted surface the card asks for by name. It was the `.glass-card`
+   recipe of the old sheet; today's is `glass`, but the markup says
+   `glass-card`, so the recipe is re-stated here on the same tokens. The frost
+   grain (`::after` + an SVG data URI, `mix-blend-mode: overlay`) is the one
+   part not ported: the field already carries the page's grain, so a second one
+   inside the card bought nothing, and it is the bulk of the bytes. */
+@utility glass-card {
+  position: relative;
+  isolation: isolate;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  background-color: var(--glass);
+  box-shadow: var(--shadow-float), var(--shadow-inset);
+  backdrop-filter: blur(var(--blur-glass)) saturate(150%);
+}
+
+/* The tilt stage: the parent is what gives the card a vanishing point. */
+@utility profile-stage {
+  perspective: 1200px;
+}
+
+@utility profile-card {
+  transform: rotateX(0deg) rotateY(0deg);
+  transition: transform var(--duration-ui) var(--ease-snap);
+
+  /* Ice spotlight under the copy, above the surface. `--spot-x`/`--spot-y` are
+     written by the component from the pointer; the alpha used to be an rgb()
+     literal and is a `color-mix` over `--color-sky` now. One stop, not two: the
+     fallback copy every `color-mix` makes Tailwind emit is written twice, and
+     the middle stop is 62 B of it per copy. */
+  &::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    /* literal: local stack inside the card's own isolated painting */
+    z-index: -1;
+    border-radius: inherit;
+    background: radial-gradient(
+      circle 15rem at var(--spot-x, 50%) var(--spot-y, 50%),
+      color-mix(in srgb, var(--color-sky) 28%, transparent),
+      transparent 70%
+    );
+    opacity: 0;
+    transition: opacity var(--duration-ui) var(--ease-snap);
+    pointer-events: none;
+  }
+
+  /* Both states are classes the component turns on itself. */
+  &.is-live::before {
+    opacity: 1;
+  }
+
+  &.is-flipped .profile-card-inner {
+    transform: rotateY(180deg);
+  }
+
+  @variant motion-reduce {
+    transform: none;
+    transition: none;
+
+    &::before {
+      opacity: 0;
+      transition: none;
+    }
+
+    & .profile-card-inner {
+      transition: none;
+    }
+  }
+}
+
+@utility profile-card-inner {
+  display: grid;
+  transform-style: preserve-3d;
+  transition: transform var(--duration-slow) var(--ease-in-out-field);
+}
+
+/* Both faces share one grid cell, so the flip swaps them without a reflow. */
+@utility profile-face {
+  grid-area: 1 / 1;
+  backface-visibility: hidden;
+}
+
+@utility profile-face-back {
+  transform: rotateY(180deg);
+}
+
+@utility profile-avatar {
+  box-shadow: 0 0 0 1px var(--strong);
+}
+
+/* The stack chip of the card's back face: the same hairline and radius as
+   `skill-chips`, on the nested pane's fill. */
+@utility profile-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.4rem 0.8rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+  background-color: color-mix(in srgb, var(--color-ink) 22%, transparent);
   font-size: var(--text-meta);
-  color: var(--color-mut);
+  line-height: 1;
+  color: color-mix(in srgb, var(--color-white) 85%, transparent);
+}
+
+/* The nested pane the card's socials sit in: recessed fill, no frost of its
+   own (the card already blurs) and no grain, so it needs neither `position`
+   nor `isolation` — the historical pair existed to host the grain layer. */
+@utility glass-nest {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background-color: color-mix(in srgb, var(--color-ink) 22%, transparent);
+}
+
+/* The card's github handle. Today's sheet has no underline-on-hover recipe, so
+   the old `.link-underline` is ported as it was, on the motion ramp. */
+@utility link-underline {
+  background-image: linear-gradient(currentColor, currentColor);
+  background-position: 0 100%;
+  background-repeat: no-repeat;
+  background-size: 0 1px;
+  transition:
+    background-size var(--duration-ui) var(--ease-snap),
+    color var(--duration-ui) var(--ease-snap);
+
+  &:focus-visible {
+    background-size: 100% 1px;
+  }
+
+  @variant pointer-fine {
+    &:hover {
+      background-size: 100% 1px;
+    }
+  }
 }
 
 @layer components {
@@ -2199,76 +2347,17 @@
   }
 
   /* --- about -------------------------------------------------------------- */
-  /* `.about-grid`, `.about-h3`, `.about-copy` and `.skill-chips` are recipes
-     above or inline utilities in `About`/`ProjectPage`. What stays: the
-     portrait row (nested element selectors and a reflow at 35rem), the
-     statement + its `.sw` state lit by the scroll trigger, and the timeline —
-     two stacked rails with `scaleY(var(--tlp))`, a dot per item and an `.is-on`
-     class, i.e. the three-state machine this file keeps (§13.4). */
-  .about-portrait {
-    display: flex;
-    align-items: center;
-    gap: 0.875rem;
-    margin-bottom: 1.875rem;
+  /* `.about-h3`, `.about-copy` and `.skill-chips` are recipes above or inline
+     utilities in `About`/`ProjectPage`. What stays: the statement's own box and
+     its `.sw` resting state, and the timeline — two stacked rails with
+     `scaleY(var(--tlp))`, a dot per item and an `.is-on` class, i.e. the
+     three-state machine this file keeps (§13.4).
 
-    /* The identity row cannot hold avatar, name and three socials on one line
-       below 35rem without breaking the role into a three-line column. Socials
-       drop to their own line, aligned under the name. */
-    @variant max-xs {
-      flex-wrap: wrap;
-      row-gap: 1rem;
-
-      & > div:first-of-type {
-        flex: 1 1 8rem;
-        min-width: 0;
-      }
-    }
-  }
-
-  .about-portrait img {
-    width: 3.5rem;
-    height: 3.5rem;
-    border-radius: 50%;
-    object-fit: cover;
-    box-shadow: 0 0 0 1px var(--strong);
-  }
-
-  .about-portrait-name {
-    font-family: var(--font-heading);
-    font-size: var(--text-copy);
-    line-height: 1.3;
-    color: var(--color-paper);
-  }
-
-  .about-socials {
-    display: flex;
-    gap: 0.5rem;
-    margin-left: 0.75rem;
-
-    @variant max-wide {
-      margin-left: 0;
-    }
-
-    @variant max-xs {
-      flex-basis: 100%;
-      width: auto;
-      margin-left: 4.375rem;
-    }
-  }
-
-  .about-socials a {
-    display: grid;
-    place-items: center;
-    width: 2.25rem;
-    height: 2.25rem;
-    border-radius: 50%;
-    border: 1px solid var(--line);
-    color: var(--color-mut);
-    transition:
-      color var(--duration-fast) var(--ease-out-field),
-      border-color var(--duration-fast) var(--ease-out-field);
-  }
-
+     The statement's box outlives its markup on purpose: the `(scripting: none)`
+     and `prefers-reduced-motion` resets name `.statement .sw` as the finished
+     state of the scroll-lit words, and `--text-statement` is one of the tokens
+     the contract pins, so deleting the rule here would orphan both. The portrait
+     row is gone: the section ships `ProfileCard` instead. */
   .statement {
     margin-top: 2.875rem;
     max-width: 30ch;
