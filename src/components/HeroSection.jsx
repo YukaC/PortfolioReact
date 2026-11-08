@@ -60,12 +60,17 @@ const HeroSection = ({ locale = "en" }) => {
             style={{ "--d": "120ms" }}
           >
             <span className="block">{t("hero.name")}</span>
-            <span className="block text-dim">{t("hero.role")}</span>
+            {/* The role is a subtitle, not a second headline: it keeps the `h1`
+                pairing the brief asks for but drops to the lead size in the body
+                face, so the sentence below can carry more weight than it. */}
+            <span className="mt-2 block text-lead font-normal tracking-normal text-dim">
+              {t("hero.role")}
+            </span>
           </h1>
 
           <SplitHeading
             as="h2"
-            className="font-heading text-work-title text-paper"
+            className="font-heading text-statement text-paper"
             text={t("hero.title")}
             accent={t("hero.accent")}
             reveal="paint"

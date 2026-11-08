@@ -222,3 +222,10 @@ commits above.
   clipboard announcement said "Copy blocked", a cause the Spanish never states. It now
   reads "Could not copy", like the Portuguese and the Spanish. Proper nouns, the four
   education periods and every technology, city and number were checked and agree.
+- L14 (owner request, after the review): the hero's grey role drops to the lead size so it
+  reads as a subtitle of the name, and the sentence "Armo tu software de punta a punta."
+  takes the statement step, so it outranks the role without outranking the name. The
+  emphasis word of every split heading loses its heavier weight and points by the sky
+  colour alone: the owner read the semibold as a second bold voice, and Space Grotesk has
+  no italic (its italic would be a slant the browser fakes), so the lighter option was the
+  one with no font cost.
