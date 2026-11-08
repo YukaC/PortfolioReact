@@ -30,7 +30,7 @@
         { "rule": "text", "selector": ".footer-mark", "contains": "CIUCANI" },
 
         { "rule": "reduced-motion", "selector": "#work-heading", "viewport": "all", "spec": "S11" },
-        { "rule": "reduced-motion", "selector": ".statement .sw", "viewport": "all", "spec": "S11" },
+        { "rule": "reduced-motion", "selector": ".timeline", "viewport": "all", "spec": "S11" },
         { "rule": "reduced-motion", "selector": "#contact .bigmail", "viewport": "all", "spec": "S11" },
         { "rule": "reduced-motion", "selector": ".footer-mark", "viewport": "all", "spec": "S11" },
 
