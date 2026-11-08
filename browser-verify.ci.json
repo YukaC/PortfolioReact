@@ -1,0 +1,69 @@
+{
+  "server": {
+    "command": "pnpm start -p 4173",
+    "port": 4173,
+    "path": "/",
+    "reuse": false
+  },
+  "viewports": [
+    { "name": "desktop", "width": 1280, "height": 900 },
+    { "name": "mobile", "width": 390, "height": 844 }
+  ],
+  "pages": [
+    {
+      "path": "/",
+      "rules": [
+        { "rule": "document", "lang": "en", "spec": "S11" },
+        "h1",
+        "img-alt",
+        "anchors",
+        "console",
+        "first-tab",
+        "a11y-labels",
+        { "rule": "reduced-motion", "selector": "h1" },
+        { "rule": "no-overflow", "viewport": "all" },
+        { "rule": "visible", "selector": ".field-progress" },
+        { "rule": "count", "selector": "[data-work-tab]", "min": 5 },
+        { "rule": "count", "selector": "[data-work-row]", "min": 5 },
+        { "rule": "text", "selector": ".marquee", "contains": "Next.js" },
+        { "rule": "text", "selector": "#contact .bigmail", "contains": "@" },
+        { "rule": "text", "selector": ".footer-mark", "contains": "CIUCANI" },
+
+        { "rule": "reduced-motion", "selector": "#work-heading", "viewport": "all", "spec": "S11" },
+        { "rule": "reduced-motion", "selector": ".statement .sw", "viewport": "all", "spec": "S11" },
+        { "rule": "reduced-motion", "selector": "#contact .bigmail", "viewport": "all", "spec": "S11" },
+        { "rule": "reduced-motion", "selector": ".footer-mark", "viewport": "all", "spec": "S11" },
+
+        { "rule": "count", "selector": ".js-only", "min": 1, "viewport": "all", "spec": "S6" },
+        { "rule": "count", "selector": "header details > summary", "min": 1, "viewport": "all", "spec": "S6" },
+        { "rule": "count", "selector": ".mobile-menu-panel", "min": 1, "spec": "S6" },
+
+        { "rule": "screenshot", "name": "home" }
+      ]
+    },
+    {
+      "path": "/es",
+      "rules": [
+        { "rule": "document", "lang": "es", "spec": "S11" },
+        "h1",
+        "console",
+        "anchors",
+        { "rule": "count", "selector": "[data-work-row]", "min": 5 },
+        { "rule": "reduced-motion", "selector": "#about-heading", "viewport": "all", "spec": "S11" },
+        { "rule": "no-overflow", "viewport": "all" }
+      ]
+    },
+    {
+      "path": "/pt",
+      "rules": [
+        { "rule": "document", "lang": "pt", "spec": "S11" },
+        "h1",
+        "console",
+        "anchors",
+        { "rule": "count", "selector": "[data-work-row]", "min": 5 },
+        { "rule": "reduced-motion", "selector": "#about-heading", "viewport": "all", "spec": "S11" },
+        { "rule": "no-overflow", "viewport": "all" }
+      ]
+    }
+  ]
+}
