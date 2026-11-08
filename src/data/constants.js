@@ -93,7 +93,7 @@ export const SOCIAL_LINKS = [
   },
   {
     name: "LinkedIn",
-    href: "https://www.linkedin.com/in/agust%C3%ADn-ciucani/",
+    href: "https://www.linkedin.com/in/agustin-ciucani",
     platform: "linkedin",
   },
   {
