@@ -132,7 +132,7 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           name: next-build
-          path: .
+          path: .next
       - name: Install Chromium
         run: pnpm exec playwright install --with-deps chromium
       - name: ${{ matrix.profile }}
@@ -165,7 +165,7 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           name: next-build
-          path: .
+          path: .next
       - name: Install Chromium
         run: pnpm exec playwright install --with-deps chromium
       # The capture side runs today; the 0.1 % diff gate needs the §14 baseline
@@ -205,7 +205,7 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           name: next-build
-          path: .
+          path: .next
       - name: Install Chromium
         run: pnpm exec playwright install --with-deps chromium
       - name: Scroll budgets (p95 ≤ 24 ms, jank ≤ 2 %, blur ≤ 2 Mpx)
@@ -243,7 +243,7 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           name: next-build
-          path: .
+          path: .next
       - name: Install Chromium
         run: pnpm exec playwright install --with-deps chromium
       - name: browser-verify (browser-verify.json)
