@@ -147,7 +147,7 @@ Commit del arreglo: `289f028` (+12 líneas CSS, dos tests nuevos, 344 líneas). 
 **L11 — el slot de validación dirigida vuelve a trabarse (segunda vez).** Después de la
 corrección, el provider emite el mismo binding de `provider_targeted_validator` y el facade
 lo rechaza dos veces con `collectBinding is missing or stale for current STATUS` (formas
-objeto y serializada). Es el mismo desajuste que `odd/tasks/dev-test-meter.md` L13: el
+objeto y serializada). Es el mismo desajuste ya visto en el medidor de dev: el
 binding apunta al target de corrección (`cbbf2737`) mientras el STATUS expone el snapshot
 actual (`5ccdabe7`). Sin verdicto del validador no hay cierre; por decisión previa del dueño
 se deja así y se sigue. Dos lineages con el mismo síntoma son evidencia suficiente para
