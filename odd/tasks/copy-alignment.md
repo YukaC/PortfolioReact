@@ -229,3 +229,8 @@ commits above.
   colour alone: the owner read the semibold as a second bold voice, and Space Grotesk has
   no italic (its italic would be a slant the browser fakes), so the lighter option was the
   one with no font cost.
+- L15 (owner request): the hero sentence carries a dictated line break, so the sky phrase
+  "de punta a punta." sits on its own line at every width instead of breaking after "de"
+  and leaving the first accented word stranded at the end of the previous line. The break
+  is the copy's `\n`, which `SplitHeading` already honours, so it holds as the type grows
+  instead of depending on the available width.
