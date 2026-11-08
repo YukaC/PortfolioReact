@@ -5,7 +5,7 @@ import { useT } from "@/i18n/LocaleProvider";
  * Language switcher.
  *
  * Each option is a plain anchor to `/?lang=<code>`: a full navigation, so the
- * middleware can persist the choice in the cookie and the server can answer with
+ * proxy can persist the choice in the cookie and the server can answer with
  * the matching prerendered page. Client-side routing here would only swap text
  * and never write the cookie.
  *
@@ -32,7 +32,7 @@ const LanguageSwitcher = ({ className = "" }) => {
             aria-label={LOCALE_LABELS[code]}
             aria-current={isCurrent ? "true" : undefined}
             title={LOCALE_LABELS[code]}
-            className={`focus-ring rounded-full px-1.5 py-0.5 transition-colors ${
+            className={`lang-link focus-ring rounded-full px-1.5 transition-colors ${
               isCurrent
                 ? "bg-white/10 text-white"
                 : "text-white/55 hover:text-white/90"

@@ -1,0 +1,690 @@
+{
+  "protocol": "audit.md §14.5 — 5 anchos × 3 posiciones de scroll × 3 idiomas, umbral 0.1 %",
+  "frozen": "prefers-reduced-motion: reduce + todas las animaciones en su estado final",
+  "generatedAt": "2026-11-01T18:52:55.391Z",
+  "commit": {
+    "sha": "b9bf524",
+    "subject": "fix(data): serve the owner's real pins again, and keep the repo pill",
+    "branch": "feat/audit-program",
+    "dirty": true
+  },
+  "renderer": "ANGLE (AMD, AMD Radeon RX 570 Series (radeonsi polaris10 ACO), OpenGL ES 3.2)",
+  "vitals": null,
+  "shots": [
+    {
+      "id": "390/top/en",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "scroll": "top",
+      "scrollY": 0,
+      "documentHeight": 6653,
+      "lang": "en",
+      "url": "/",
+      "path": "visual/baseline/390/top/en.png",
+      "bytes": 299480,
+      "sha256": "8b083d13e1639f7059de1441917af6b396d6ca49565fe2e37a5565031a24a2da"
+    },
+    {
+      "id": "390/top/es",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "scroll": "top",
+      "scrollY": 0,
+      "documentHeight": 6813,
+      "lang": "es",
+      "url": "/es",
+      "path": "visual/baseline/390/top/es.png",
+      "bytes": 304055,
+      "sha256": "6c1481c9148457e17f72edcf7729bdf82061d8347bfc2bc2c6531578b98f16be"
+    },
+    {
+      "id": "390/top/pt",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "scroll": "top",
+      "scrollY": 0,
+      "documentHeight": 6760,
+      "lang": "pt",
+      "url": "/pt",
+      "path": "visual/baseline/390/top/pt.png",
+      "bytes": 306377,
+      "sha256": "398226fedd91e89d6e5f7b55086ffb80f2224fe0fc6115571d81f2d6107e2bac"
+    },
+    {
+      "id": "390/hero-out/en",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "scroll": "hero-out",
+      "scrollY": 844,
+      "documentHeight": 6653,
+      "lang": "en",
+      "url": "/",
+      "path": "visual/baseline/390/hero-out/en.png",
+      "bytes": 285175,
+      "sha256": "c760827b8e1c1de8a375830b308871f93c31ef362173f0dae54023cf0168d440"
+    },
+    {
+      "id": "390/hero-out/es",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "scroll": "hero-out",
+      "scrollY": 844,
+      "documentHeight": 6813,
+      "lang": "es",
+      "url": "/es",
+      "path": "visual/baseline/390/hero-out/es.png",
+      "bytes": 291719,
+      "sha256": "c8106a52d50cc8428e9220229465ae086731a3512ab0c2e4debddb3fd7b0ddd2"
+    },
+    {
+      "id": "390/hero-out/pt",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "scroll": "hero-out",
+      "scrollY": 844,
+      "documentHeight": 6760,
+      "lang": "pt",
+      "url": "/pt",
+      "path": "visual/baseline/390/hero-out/pt.png",
+      "bytes": 292337,
+      "sha256": "6bf8ac54c942bd17509779f3fade2c27820cb5975e43ee3b9766ba6ec25715de"
+    },
+    {
+      "id": "390/footer/en",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "scroll": "footer",
+      "scrollY": 5809,
+      "documentHeight": 6653,
+      "lang": "en",
+      "url": "/",
+      "path": "visual/baseline/390/footer/en.png",
+      "bytes": 297216,
+      "sha256": "3438149a55c3cdfdd31ee107a90f2c343bf1bd80af86be2e8350569fca2849a7"
+    },
+    {
+      "id": "390/footer/es",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "scroll": "footer",
+      "scrollY": 5969,
+      "documentHeight": 6813,
+      "lang": "es",
+      "url": "/es",
+      "path": "visual/baseline/390/footer/es.png",
+      "bytes": 294959,
+      "sha256": "fe907549fb96431f4c1d65094048691a0ac03e8bd9c74037b81aecca3b5b58c5"
+    },
+    {
+      "id": "390/footer/pt",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "scroll": "footer",
+      "scrollY": 5916,
+      "documentHeight": 6760,
+      "lang": "pt",
+      "url": "/pt",
+      "path": "visual/baseline/390/footer/pt.png",
+      "bytes": 294879,
+      "sha256": "923fc0ce80929f9da9565ec92124b16c47d0fade41f65a72c62e25aedffb3209"
+    },
+    {
+      "id": "768/top/en",
+      "viewport": {
+        "width": 768,
+        "height": 1024
+      },
+      "scroll": "top",
+      "scrollY": 0,
+      "documentHeight": 7714,
+      "lang": "en",
+      "url": "/",
+      "path": "visual/baseline/768/top/en.png",
+      "bytes": 607612,
+      "sha256": "c72e4aa44ea8208be7aa1092feb340becd4c45f8b22a9b46cd1619d1e0a299e3"
+    },
+    {
+      "id": "768/top/es",
+      "viewport": {
+        "width": 768,
+        "height": 1024
+      },
+      "scroll": "top",
+      "scrollY": 0,
+      "documentHeight": 7827,
+      "lang": "es",
+      "url": "/es",
+      "path": "visual/baseline/768/top/es.png",
+      "bytes": 613815,
+      "sha256": "d97ad44f2c61a36d099251ef8544d70312dd75967a97ce3db3c725ebfe867429"
+    },
+    {
+      "id": "768/top/pt",
+      "viewport": {
+        "width": 768,
+        "height": 1024
+      },
+      "scroll": "top",
+      "scrollY": 0,
+      "documentHeight": 7786,
+      "lang": "pt",
+      "url": "/pt",
+      "path": "visual/baseline/768/top/pt.png",
+      "bytes": 617167,
+      "sha256": "cd04b89a32d0afb4934144a6f697e8a36c0883dc5849b04743506eea9ebec789"
+    },
+    {
+      "id": "768/hero-out/en",
+      "viewport": {
+        "width": 768,
+        "height": 1024
+      },
+      "scroll": "hero-out",
+      "scrollY": 1024,
+      "documentHeight": 7714,
+      "lang": "en",
+      "url": "/",
+      "path": "visual/baseline/768/hero-out/en.png",
+      "bytes": 555097,
+      "sha256": "044d79ffae87f6d51d11763b286b855a50869d820fe16aa620aadc838ba3ef83"
+    },
+    {
+      "id": "768/hero-out/es",
+      "viewport": {
+        "width": 768,
+        "height": 1024
+      },
+      "scroll": "hero-out",
+      "scrollY": 1024,
+      "documentHeight": 7827,
+      "lang": "es",
+      "url": "/es",
+      "path": "visual/baseline/768/hero-out/es.png",
+      "bytes": 576900,
+      "sha256": "fcebc104fdc59f903b57b1881536ef47477f3f6759693b7886ae97cf7338630d"
+    },
+    {
+      "id": "768/hero-out/pt",
+      "viewport": {
+        "width": 768,
+        "height": 1024
+      },
+      "scroll": "hero-out",
+      "scrollY": 1024,
+      "documentHeight": 7786,
+      "lang": "pt",
+      "url": "/pt",
+      "path": "visual/baseline/768/hero-out/pt.png",
+      "bytes": 577402,
+      "sha256": "9eeb9a941512afb4140571ac28a2f316911aa3b5d34a1885938cb7511d33e753"
+    },
+    {
+      "id": "768/footer/en",
+      "viewport": {
+        "width": 768,
+        "height": 1024
+      },
+      "scroll": "footer",
+      "scrollY": 6690,
+      "documentHeight": 7714,
+      "lang": "en",
+      "url": "/",
+      "path": "visual/baseline/768/footer/en.png",
+      "bytes": 619534,
+      "sha256": "1747eee99397cabc368cee7b4f8229a27d45d63d4fb7bcf3e2c07803e918b322"
+    },
+    {
+      "id": "768/footer/es",
+      "viewport": {
+        "width": 768,
+        "height": 1024
+      },
+      "scroll": "footer",
+      "scrollY": 6803,
+      "documentHeight": 7827,
+      "lang": "es",
+      "url": "/es",
+      "path": "visual/baseline/768/footer/es.png",
+      "bytes": 621076,
+      "sha256": "151bd13624b4647e56c0f1e2029840d81d171e1ed895b447260f640e0d3c97eb"
+    },
+    {
+      "id": "768/footer/pt",
+      "viewport": {
+        "width": 768,
+        "height": 1024
+      },
+      "scroll": "footer",
+      "scrollY": 6762,
+      "documentHeight": 7786,
+      "lang": "pt",
+      "url": "/pt",
+      "path": "visual/baseline/768/footer/pt.png",
+      "bytes": 620521,
+      "sha256": "026ca4e1b13e6ab3307cb5915451c22fbc59cfb546db2d15c7fa49c4e961c8fa"
+    },
+    {
+      "id": "900/top/en",
+      "viewport": {
+        "width": 900,
+        "height": 1000
+      },
+      "scroll": "top",
+      "scrollY": 0,
+      "documentHeight": 7939,
+      "lang": "en",
+      "url": "/",
+      "path": "visual/baseline/900/top/en.png",
+      "bytes": 722890,
+      "sha256": "c6d24ab184387f6fb245ab6094ef5d23a854c2d42dd3e545ca534828c72263e9"
+    },
+    {
+      "id": "900/top/es",
+      "viewport": {
+        "width": 900,
+        "height": 1000
+      },
+      "scroll": "top",
+      "scrollY": 0,
+      "documentHeight": 8058,
+      "lang": "es",
+      "url": "/es",
+      "path": "visual/baseline/900/top/es.png",
+      "bytes": 729312,
+      "sha256": "9dc6dca3ec31714862f34443e765a475cbf54a78e2fded78a791e2c0361d0019"
+    },
+    {
+      "id": "900/top/pt",
+      "viewport": {
+        "width": 900,
+        "height": 1000
+      },
+      "scroll": "top",
+      "scrollY": 0,
+      "documentHeight": 8039,
+      "lang": "pt",
+      "url": "/pt",
+      "path": "visual/baseline/900/top/pt.png",
+      "bytes": 732061,
+      "sha256": "7927b21d1ccf255839f8e354b74c82d88797153f0b2a4409e63305e32357cdc9"
+    },
+    {
+      "id": "900/hero-out/en",
+      "viewport": {
+        "width": 900,
+        "height": 1000
+      },
+      "scroll": "hero-out",
+      "scrollY": 1000,
+      "documentHeight": 7939,
+      "lang": "en",
+      "url": "/",
+      "path": "visual/baseline/900/hero-out/en.png",
+      "bytes": 664731,
+      "sha256": "b4386a33d3a5f2641ee6a41f04fbd0492badfed41954d82653d6ea2e43e6cffd"
+    },
+    {
+      "id": "900/hero-out/es",
+      "viewport": {
+        "width": 900,
+        "height": 1000
+      },
+      "scroll": "hero-out",
+      "scrollY": 1000,
+      "documentHeight": 8058,
+      "lang": "es",
+      "url": "/es",
+      "path": "visual/baseline/900/hero-out/es.png",
+      "bytes": 684945,
+      "sha256": "6e965060d866fb05b6a73592a940fbe6846951c44a1baad6e90375287410bb12"
+    },
+    {
+      "id": "900/hero-out/pt",
+      "viewport": {
+        "width": 900,
+        "height": 1000
+      },
+      "scroll": "hero-out",
+      "scrollY": 1000,
+      "documentHeight": 8039,
+      "lang": "pt",
+      "url": "/pt",
+      "path": "visual/baseline/900/hero-out/pt.png",
+      "bytes": 685521,
+      "sha256": "0f0033ca1764e0ba4c3703dadad83de7ab289439c091769fa0410c1735bd8705"
+    },
+    {
+      "id": "900/footer/en",
+      "viewport": {
+        "width": 900,
+        "height": 1000
+      },
+      "scroll": "footer",
+      "scrollY": 6939,
+      "documentHeight": 7939,
+      "lang": "en",
+      "url": "/",
+      "path": "visual/baseline/900/footer/en.png",
+      "bytes": 717387,
+      "sha256": "7eb969d68d364cb1ffae6e1fec42e680e0ce7e613bd7c8249d7548c1de2d0ffb"
+    },
+    {
+      "id": "900/footer/es",
+      "viewport": {
+        "width": 900,
+        "height": 1000
+      },
+      "scroll": "footer",
+      "scrollY": 7058,
+      "documentHeight": 8058,
+      "lang": "es",
+      "url": "/es",
+      "path": "visual/baseline/900/footer/es.png",
+      "bytes": 721907,
+      "sha256": "8cabe703b1d507d25fc04db17906deb8d2e564adcc84e54676fb7f8c18924ca2"
+    },
+    {
+      "id": "900/footer/pt",
+      "viewport": {
+        "width": 900,
+        "height": 1000
+      },
+      "scroll": "footer",
+      "scrollY": 7039,
+      "documentHeight": 8039,
+      "lang": "pt",
+      "url": "/pt",
+      "path": "visual/baseline/900/footer/pt.png",
+      "bytes": 720029,
+      "sha256": "1d054a38e414c852cdeb5be23f2213a83ee8a585bcf772e6a068eaa95827f9ee"
+    },
+    {
+      "id": "1280/top/en",
+      "viewport": {
+        "width": 1280,
+        "height": 800
+      },
+      "scroll": "top",
+      "scrollY": 0,
+      "documentHeight": 5335,
+      "lang": "en",
+      "url": "/",
+      "path": "visual/baseline/1280/top/en.png",
+      "bytes": 883862,
+      "sha256": "364c0071c669e53d64260610353debba00ca14834fcf18d285af8248926f8a58"
+    },
+    {
+      "id": "1280/top/es",
+      "viewport": {
+        "width": 1280,
+        "height": 800
+      },
+      "scroll": "top",
+      "scrollY": 0,
+      "documentHeight": 5444,
+      "lang": "es",
+      "url": "/es",
+      "path": "visual/baseline/1280/top/es.png",
+      "bytes": 888617,
+      "sha256": "c07bd3442d8495912927e275670e282390288b754603603fd4cfc7fa751b556a"
+    },
+    {
+      "id": "1280/top/pt",
+      "viewport": {
+        "width": 1280,
+        "height": 800
+      },
+      "scroll": "top",
+      "scrollY": 0,
+      "documentHeight": 5395,
+      "lang": "pt",
+      "url": "/pt",
+      "path": "visual/baseline/1280/top/pt.png",
+      "bytes": 889588,
+      "sha256": "ddbc8e48766a07b5ba42c1663f7fc908bb93b584349d4759123861d06ad4fb5f"
+    },
+    {
+      "id": "1280/hero-out/en",
+      "viewport": {
+        "width": 1280,
+        "height": 800
+      },
+      "scroll": "hero-out",
+      "scrollY": 800,
+      "documentHeight": 5335,
+      "lang": "en",
+      "url": "/",
+      "path": "visual/baseline/1280/hero-out/en.png",
+      "bytes": 863207,
+      "sha256": "044fb2fff69da06790abfa7f9129838b105d9cd762d0f24782c75d209e83a4bf"
+    },
+    {
+      "id": "1280/hero-out/es",
+      "viewport": {
+        "width": 1280,
+        "height": 800
+      },
+      "scroll": "hero-out",
+      "scrollY": 800,
+      "documentHeight": 5444,
+      "lang": "es",
+      "url": "/es",
+      "path": "visual/baseline/1280/hero-out/es.png",
+      "bytes": 866631,
+      "sha256": "0f3bf67c993ca625604fff4d3e4962f946f47769d9f3ba955dca082013ad84fe"
+    },
+    {
+      "id": "1280/hero-out/pt",
+      "viewport": {
+        "width": 1280,
+        "height": 800
+      },
+      "scroll": "hero-out",
+      "scrollY": 800,
+      "documentHeight": 5395,
+      "lang": "pt",
+      "url": "/pt",
+      "path": "visual/baseline/1280/hero-out/pt.png",
+      "bytes": 868551,
+      "sha256": "a4d910ae257507b5fe1bd9916fa28d854f9c6b61b4ebd0b608855542fe79d5fb"
+    },
+    {
+      "id": "1280/footer/en",
+      "viewport": {
+        "width": 1280,
+        "height": 800
+      },
+      "scroll": "footer",
+      "scrollY": 4535,
+      "documentHeight": 5335,
+      "lang": "en",
+      "url": "/",
+      "path": "visual/baseline/1280/footer/en.png",
+      "bytes": 821172,
+      "sha256": "39be869e9690a20b5ce5e0ff3431809e48b1afc1baf111ee923ab046d7654667"
+    },
+    {
+      "id": "1280/footer/es",
+      "viewport": {
+        "width": 1280,
+        "height": 800
+      },
+      "scroll": "footer",
+      "scrollY": 4644,
+      "documentHeight": 5444,
+      "lang": "es",
+      "url": "/es",
+      "path": "visual/baseline/1280/footer/es.png",
+      "bytes": 823016,
+      "sha256": "0ba7cd14c10a1c3217a2717f6163035707643fc582639d81b5e0ea3983df2a98"
+    },
+    {
+      "id": "1280/footer/pt",
+      "viewport": {
+        "width": 1280,
+        "height": 800
+      },
+      "scroll": "footer",
+      "scrollY": 4595,
+      "documentHeight": 5395,
+      "lang": "pt",
+      "url": "/pt",
+      "path": "visual/baseline/1280/footer/pt.png",
+      "bytes": 821082,
+      "sha256": "f27dee7e3bfcd26c3fa85db06523cdfc8fef240b22c80ae716fb1ad65071a38c"
+    },
+    {
+      "id": "1440/top/en",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "scroll": "top",
+      "scrollY": 0,
+      "documentHeight": 5570,
+      "lang": "en",
+      "url": "/",
+      "path": "visual/baseline/1440/top/en.png",
+      "bytes": 1062219,
+      "sha256": "2f628225f931b35c0d8c5b2358eb510bd3208ad5ae648be53adcbe245a2c079d"
+    },
+    {
+      "id": "1440/top/es",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "scroll": "top",
+      "scrollY": 0,
+      "documentHeight": 5680,
+      "lang": "es",
+      "url": "/es",
+      "path": "visual/baseline/1440/top/es.png",
+      "bytes": 1067548,
+      "sha256": "e22f2bff1b005b7be17843080cccee4bdb69e26756565783d02824eac0775df3"
+    },
+    {
+      "id": "1440/top/pt",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "scroll": "top",
+      "scrollY": 0,
+      "documentHeight": 5630,
+      "lang": "pt",
+      "url": "/pt",
+      "path": "visual/baseline/1440/top/pt.png",
+      "bytes": 1067789,
+      "sha256": "98cb497dbad0b4e7d60e67d7194d8b266b7dfcee9e669983eaf9e550ca812265"
+    },
+    {
+      "id": "1440/hero-out/en",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "scroll": "hero-out",
+      "scrollY": 900,
+      "documentHeight": 5570,
+      "lang": "en",
+      "url": "/",
+      "path": "visual/baseline/1440/hero-out/en.png",
+      "bytes": 1052198,
+      "sha256": "71444a6ca1defe5676a06d5f51d43978211ffffd53b38d27e51f63cde8d93148"
+    },
+    {
+      "id": "1440/hero-out/es",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "scroll": "hero-out",
+      "scrollY": 900,
+      "documentHeight": 5680,
+      "lang": "es",
+      "url": "/es",
+      "path": "visual/baseline/1440/hero-out/es.png",
+      "bytes": 1058835,
+      "sha256": "276b35e713cb438b2def35392081e719e5d88ad35ffc193b9160802613046059"
+    },
+    {
+      "id": "1440/hero-out/pt",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "scroll": "hero-out",
+      "scrollY": 900,
+      "documentHeight": 5630,
+      "lang": "pt",
+      "url": "/pt",
+      "path": "visual/baseline/1440/hero-out/pt.png",
+      "bytes": 1059607,
+      "sha256": "3bbfd32861eb199b4774abd85326951ea5e75678cb3878e3560746a25023d6f1"
+    },
+    {
+      "id": "1440/footer/en",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "scroll": "footer",
+      "scrollY": 4670,
+      "documentHeight": 5570,
+      "lang": "en",
+      "url": "/",
+      "path": "visual/baseline/1440/footer/en.png",
+      "bytes": 1013181,
+      "sha256": "b74ef469e0a8606cf47f282b630d783370b7967aed3daa5cfe611a2d6722eec4"
+    },
+    {
+      "id": "1440/footer/es",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "scroll": "footer",
+      "scrollY": 4780,
+      "documentHeight": 5680,
+      "lang": "es",
+      "url": "/es",
+      "path": "visual/baseline/1440/footer/es.png",
+      "bytes": 1017279,
+      "sha256": "b0cd80fdfb04da3ab8b299cc47977556e8fafc2c8ded4db6c175d80e105fa05a"
+    },
+    {
+      "id": "1440/footer/pt",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "scroll": "footer",
+      "scrollY": 4730,
+      "documentHeight": 5630,
+      "lang": "pt",
+      "url": "/pt",
+      "path": "visual/baseline/1440/footer/pt.png",
+      "bytes": 1016548,
+      "sha256": "dea2e8ad2052b360b665d588f6f7e90272d25c807891be7c6cd6bb6efeedf619"
+    }
+  ]
+}

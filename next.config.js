@@ -1,6 +1,6 @@
 /**
- * Keep default distDir `.next`. For HDD checkouts use `pnpm setup:ssd` (NVMe
- * git worktree) — do not symlink node_modules/.next across filesystems (Turbopack).
+ * Keep default distDir `.next`. The tree lives on NVMe; do not symlink
+ * node_modules/.next across filesystems (Turbopack rejects it).
  */
 /** @type {import('next').NextConfig} */
 const nextConfig = {
@@ -26,7 +26,14 @@ const nextConfig = {
   experimental: {
     // Barrel opt for drei only — three/gsap OPI can break under Turbopack.
     optimizePackageImports: ["@react-three/drei"],
+    // The site has two root layouts (`(en)` and `(intl)/[lang]`, because
+    // `<html lang>` belongs to the route), and a `not-found.jsx` is rendered
+    // inside a root layout. `global-not-found.jsx` is the documented way to give
+    // unmatched URLs a page of the site's own instead of the built-in one
+    // (audit.md §16.1: `pages/404.jsx` → `app/not-found.jsx`).
+    globalNotFound: true,
   },
+
   async headers() {
     const isDev = process.env.NODE_ENV === "development";
     const csp = [

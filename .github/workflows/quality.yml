@@ -1,0 +1,260 @@
+name: Quality
+
+# audit.md §21.5 — the eight suites of §21.2 as required checks.
+#
+# lint · unit · contract · build · e2e (desktop / mobile / no-js / reduced) ·
+# visual · perf (desktop / mobile-4x / software-gl) · a11y
+#
+# Every job is independent so the whole run finishes in minutes: `build` produces
+# the `.next` output once and the rest download it, then each suite starts its own
+# `next start` (the scripts reuse the build in `.next` and pick their own port).
+#
+# "Required" is a branch-protection setting, not something this file can declare:
+# these eight job names must be ticked as required checks on `main`.
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: quality-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NEXT_TELEMETRY_DISABLED: "1"
+  # E2E traces and screenshots land here on a failed run, so the upload step has
+  # one directory to collect instead of a list of possible paths.
+  CI_ARTIFACTS: ${{ github.workspace }}/.ci-artifacts
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  lint:
+    name: lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+        # version from package.json "packageManager"
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: ".nvmrc"
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: ESLint
+        run: pnpm lint
+      - name: Motion aliases (gsap resetTo guard)
+        run: pnpm check:motion
+      - name: Bebop timing
+        run: pnpm validate:bebop
+
+  unit:
+    name: unit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: ".nvmrc"
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: node:test
+        run: pnpm test
+
+  contract:
+    name: contract
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: ".nvmrc"
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: CSS invariants (globals.css as text, no build)
+        run: node --test src/lib/css-contract.test.js
+      - name: CSS budget (literals, dead classes, orphan tokens, +5 % growth)
+        run: pnpm check:css
+
+  build:
+    name: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: ".nvmrc"
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: next build
+        run: pnpm build
+      - name: Upload the build for the browser suites
+        uses: actions/upload-artifact@v4
+        with:
+          name: next-build
+          path: |
+            .next
+            !.next/cache
+          include-hidden-files: true
+          retention-days: 1
+
+  e2e:
+    name: e2e (${{ matrix.profile }})
+    runs-on: ubuntu-latest
+    needs: build
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - profile: desktop
+            run: pnpm e2e:functional --profile desktop && pnpm e2e:runtime
+          - profile: mobile
+            run: pnpm e2e:functional --profile mobile && pnpm e2e:motion
+          - profile: no-js
+            run: pnpm e2e:nojs
+          - profile: reduced
+            run: pnpm e2e:functional --profile reduced
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: ".nvmrc"
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - uses: actions/download-artifact@v4
+        with:
+          name: next-build
+          path: .next
+      - name: Install Chromium
+        run: pnpm exec playwright install --with-deps chromium
+      - name: ${{ matrix.profile }}
+        run: ${{ matrix.run }}
+        env:
+          E2E_TRACE_DIR: ${{ env.CI_ARTIFACTS }}
+      - name: Traces and screenshots (only when a suite fails)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-${{ matrix.profile }}-failure
+          path: |
+            .ci-artifacts
+            .browser-verify
+          if-no-files-found: ignore
+          retention-days: 7
+
+  visual:
+    name: visual
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: ".nvmrc"
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - uses: actions/download-artifact@v4
+        with:
+          name: next-build
+          path: .next
+      - name: Install Chromium
+        run: pnpm exec playwright install --with-deps chromium
+      # The capture side runs today; the 0.1 % diff gate needs the §14 baseline
+      # set committed (45 captures), which is a separate task.
+      - name: Capture the screenshots
+        run: pnpm e2e:a11y --only screenshot
+      - name: Upload screenshots
+        uses: actions/upload-artifact@v4
+        with:
+          name: screenshots
+          path: .browser-verify
+          if-no-files-found: ignore
+          retention-days: 7
+
+  perf:
+    name: perf (${{ matrix.profile }})
+    runs-on: ubuntu-latest
+    needs: build
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - profile: desktop
+            run: pnpm measure:scroll --profile desktop --out scroll-desktop.json
+          - profile: mobile-4x
+            run: pnpm measure:scroll --profile mobile-4x --out scroll-mobile.json
+          - profile: software-gl
+            run: pnpm measure:scroll --software-gl --out scroll-software-gl.json
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: ".nvmrc"
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - uses: actions/download-artifact@v4
+        with:
+          name: next-build
+          path: .next
+      - name: Install Chromium
+        run: pnpm exec playwright install --with-deps chromium
+      - name: Scroll budgets (p95 ≤ 24 ms, jank ≤ 2 %, blur ≤ 2 Mpx)
+        run: ${{ matrix.run }}
+      - name: Lab vitals (LCP · CLS · TBT · JS)
+        if: matrix.profile == 'desktop'
+        run: pnpm measure:vitals --json > vitals.json
+      - name: Repose budgets (0 draws, ≤ 1.5 recalc/frame, ≤ 100 ms task)
+        if: matrix.profile == 'desktop'
+        run: pnpm measure:idle --out idle.json
+      - name: Vitals, idle and scroll reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: perf-${{ matrix.profile }}
+          path: |
+            vitals.json
+            idle.json
+            scroll-*.json
+          if-no-files-found: ignore
+          retention-days: 7
+
+  a11y:
+    name: a11y
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: ".nvmrc"
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - uses: actions/download-artifact@v4
+        with:
+          name: next-build
+          path: .next
+      - name: Install Chromium
+        run: pnpm exec playwright install --with-deps chromium
+      - name: browser-verify (browser-verify.json)
+        run: pnpm e2e:a11y --report a11y-report.json
+      - name: Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: a11y
+          path: |
+            a11y-report.json
+            .browser-verify
+          if-no-files-found: ignore
+          retention-days: 7

@@ -1,16 +1,91 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
-import * as THREE from 'three';
+import {
+  AdditiveBlending,
+  BufferAttribute,
+  BufferGeometry,
+  Camera,
+  ClampToEdgeWrapping,
+  Color,
+  DataTexture,
+  HalfFloatType,
+  LineSegments,
+  LinearFilter,
+  Mesh,
+  PlaneGeometry,
+  RGBAFormat,
+  RawShaderMaterial,
+  Scene,
+  Timer,
+  Vector2,
+  Vector4,
+  WebGLRenderTarget,
+  WebGLRenderer,
+} from 'three';
 
-// Presentation cadence, driven by how long the pointer has been still. Below the
-// first threshold the field runs at display rate; between the two it runs on
-// every other animation frame; after the second it settles into a slow breath so
-// the haze keeps drifting instead of freezing, at ~7 composite passes per second
-// instead of the 15 the previous build spent on unchanged output.
-const IDLE_HALF_RATE_AFTER_MS = 320;
-const IDLE_BREATH_AFTER_MS = 2200;
-const IDLE_BREATH_INTERVAL_MS = 143;
+// The smoke has three phases (audit.md §18.3, amended by the owner's brief L21
+// and by `odd/tasks/flare-tempo.md` L6, then corrected by L8). The loop runs at
+// display rate for as long as the reader does anything; once they have been still
+// for SETTLE_AFTER_MS the plume stops being fed and disperses into nothing over
+// DISPERSAL_DURATION_MS — still at display rate — and only after that does the
+// loop cancel itself: 0 draws at rest.
+//
+//   • `dispersing`: the dye is simulated exactly like a live frame, but with the
+//     dispersal dissipation, with both feeds at zero and with the procedural haze
+//     faded to 0 across the same window, so the density falls away and the mist
+//     itself leaves with it. This is the "fade out de la animación" the owner asked
+//     for: the animation's own fade-out, not the picture being switched off. It
+//     takes both halves, because the dye thins through dissipation while the haze
+//     in `color_frag` is procedural and reads the clock instead of the dye.
+//   • `frozen`: the dispersal has run its whole length (or the tab hid, or WebGL
+//     died). The last frame drawn was the one with `hazeFade = 0` and the thinned
+//     dye, so nothing is drawn and nothing is scheduled, and the canvas has no
+//     pixels left to keep, because the colour pass writes premultiplied alpha: at
+//     dye density 0 every channel, alpha included, is 0.
+//
+// Either way the way out is by event, never by a timer: an interaction restores
+// the dye's own values and restarts the loop. The lattice and its flares are CSS
+// and live outside this component, so repose can cost nothing without the field
+// going dead (§18.1).
+//
+// What this replaced, so nobody re-adds it: an `ambient` phase presenting one
+// frame every 190 ms with a faint inflow. It kept the plume alive at rest, but a
+// 5 fps cadence is a plume that visibly steps, and the owner's report was exactly
+// that ("bajar los fps del smoke no me gusta… prefiero un fade out sencillo"). If
+// a later brief wants the plume to keep moving while it goes, the frame to buy is
+// a display-rate one — never a slower cadence in place of the dispersal. A CSS
+// opacity fade on the canvas was also tried and rejected by the owner (L8): it
+// switches the picture off instead of letting the smoke go.
+const SETTLE_AFTER_MS = 350;
+// How long the plume takes to disperse once nobody stirs it. Long on purpose:
+// this is the "neblina que se va", and those 3.7 s are simulated, so its length
+// is paid in frames at display rate — never bought back with a slower cadence.
+const DISPERSAL_DURATION_MS = 3700;
+const PHASE_ACTIVE = 'active';
+const PHASE_DISPERSING = 'dispersing';
+const PHASE_FROZEN = 'frozen';
+// The dissipation a dispersing step runs with, stated here because the phase is
+// the one place the behaviour is specified: the dye keeps ~2 % of its density
+// after ~3 s of steps at display rate (0.978^180 ≈ 0.02) and under 1 % by the end
+// of the dispersal window (0.978^222 ≈ 0.007), which is what "termina de
+// dispersarse" looks like as a number. It is the simulation's own value, and
+// because the mist is fed from the floor the ink leaves downward (§18.1 rule 2).
+const DISPERSAL_DISSIPATION = 0.978;
+/**
+ * The haze's share of the dispersal: 1 before it, 0 at its end, smoothstepped in
+ * between so the mist leaves with the same ease the plume thins with.
+ *
+ * It has to exist because the dispersal has two halves. Dissipation thins the dye
+ * texture; the dawn-mist `haze` in `color_frag` is procedural — it reads the clock
+ * and the noise field, never the dye — so no amount of simulated waiting removes
+ * it. Without this fade the canvas would park with a static mist band at the floor
+ * that never leaves, and the plume would never be seen to finish dispersing.
+ */
+function dispersalHazeFade(idleMs) {
+  const p = Math.min(1, Math.max(0, (idleMs - SETTLE_AFTER_MS) / DISPERSAL_DURATION_MS));
+  return 1 - p * p * (3 - 2 * p);
+}
 
 export default function LiquidEther({
   mouseForce = 20,
@@ -33,7 +108,17 @@ export default function LiquidEther({
   autoResumeDelay = 1000,
   autoRampDuration = 0.6,
   backgroundColor = '#FFFFFF',
-  lightMode = false
+  lightMode = false,
+  onUnavailable = null,
+  // A phone's plume trailing the finger reads as a smudge chasing the thumb while
+  // the reader is trying to scroll, so touch input does not drive the dye unless
+  // a design explicitly asks for it. Mouse movement is unaffected.
+  touchSmoke = false,
+  // Tier knob from `AppBackground` (audit.md §18.6). A background is not worth
+  // three device pixels per CSS pixel, and a sleeping GPU should not be woken
+  // for a field that is about to freeze anyway.
+  pixelRatio = 1,
+  powerPreference = 'high-performance'
 }) {
   const mountRef = useRef(null);
   const webglRef = useRef(null);
@@ -42,6 +127,12 @@ export default function LiquidEther({
   const intersectionObserverRef = useRef(null);
   const isVisibleRef = useRef(true);
   const resizeRafRef = useRef(null);
+  // Latest value, so a parent arrow that changes every render neither remounts
+  // the field nor leaves the fallback calling a stale handler.
+  const onUnavailableRef = useRef(onUnavailable);
+  useEffect(() => {
+    onUnavailableRef.current = onUnavailable;
+  }, [onUnavailable]);
 
   useEffect(() => {
     if (!mountRef.current) return;
@@ -60,25 +151,25 @@ export default function LiquidEther({
       const w = arr.length;
       const data = new Uint8Array(w * 4);
       for (let i = 0; i < w; i++) {
-        const c = new THREE.Color(arr[i]);
+        const c = new Color(arr[i]);
         data[i * 4 + 0] = Math.round(c.r * 255);
         data[i * 4 + 1] = Math.round(c.g * 255);
         data[i * 4 + 2] = Math.round(c.b * 255);
         data[i * 4 + 3] = 255;
       }
-      const tex = new THREE.DataTexture(data, w, 1, THREE.RGBAFormat);
-      tex.magFilter = THREE.LinearFilter;
-      tex.minFilter = THREE.LinearFilter;
-      tex.wrapS = THREE.ClampToEdgeWrapping;
-      tex.wrapT = THREE.ClampToEdgeWrapping;
+      const tex = new DataTexture(data, w, 1, RGBAFormat);
+      tex.magFilter = LinearFilter;
+      tex.minFilter = LinearFilter;
+      tex.wrapS = ClampToEdgeWrapping;
+      tex.wrapT = ClampToEdgeWrapping;
       tex.generateMipmaps = false;
       tex.needsUpdate = true;
       return tex;
     }
 
     const paletteTex = makePaletteTexture(colors);
-    const bg = new THREE.Color(backgroundColor);
-    const bgVec4 = lightMode ? new THREE.Vector4(bg.r, bg.g, bg.b, 1) : new THREE.Vector4(0, 0, 0, 0);
+    const bg = new Color(backgroundColor);
+    const bgVec4 = lightMode ? new Vector4(bg.r, bg.g, bg.b, 1) : new Vector4(0, 0, 0, 0);
 
     // Releases every geometry and material reachable from a root object. Used on
     // unmount so the field never leaves GPU programs or buffers behind.
@@ -112,26 +203,26 @@ export default function LiquidEther({
         this.renderer = null;
         this.timer = null;
       }
-      init(container) {
+      init(container, options = {}) {
         this.container = container;
-        this.pixelRatio = 1;
+        this.pixelRatio = options.pixelRatio > 0 ? options.pixelRatio : 1;
         this.resize();
-        this.renderer = new THREE.WebGLRenderer({
+        this.renderer = new WebGLRenderer({
           antialias: false,
           alpha: true,
           depth: false,
           stencil: false,
-          powerPreference: 'high-performance',
+          powerPreference: options.powerPreference || 'high-performance',
           premultipliedAlpha: true
         });
         this.renderer.autoClear = false;
-        this.renderer.setClearColor(new THREE.Color(0x000000), 0);
+        this.renderer.setClearColor(new Color(0x000000), 0);
         this.renderer.setPixelRatio(this.pixelRatio);
         this.renderer.setSize(this.width, this.height);
         this.renderer.domElement.style.width = '100%';
         this.renderer.domElement.style.height = '100%';
         this.renderer.domElement.style.display = 'block';
-        this.timer = new THREE.Timer();
+        this.timer = new Timer();
       }
       resize() {
         if (!this.container) return false;
@@ -156,9 +247,9 @@ export default function LiquidEther({
     class MouseClass {
       constructor() {
         this.mouseMoved = false;
-        this.coords = new THREE.Vector2();
-        this.coords_old = new THREE.Vector2();
-        this.diff = new THREE.Vector2();
+        this.coords = new Vector2();
+        this.coords_old = new Vector2();
+        this.diff = new Vector2();
         this.timer = null;
         this.container = null;
         this.docTarget = null;
@@ -170,8 +261,9 @@ export default function LiquidEther({
         this.takeoverActive = false;
         this.takeoverStartTime = 0;
         this.takeoverDuration = 0.25;
-        this.takeoverFrom = new THREE.Vector2();
-        this.takeoverTo = new THREE.Vector2();
+        this.touchSmoke = false;
+        this.takeoverFrom = new Vector2();
+        this.takeoverTo = new Vector2();
         this.onInteract = null;
         this.pendingX = 0;
         this.pendingY = 0;
@@ -288,6 +380,7 @@ export default function LiquidEther({
         this.queuePointer(event.clientX, event.clientY);
       }
       onDocumentTouchStart(event) {
+        if (!this.touchSmoke) return;
         if (event.touches.length !== 1) return;
         const t = event.touches[0];
         if (!this.updateHoverState(t.clientX, t.clientY)) return;
@@ -296,6 +389,7 @@ export default function LiquidEther({
         this.hasUserControl = true;
       }
       onDocumentTouchMove(event) {
+        if (!this.touchSmoke) return;
         if (event.touches.length !== 1) return;
         const t = event.touches[0];
         if (!this.updateHoverState(t.clientX, t.clientY)) return;
@@ -334,21 +428,35 @@ export default function LiquidEther({
         this.mouse = mouse;
         this.manager = manager;
         this.enabled = opts.enabled;
+        // The demo driver yields to a pointer resting on the page; the ambient one
+        // cannot, because the reader parked over the page is exactly who it is
+        // for. Only the pointer *moving* takes the field back (see `wake`).
+        this.respectsHover = opts.respectsHover !== false;
         this.speed = opts.speed; // normalized units/sec
         this.resumeDelay = opts.resumeDelay || 3000; // ms
         this.rampDurationMs = (opts.rampDuration || 0) * 1000;
         this.active = false;
-        this.current = new THREE.Vector2(0, 0);
-        this.target = new THREE.Vector2();
+        this.current = new Vector2(0, 0);
+        this.target = new Vector2();
         this.lastTime = performance.now();
         this.activationTime = 0;
         this.margin = 0.2;
-        this._tmpDir = new THREE.Vector2(); // reuse temp vector to avoid per-frame alloc
+        // Where the wander may go, vertically. The default is the whole canvas
+        // (±(1 - margin)), which is what a demo pointer standing in for a hand
+        // should cover; the ambient field keeps its source near the floor. Read
+        // after `margin` because the edges are derived from it.
+        const edge = 1 - this.margin;
+        this.yMin = typeof opts.yMin === 'number' ? opts.yMin : -edge;
+        this.yMax = typeof opts.yMax === 'number' ? opts.yMax : edge;
+        this._tmpDir = new Vector2(); // reuse temp vector to avoid per-frame alloc
         this.pickNewTarget();
       }
       pickNewTarget() {
         const r = Math.random;
-        this.target.set((r() * 2 - 1) * (1 - this.margin), (r() * 2 - 1) * (1 - this.margin));
+        this.target.set(
+          (r() * 2 - 1) * (1 - this.margin),
+          this.yMin + r() * (this.yMax - this.yMin)
+        );
       }
       forceStop() {
         this.active = false;
@@ -362,7 +470,7 @@ export default function LiquidEther({
           if (this.active) this.forceStop();
           return;
         }
-        if (this.mouse.isHoverInside) {
+        if (this.respectsHover && this.mouse.isHoverInside) {
           if (this.active) this.forceStop();
           return;
         }
@@ -538,64 +646,10 @@ export default function LiquidEther({
     uniform float time;
     uniform vec2 texelSize;
     uniform float hazeStrength;
-    uniform vec2 resolution;
+    uniform float hazeFade;
     uniform vec2 pointerUv;
     varying vec2 uv;
     ${noise_glsl}
-    // Underdamped step toward 1. zeta < 1 overshoots, then settles.
-    float springStep(float t, float zeta, float wn){
-      float wd = wn * sqrt(max(1.0 - zeta * zeta, 0.0001));
-      float decay = exp(-zeta * wn * t);
-      return 1.0 - decay * (cos(wd * t) + (zeta * wn / wd) * sin(wd * t));
-    }
-    // One-shot glow: soft rise, then a slower settle. Never goes below rest.
-    float springPop(float t){
-      const float attackZeta = 0.7;
-      const float attackWn = 7.5;
-      const float attackEnd = 1.05;
-      const float releaseZeta = 0.8;
-      const float releaseWn = 3.2;
-      if (t < 0.0) return 0.0;
-      if (t < attackEnd) return springStep(t, attackZeta, attackWn);
-      float releaseT = t - attackEnd;
-      if (releaseT > 1.45) return 0.0;
-      float atSeam = springStep(attackEnd, attackZeta, attackWn);
-      float wd = releaseWn * sqrt(max(1.0 - releaseZeta * releaseZeta, 0.0001));
-      float decay = exp(-releaseZeta * releaseWn * releaseT);
-      float release = decay * (cos(wd * releaseT) + (releaseZeta * releaseWn / wd) * sin(wd * releaseT));
-      return atSeam * max(release, 0.0);
-    }
-    // Cover dot is constant. A few cells per cycle add one spring glow.
-    void coverGrid(vec2 pixel, inout vec3 premul, inout float outA){
-      const float cellSize = 48.0;
-      vec2 cell = floor(pixel / cellSize);
-      vec2 cellCenter = (cell + 0.5) * cellSize;
-      vec2 delta = pixel - cellCenter;
-      float dist = length(delta);
-      vec3 coral = vec3(0.886, 0.447, 0.498);
-
-      float dotMask = 1.0 - smoothstep(1.5, 2.0, dist);
-      premul = mix(premul, coral * 0.55, dotMask);
-      outA = mix(outA, 0.55, dotMask);
-
-      float period = mix(22.0, 34.0, hash(cell + 4.2));
-      float shifted = time + hash(cell) * period;
-      float cycle = floor(shifted / period);
-      float localT = shifted - cycle * period;
-      float roll = hash(cell + vec2(cycle, 7.7));
-      float fires = step(roll, 0.58);
-      float rollLeft = hash(cell + vec2(-1.0, 0.0) + vec2(cycle, 7.7));
-      float rollDown = hash(cell + vec2(0.0, -1.0) + vec2(cycle, 7.7));
-      float leftWins = step(rollLeft, 0.58) * step(rollLeft, roll);
-      float downWins = step(rollDown, 0.58) * step(rollDown, roll);
-      fires *= 1.0 - max(leftWins, downWins);
-      float hot = springPop(localT) * fires;
-      float core = exp(-dist * dist / 8.0) * hot;
-      float bloom = 6.0 + 7.0 * min(hot, 1.1);
-      float halo = exp(-dist * dist / (bloom * bloom)) * hot;
-      vec3 hotColor = mix(coral, vec3(1.0, 0.86, 0.87), clamp(hot * 0.35, 0.0, 0.55));
-      premul += hotColor * (core * 0.62 + halo * 0.28);
-    }
     void main(){
     float aspect = texelSize.y / texelSize.x;
     vec2 aspectUv = vec2(uv.x * aspect, uv.y);
@@ -621,7 +675,7 @@ export default function LiquidEther({
     vec2 hazeWarp = vec2(fbm(aspectUv * 0.55 + vec2(time * 0.012, 0.0)), fbm(aspectUv * 0.55 + vec2(3.1, time * 0.009))) - 0.5;
     float hazeNoise = fbm(aspectUv * 0.72 + hazeWarp * 0.9 + pointerPush + vec2(time * 0.014, time * 0.006));
     float linger = 0.88 + 0.12 * sin(time * 0.11);
-    float haze = smoothstep(0.34, 0.86, hazeNoise) * hazeStrength * heightFade * linger;
+    float haze = smoothstep(0.34, 0.86, hazeNoise) * hazeStrength * heightFade * linger * hazeFade;
     float density = 1.0 - exp(-(softDensity * breakup + haze) * 1.55);
 
     // Light from above: rims facing it glow, thick core falls into shadow
@@ -639,10 +693,12 @@ export default function LiquidEther({
     vec3 ink = lightMode ? chroma : smoke;
     float alpha = density * 0.64;
     float outA = mix(bgColor.a, 1.0, alpha);
-    // Premultiplied smoke (renderer + material use premultipliedAlpha)
+    // Premultiplied smoke (renderer + material use premultipliedAlpha). The
+    // coral lattice is not drawn here any more: it is one CSS raster plus 36
+    // composited flares (.bocanada-lattice / .flare), which took coverGrid
+    // — ~40 % of the ALU of this pass — out of the shader and let the canvas
+    // freeze in repose without the field going dead (§18.2, §18.5).
     vec3 premul = mix(bgColor.rgb, ink, density) * outA;
-    // Static cover dots, plus a rare spring glow. Halo does not change alpha.
-    coverGrid(uv * resolution, premul, outA);
     gl_FragColor = vec4(premul, outA);
 }
 `;
@@ -742,12 +798,12 @@ export default function LiquidEther({
         this.plane = null;
       }
       init() {
-        this.scene = new THREE.Scene();
-        this.camera = new THREE.Camera();
+        this.scene = new Scene();
+        this.camera = new Camera();
         if (this.uniforms) {
-          this.material = new THREE.RawShaderMaterial(this.props.material);
-          this.geometry = new THREE.PlaneGeometry(2.0, 2.0);
-          this.plane = new THREE.Mesh(this.geometry, this.material);
+          this.material = new RawShaderMaterial(this.props.material);
+          this.geometry = new PlaneGeometry(2.0, 2.0);
+          this.plane = new Mesh(this.geometry, this.material);
           this.scene.add(this.plane);
         }
       }
@@ -795,17 +851,17 @@ export default function LiquidEther({
         this.createBoundary();
       }
       createBoundary() {
-        const boundaryG = new THREE.BufferGeometry();
+        const boundaryG = new BufferGeometry();
         const vertices_boundary = new Float32Array([
           -1, -1, 0, -1, 1, 0, -1, 1, 0, 1, 1, 0, 1, 1, 0, 1, -1, 0, 1, -1, 0, -1, -1, 0
         ]);
-        boundaryG.setAttribute('position', new THREE.BufferAttribute(vertices_boundary, 3));
-        const boundaryM = new THREE.RawShaderMaterial({
+        boundaryG.setAttribute('position', new BufferAttribute(vertices_boundary, 3));
+        const boundaryM = new RawShaderMaterial({
           vertexShader: line_vert,
           fragmentShader: advection_frag,
           uniforms: this.uniforms
         });
-        this.line = new THREE.LineSegments(boundaryG, boundaryM);
+        this.line = new LineSegments(boundaryG, boundaryM);
         this.scene.add(this.line);
       }
       update({ dt, isBounce, BFECC, dye, buoyancy, turbulence }) {
@@ -827,14 +883,14 @@ export default function LiquidEther({
             vertexShader: face_vert,
             fragmentShader: dye_frag,
             uniforms: {
-              boundarySpace: { value: new THREE.Vector2(0, 0) },
+              boundarySpace: { value: new Vector2(0, 0) },
               px: { value: simProps.cellScale },
               fboSize: { value: simProps.fboSize },
               velocity: { value: simProps.velocity.texture },
               dye: { value: null },
               dt: { value: simProps.dt },
               dissipation: { value: 0.985 },
-              splatCenter: { value: new THREE.Vector2(0.5, 0.5) },
+              splatCenter: { value: new Vector2(0.5, 0.5) },
               splatRadius: { value: 0.05 },
               splatAmount: { value: 0 },
               time: { value: 0 },
@@ -867,20 +923,20 @@ export default function LiquidEther({
       }
       init(simProps) {
         super.init();
-        const mouseG = new THREE.PlaneGeometry(1, 1);
-        const mouseM = new THREE.RawShaderMaterial({
+        const mouseG = new PlaneGeometry(1, 1);
+        const mouseM = new RawShaderMaterial({
           vertexShader: mouse_vert,
           fragmentShader: externalForce_frag,
-          blending: THREE.AdditiveBlending,
+          blending: AdditiveBlending,
           depthWrite: false,
           uniforms: {
             px: { value: simProps.cellScale },
-            force: { value: new THREE.Vector2(0.0, 0.0) },
-            center: { value: new THREE.Vector2(0.0, 0.0) },
-            scale: { value: new THREE.Vector2(simProps.cursor_size, simProps.cursor_size) }
+            force: { value: new Vector2(0.0, 0.0) },
+            center: { value: new Vector2(0.0, 0.0) },
+            scale: { value: new Vector2(simProps.cursor_size, simProps.cursor_size) }
           }
         });
-        this.mouse = new THREE.Mesh(mouseG, mouseM);
+        this.mouse = new Mesh(mouseG, mouseM);
         this.scene.add(this.mouse);
       }
       update(props) {
@@ -1063,9 +1119,9 @@ export default function LiquidEther({
           dye_0: null,
           dye_1: null
         };
-        this.fboSize = new THREE.Vector2();
-        this.cellScale = new THREE.Vector2();
-        this.boundarySpace = new THREE.Vector2();
+        this.fboSize = new Vector2();
+        this.cellScale = new Vector2();
+        this.boundarySpace = new Vector2();
         this.init();
       }
       init() {
@@ -1074,7 +1130,7 @@ export default function LiquidEther({
         this.createShaderPass();
       }
       getFloatType() {
-        return THREE.HalfFloatType;
+        return HalfFloatType;
       }
       createAllFBO() {
         const type = this.getFloatType();
@@ -1082,13 +1138,13 @@ export default function LiquidEther({
           type,
           depthBuffer: false,
           stencilBuffer: false,
-          minFilter: THREE.LinearFilter,
-          magFilter: THREE.LinearFilter,
-          wrapS: THREE.ClampToEdgeWrapping,
-          wrapT: THREE.ClampToEdgeWrapping
+          minFilter: LinearFilter,
+          magFilter: LinearFilter,
+          wrapS: ClampToEdgeWrapping,
+          wrapT: ClampToEdgeWrapping
         };
         for (let key in this.fbos) {
-          this.fbos[key] = new THREE.WebGLRenderTarget(this.fboSize.x, this.fboSize.y, opts);
+          this.fbos[key] = new WebGLRenderTarget(this.fboSize.x, this.fboSize.y, opts);
         }
       }
       createShaderPass() {
@@ -1159,7 +1215,13 @@ export default function LiquidEther({
           this.fbos[key].setSize(this.fboSize.x, this.fboSize.y);
         }
       }
+      /**
+       * One simulation step. Every phase runs the same passes in the same order
+       * with the same iteration counts: the dispersal changes the dye's
+       * dissipation and how much is fed to it, never the step.
+       */
       update() {
+        const iterations = (count) => count;
         if (this.options.isBounce) {
           this.boundarySpace.set(0, 0);
         } else {
@@ -1182,13 +1244,13 @@ export default function LiquidEther({
         if (this.options.isViscous) {
           vel = this.viscous.update({
             viscous: this.options.viscous,
-            iterations: this.options.iterations_viscous,
+            iterations: iterations(this.options.iterations_viscous),
             dt: this.options.dt
           });
         }
         this.divergence.update({ vel });
         const pressure = this.poisson.update({
-          iterations: this.options.iterations_poisson
+          iterations: iterations(this.options.iterations_poisson)
         });
         this.pressure.update({ vel, pressure });
         this.dyeAdvection.update({
@@ -1232,11 +1294,11 @@ export default function LiquidEther({
       }
       init() {
         this.simulation = new Simulation();
-        this.scene = new THREE.Scene();
-        this.camera = new THREE.Camera();
-        this.output = new THREE.Mesh(
-          new THREE.PlaneGeometry(2, 2),
-          new THREE.RawShaderMaterial({
+        this.scene = new Scene();
+        this.camera = new Camera();
+        this.output = new Mesh(
+          new PlaneGeometry(2, 2),
+          new RawShaderMaterial({
             vertexShader: face_vert,
             fragmentShader: color_frag,
             transparent: true,
@@ -1244,15 +1306,18 @@ export default function LiquidEther({
             premultipliedAlpha: true,
             uniforms: {
               dye: { value: this.simulation.dyeRead.texture },
-              boundarySpace: { value: new THREE.Vector2() },
+              boundarySpace: { value: new Vector2() },
               palette: { value: paletteTex },
               bgColor: { value: bgVec4 },
               lightMode: { value: lightMode },
               time: { value: 0 },
               texelSize: { value: this.simulation.cellScale },
               hazeStrength: { value: this.simulation.options.haze_strength },
-              resolution: { value: new THREE.Vector2(Common.width, Common.height) },
-              pointerUv: { value: new THREE.Vector2(0.5, 0.5) }
+              /* The haze's own dispersal knob (see `dispersalHazeFade`): 1 keeps
+                 the mist exactly as it has always looked, 0 removes the
+                 procedural term so nothing is left at the floor. */
+              hazeFade: { value: 1 },
+              pointerUv: { value: new Vector2(0.5, 0.5) }
             }
           })
         );
@@ -1263,11 +1328,16 @@ export default function LiquidEther({
       }
       resize() {
         this.simulation.resize();
-        this.output.material.uniforms.resolution.value.set(Common.width, Common.height);
       }
       render() {
         Common.renderer.setRenderTarget(null);
         Common.renderer.render(this.scene, this.camera);
+      }
+      /* One owner for the haze's dispersal value: the simulation cannot produce
+         it (the haze never reads the dye), so it is written from the phase. */
+      setHazeFade(value) {
+        if (!this.output) return;
+        this.output.material.uniforms.hazeFade.value = value;
       }
       update(shouldSimulate = true, shouldPresent = true) {
         if (shouldSimulate) this.simulation.update();
@@ -1275,7 +1345,6 @@ export default function LiquidEther({
         const uniforms = this.output.material.uniforms;
         uniforms.dye.value = this.simulation.dyeRead.texture;
         uniforms.time.value = Common.time;
-        uniforms.resolution.value.set(Common.width, Common.height);
         uniforms.pointerUv.value.set(Mouse.coords.x * 0.5 + 0.5, Mouse.coords.y * 0.5 + 0.5);
         this.render();
       }
@@ -1294,21 +1363,24 @@ export default function LiquidEther({
     class WebGLManager {
       constructor(props) {
         this.props = props;
-        Common.init(props.$wrapper);
+        Common.init(props.$wrapper, {
+          pixelRatio: props.pixelRatio,
+          powerPreference: props.powerPreference
+        });
         Mouse.init(props.$wrapper);
         Mouse.autoIntensity = props.autoIntensity;
         Mouse.takeoverDuration = props.takeoverDuration;
+        Mouse.touchSmoke = props.touchSmoke === true;
         this.lastUserInteraction = performance.now();
-        this.frameIndex = 0;
-        this.idleTimer = null;
-        this.needsPresent = true;
+        /* Nothing has been drawn into the dye until something interacts with the
+           field. A reload with no interaction therefore has nothing to disperse:
+           simulating 3.7 s of steps at display rate to fade an empty buffer is the
+           burst the owner heard as load noise (L11). */
+        this.touched = false;
+        this.phase = PHASE_ACTIVE;
         this.reallocTimer = null;
         Mouse.onInteract = () => {
-          this.lastUserInteraction = performance.now();
-          if (this.autoDriver) this.autoDriver.forceStop();
-          if (!this.running && isVisibleRef.current && !document.hidden) {
-            this.start();
-          }
+          this.wake();
         };
         this.autoDriver = new AutoDriver(Mouse, this, {
           enabled: props.autoDemo,
@@ -1317,15 +1389,26 @@ export default function LiquidEther({
           rampDuration: props.autoRampDuration
         });
         this.init();
+        // The values the simulation was built with, so leaving a phase can always
+        // restore them instead of guessing (see `enterPhase`).
+        this.baseDissipation = this.output.simulation.options.dissipation;
+        this.baseSmokeAmount = this.output.simulation.options.smoke_amount;
+        this.baseAmbientAmount = this.output.simulation.options.ambient_amount;
         this._loop = this.loop.bind(this);
         this._resize = this.resize.bind(this);
         window.addEventListener('resize', this._resize);
+        // Every event §18.3 names as an interaction wakes the field. The scroll
+        // family matters most: a reader who never moves the mouse would
+        // otherwise never see the smoke, and `wheel` is what a trackpad sends.
+        this._onWake = () => this.wake();
+        window.addEventListener('wheel', this._onWake, { passive: true });
+        window.addEventListener('touchstart', this._onWake, { passive: true });
         this._onVisibility = () => {
           const hidden = document.hidden;
           if (hidden) {
             this.pause();
           } else if (isVisibleRef.current) {
-            this.start();
+            this.wake();
           }
         };
         document.addEventListener('visibilitychange', this._onVisibility);
@@ -1335,7 +1418,69 @@ export default function LiquidEther({
         this.props.$wrapper.prepend(Common.renderer.domElement);
         this.output = new Output();
       }
+      /**
+       * The three simulation values a phase owns: one owner, one place. Both
+       * directions of the dispersal go through here, so `wake()` cannot restore
+       * the dissipation without restoring the feed with it.
+       *
+       * The canvas itself is never faded by CSS (there is no `canvas.style.opacity`
+       * or `canvas.style.transition` anywhere, by design): the colour pass writes
+       * premultiplied alpha with `bgColor.a = 0`, so as the dye density goes to 0
+       * every channel goes to 0 with it and the canvas ends up transparent on its
+       * own. A CSS opacity fade was tried instead and rejected by the owner (L8):
+       * it switches the picture off, it does not let the smoke go.
+       */
+      enterPhase(phase) {
+        this.phase = phase;
+        if (!this.output) return;
+        const dispersing = phase === PHASE_DISPERSING;
+        const options = this.output.simulation.options;
+        options.dissipation = dispersing ? DISPERSAL_DISSIPATION : this.baseDissipation;
+        // Nothing is fed while the plume leaves: `smoke_amount` is the pointer
+        // splat and `ambient_amount` is the dawn-mist inflow, which would
+        // otherwise top the canvas up for ever and no dispersal would ever land.
+        options.smoke_amount = dispersing ? 0 : this.baseSmokeAmount;
+        options.ambient_amount = dispersing ? 0 : this.baseAmbientAmount;
+      }
+      /*
+       * The haze's half of the dispersal, written from the phase that owns it.
+       * Dissipation can only thin the dye texture; the dawn-mist `haze` is
+       * procedural and reads the clock, so it needs its own fade or the canvas
+       * would park with a static mist band at the floor that never leaves.
+       */
+      setHazeFade(value) {
+        if (this.output) this.output.setHazeFade(value);
+      }
+      /* Adopts a new device-pixel ratio without rebuilding the context: the
+         framebuffers are sized in simulation units, so only the drawing buffer
+         and the output pass have to follow. */
+      setPixelRatio(ratio) {
+        const next = ratio > 0 ? ratio : 1;
+        if (!Common.renderer || Math.abs(Common.pixelRatio - next) < 0.001) return;
+        Common.pixelRatio = next;
+        Common.renderer.setPixelRatio(next);
+        Common.renderer.setSize(Common.width, Common.height, false);
+        this.needsPresent = true;
+      }
+      /**
+       * The idle phase, from how long the reader has been still (§18.3).
+       *
+       * `active → dispersing → frozen`, for every device: the phase order and the
+       * wake-up-by-event rule do not depend on a tier, so no two devices can
+       * diverge in anything but how fast their GPU draws the same three phases.
+       */
+      phaseFor(idleMs) {
+        if (idleMs < SETTLE_AFTER_MS) return PHASE_ACTIVE;
+        // Nothing was ever fed, so there is nothing to disperse: park on the first
+        // frame instead of paying for the fade of an empty buffer (L11).
+        if (!this.touched) return PHASE_FROZEN;
+        if (idleMs < SETTLE_AFTER_MS + DISPERSAL_DURATION_MS) return PHASE_DISPERSING;
+        return PHASE_FROZEN;
+      }
       resize() {
+        // A resize is an interaction (§18.3), and it also leaves stale targets
+        // behind, so it has to wake a parked loop rather than just flag it.
+        this.wake();
         // Cheap half: adopt the container size for the drawing buffer. Returning
         // early when the pixel size did not change means a burst of observer
         // callbacks that lands on the same size does no work at all.
@@ -1354,54 +1499,67 @@ export default function LiquidEther({
       }
       render(shouldSimulate = true, shouldPresent = true) {
         if (this.autoDriver && this.autoDriver.enabled) this.autoDriver.update();
+        // `mouseMoved` is true only while a real pointer event is fresh (it clears
+        // itself after 100 ms), which is exactly "dye is being laid down". A reload
+        // that is only observed never sets it, so nothing is dispersed for nothing.
+        if (Mouse.mouseMoved || Mouse.hasUserControl) this.touched = true;
         Mouse.update();
         Common.update();
         this.output.update(shouldSimulate, shouldPresent);
       }
       loop() {
         if (!this.running) return;
-        this.frameIndex += 1;
         const idleMs = performance.now() - this.lastUserInteraction;
-        // One fixed simulation step per drawn frame (simProps.dt is a constant,
-        // not a wall-clock delta), so the cadence changes how much the fluid
-        // advances, never how a single frame looks.
-        let advance = true;
-        let present = true;
-        if (idleMs > IDLE_BREATH_AFTER_MS) {
-          // Slow breath: the timer in scheduleNext is the throttle here, and each
-          // tick only re-composites the field against a fresh shader clock. The
-          // fluid does not advance, so a tick costs one draw call (the previous
-          // build did the same at 15/s), while the time-driven haze and lattice
-          // flares keep drifting instead of freezing.
-          advance = false;
-        } else if (idleMs > IDLE_HALF_RATE_AFTER_MS) {
-          advance = (this.frameIndex & 1) === 0;
-          present = advance;
-        }
-        // Draw only when the presented frame is stale. A resize or reallocation
-        // leaves empty render targets behind, so it always forces a full step.
-        const mustPresent = this.needsPresent;
-        if (mustPresent || present) {
+        const phase = this.phaseFor(idleMs);
+        if (phase === PHASE_FROZEN) {
+          // Parked, and reached exactly at `SETTLE_AFTER_MS + DISPERSAL_DURATION_MS`
+          // — after the whole dispersal has been simulated at display rate, never
+          // on its first frame. This is the last frame drawn: hazeFade 0 with the
+          // thinned dye, so the canvas is left transparent on its own
+          // (`bgColor.a = 0`, premultiplied output) and only the CSS field shows.
+          this.setHazeFade(0);
           this.needsPresent = false;
-          this.render(mustPresent ? true : advance, true);
+          this.render(true, true);
+          this.enterPhase(PHASE_FROZEN);
+          this.running = false;
+          return;
         }
-        this.scheduleNext(idleMs);
+        if (phase !== this.phase) this.enterPhase(phase);
+        // Both halves of the dispersal, and one owner for each: the simulation
+        // thins the dye through its dissipation and its feeds, and the procedural
+        // haze leaves through its own fade (1 outside the dispersal, so a live
+        // field looks exactly as it always did).
+        this.setHazeFade(phase === PHASE_DISPERSING ? dispersalHazeFade(idleMs) : 1);
+        // Display rate in both live phases, one fixed simulation step per drawn
+        // frame (simProps.dt is a constant, not a wall-clock delta): the dispersal
+        // is the animation's own fade-out, so it gets the same frame as any other
+        // and no phase knowledge reaches the step. Nothing here ever skips a frame
+        // or shortens a pass to save one — the frame rate is the section the owner
+        // refused to trade ("que no baje fps").
+        this.needsPresent = false;
+        this.render(true, true);
+        this.scheduleNext();
       }
-      scheduleNext(idleMs) {
+      scheduleNext() {
         if (!this.running) return;
         if (rafRef.current) {
           cancelAnimationFrame(rafRef.current);
-          rafRef.current = null;
-        }
-        if (this.idleTimer) {
-          window.clearTimeout(this.idleTimer);
-          this.idleTimer = null;
-        }
-        if (idleMs > IDLE_BREATH_AFTER_MS) {
-          this.idleTimer = window.setTimeout(this._loop, IDLE_BREATH_INTERVAL_MS);
-          return;
         }
         rafRef.current = requestAnimationFrame(this._loop);
+      }
+      /** Event-driven wake: the only way out of `dispersing` and `frozen`. */
+      wake() {
+        this.lastUserInteraction = performance.now();
+        // Through the phase, not around it: it restores the dye's dissipation and
+        // both feeds, so the values that define a live field can never be restored
+        // by one path and forgotten by another.
+        this.enterPhase(PHASE_ACTIVE);
+        // Stopped after the phase is entered, so a pointer that moves after a long
+        // rest takes the field over in the same event and with no takeover
+        // animation: the reader's hand always wins instantly.
+        if (this.autoDriver) this.autoDriver.forceStop();
+        if (!isVisibleRef.current || document.hidden) return;
+        if (!this.running) this.start();
       }
       start() {
         if (this.running) return;
@@ -1417,15 +1575,13 @@ export default function LiquidEther({
           cancelAnimationFrame(rafRef.current);
           rafRef.current = null;
         }
-        if (this.idleTimer) {
-          window.clearTimeout(this.idleTimer);
-          this.idleTimer = null;
-        }
       }
       dispose() {
         try {
           this.pause();
           window.removeEventListener('resize', this._resize);
+          window.removeEventListener('wheel', this._onWake);
+          window.removeEventListener('touchstart', this._onWake);
           document.removeEventListener('visibilitychange', this._onVisibility);
           if (this.reallocTimer) {
             window.clearTimeout(this.reallocTimer);
@@ -1453,41 +1609,48 @@ export default function LiquidEther({
     container.style.position = container.style.position || 'relative';
     container.style.overflow = container.style.overflow || 'hidden';
 
-    const webgl = new WebGLManager({
-      $wrapper: container,
-      autoDemo,
-      autoSpeed,
-      autoIntensity,
-      takeoverDuration,
-      autoResumeDelay,
-      autoRampDuration
-    });
+    /* A browser can expose WebGL and still refuse a context: Brave shields, a
+       broken driver, or too many live contexts. Nothing would ever be drawn, so
+       the field must hand control back to the CSS lattice instead of staying
+       empty. Reported once per mount, from either the constructor or a later
+       `webglcontextlost`. */
+    let unavailableReported = false;
+    const reportUnavailable = () => {
+      if (unavailableReported) return;
+      unavailableReported = true;
+      onUnavailableRef.current?.();
+    };
+
+    let webgl = null;
+    try {
+      webgl = new WebGLManager({
+        $wrapper: container,
+        autoDemo,
+        autoSpeed,
+        autoIntensity,
+        takeoverDuration,
+        autoResumeDelay,
+        autoRampDuration,
+        touchSmoke,
+        pixelRatio,
+        powerPreference
+      });
+    } catch (error) {
+      reportUnavailable(error);
+      return undefined;
+    }
     webglRef.current = webgl;
 
-    const applyOptionsFromProps = () => {
-      if (!webglRef.current) return;
-      const sim = webglRef.current.output?.simulation;
-      if (!sim) return;
-      const prevRes = sim.options.resolution;
-      Object.assign(sim.options, {
-        mouse_force: mouseForce,
-        cursor_size: cursorSize,
-        isViscous,
-        viscous,
-        iterations_viscous: iterationsViscous,
-        iterations_poisson: iterationsPoisson,
-        dt,
-        BFECC,
-        resolution,
-        isBounce
-      });
-      if (resolution !== prevRes) {
-        sim.resize();
-      }
-    };
-    applyOptionsFromProps();
-
     webgl.start();
+
+    /* The context can also die later (GPU reset, driver crash, the tab parked
+       for a long time). Same answer: let the CSS lattice take over. */
+    const fieldCanvas = container.querySelector('canvas');
+    const handleContextLost = (event) => {
+      event.preventDefault?.();
+      reportUnavailable();
+    };
+    fieldCanvas?.addEventListener('webglcontextlost', handleContextLost, false);
 
     // IntersectionObserver to pause rendering when not visible
     const io = new IntersectionObserver(
@@ -1522,6 +1685,7 @@ export default function LiquidEther({
     resizeObserverRef.current = ro;
 
     return () => {
+      fieldCanvas?.removeEventListener('webglcontextlost', handleContextLost, false);
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
       if (resizeRafRef.current) cancelAnimationFrame(resizeRafRef.current);
       resizeRafRef.current = null;
@@ -1544,17 +1708,15 @@ export default function LiquidEther({
       }
       webglRef.current = null;
     };
+    // Only the props that change what gets built live here. Simulation options
+    // (`resolution`, the iteration counts, the forces) belong to the effect
+    // below: they are applied in place, so a quality-tier downgrade must never
+    // tear down the WebGL context, and the option-only props are deliberately
+    // absent from this list for that reason. `pixelRatio` and `powerPreference`
+    // are read here once (the context is built once) and then kept current by
+    // the effect below, which is why they are also not dependencies.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
-    BFECC,
-    cursorSize,
-    dt,
-    isBounce,
-    isViscous,
-    iterationsPoisson,
-    iterationsViscous,
-    mouseForce,
-    resolution,
-    viscous,
     colors,
     autoDemo,
     autoSpeed,
@@ -1563,7 +1725,8 @@ export default function LiquidEther({
     autoResumeDelay,
     autoRampDuration,
     backgroundColor,
-    lightMode
+    lightMode,
+    touchSmoke
   ]);
 
   useEffect(() => {
@@ -1572,6 +1735,8 @@ export default function LiquidEther({
     const sim = webgl.output?.simulation;
     if (!sim) return;
     const prevRes = sim.options.resolution;
+    const prevPoisson = sim.options.iterations_poisson;
+    const prevViscousIterations = sim.options.iterations_viscous;
     Object.assign(sim.options, {
       mouse_force: mouseForce,
       cursor_size: cursorSize,
@@ -1592,12 +1757,19 @@ export default function LiquidEther({
       if (webgl.autoDriver.mouse) {
         webgl.autoDriver.mouse.autoIntensity = autoIntensity;
         webgl.autoDriver.mouse.takeoverDuration = takeoverDuration;
+        webgl.autoDriver.mouse.touchSmoke = touchSmoke === true;
       }
     }
-    if (resolution !== prevRes) {
+    if (
+      resolution !== prevRes ||
+      iterationsPoisson !== prevPoisson ||
+      iterationsViscous !== prevViscousIterations
+    ) {
       sim.resize();
     }
+    webgl.setPixelRatio(pixelRatio);
   }, [
+    pixelRatio,
     mouseForce,
     cursorSize,
     isViscous,

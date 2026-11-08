@@ -27,7 +27,13 @@ const bebopShipJs = readFileSync(join(ROOT, "src/data/bebopShip.js"), "utf8");
 const sceneJs     = readFileSync(join(ROOT, "src/components/bebop/BebopShipScene.jsx"), "utf8");
 const modelJs     = readFileSync(join(ROOT, "src/components/bebop/ShipModel.jsx"), "utf8");
 const meta        = JSON.parse(readFileSync(join(ROOT, "scripts/bebop-ship-meta.json"), "utf8"));
-const appJs       = readFileSync(join(ROOT, "src/pages/_app.js"), "utf8");
+/* The App Router owns the document now: `src/pages/_app.js` is gone and the
+   global stylesheet, the fonts and the `html.js` marker moved to
+   `src/app/root-shell.jsx`, which both layouts (`(en)` and `(intl)/[lang]`)
+   render. The invariant this file checks is the same one it always checked —
+   the Bebop CSS Module is a chunk of `BebopAnimation`, not something the root
+   shell loads — so it reads the root shell instead of the deleted `_app`. */
+const rootShell   = readFileSync(join(ROOT, "src/app/root-shell.jsx"), "utf8");
 
 const shipPhase  = parseShipPhaseMs(bebopTimings);
 const gltfPath   = join(ROOT, "public", BEBOP_SHIP.gltfUrl.replace(/^\//, ""));
@@ -56,12 +62,14 @@ const noEndcard    = !/SEE YOU SPACE COWBOY/.test(animJs);
 const usesGsap     = /gsap/.test(sceneJs);
 const usesHardCuts = /tl\.set\(/.test(sceneJs);
 const usesLerp     = /tl\.to\(/.test(sceneJs);
-// CSS Module loaded from BebopAnimation chunk — not global _app/globals.
+// CSS Module loaded from BebopAnimation chunk — not from the root shell.
 const cssModuleSplit =
   /bebop\.module\.css/.test(animJs) &&
-  !/bebop\.(module\.)?css/.test(appJs) &&
+  !/bebop\.(module\.)?css/.test(rootShell) &&
   !/@import\s+["']\.\/bebop\.css["']/.test(globalsCss) &&
   existsSync(join(ROOT, "src/components/bebop/bebop.module.css"));
+// The root shell is the document's head: it must carry the global sheet.
+const rootShellOwnsGlobals = /@\/styles\/globals\.css/.test(rootShell);
 const modelUsesUrl = /BEBOP_SHIP\.gltfUrl/.test(modelJs);
 const noDeprecated = !/@deprecated/.test(bebopShipJs);
 
@@ -93,7 +101,8 @@ assert("V15 .bebopShipSystem full-bleed (inset:0, no flex)",           shipBleed
 assert("V20 no overlay endcard copy",                                  noEndcard);
 assert("V21 BebopShipScene uses GSAP timeline",                        usesGsap);
 assert("V21 GSAP hard cuts (tl.set) + continuous lerp (tl.to)",        usesHardCuts && usesLerp);
-assert("V22 bebop CSS Module via BebopAnimation (not _app/globals)", cssModuleSplit);
+assert("V22 bebop CSS Module via BebopAnimation (not the root shell)",   cssModuleSplit);
+assert("V22 root shell owns src/styles/globals.css",                    rootShellOwnsGlobals);
 assert("V22 ShipModel uses BEBOP_SHIP.gltfUrl",                        modelUsesUrl);
 assert("V22 no @deprecated aliases in bebopShip.js",                   noDeprecated);
 

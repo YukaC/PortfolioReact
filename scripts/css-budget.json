@@ -1,0 +1,86 @@
+{
+  "note": "Baseline of the compiled stylesheet for `pnpm check:css`. The number is measured from the source, not from a build: src/styles/globals.css compiled in-process with @tailwindcss/postcss (the plugin the app itself uses), so any machine and any CI job gets the same byte count. The guard fails when the compiled sheet grows more than `growthAllowance` over `compiledBytes` (audit.md §13.3 S7 / §21.3), and when `@layer components` exceeds `componentsCeiling` (§14.3, spec S14). Raising either number is a decision that belongs in the same commit as the CSS that makes it grow, with the reason in the feature doc.",
+  "compiledBytes": 77888,
+  "componentsBytes": 29645,
+  "componentsCeiling": 30450,
+  "growthAllowance": 0.05,
+  "history": [
+    {
+      "stage": "pre-program",
+      "bytes": 65896,
+      "source": "odd/tasks/audit-program.md L3 (T1 entry)"
+    },
+    {
+      "stage": "T1 — S1 + S7 (tokens, one colour grammar)",
+      "bytes": 68917,
+      "deltaPct": 4.58,
+      "source": "odd/tasks/audit-program.md L3; ~3 kB are the @supports pairs Lightning CSS emits for each color-mix()",
+      "inherited": "+4.9 % over the pre-program size as quoted in the T8 brief; the recorded figure is +4.58 %"
+    },
+    {
+      "stage": "T6 — S5 (CSS lattice replaces the shader's grid)",
+      "bytes": 70020,
+      "deltaPct": 1.6,
+      "source": "measured: sum of .next/static/chunks/*.css in the production build that contains T6 (commit bfcfb5d)",
+      "inherited": "+1.75 % over the post-T1 size as quoted in the T8 brief; the measured figure is +1.6 %"
+    },
+    {
+      "stage": "T8 — baseline recorded (this file)",
+      "bytes": 69224,
+      "deltaPct": -1.14,
+      "source": "in-process compile of the current source, which is a different pipeline from `next build` (Lightning CSS), hence the lower absolute number than the 70020 B build artefact"
+    },
+    {
+      "stage": "T11A — S14 (Tailwind by buckets)",
+      "bytes": 72514,
+      "deltaPct": 4.75,
+      "source": "T11A grew the sheet +4.75 % by moving recipes into @utility (each one carries its nested variant bodies and var() references, which a single inline utility used once did not) while @layer components shrank 25 %, so the net was +3.3 kB and left only 171 B of headroom under the 5 % ceiling"
+    },
+    {
+      "stage": "T11B — S4 (blur convolved into the blob gradients)",
+      "bytes": 74149,
+      "deltaPct": 2.25,
+      "source": "the six `filter: blur(110px)` layers became, at 900px and up, radial gradients whose stops sample the convolved profile (38 stops, two per line) while the narrow layout keeps the ramp and the filter it can afford; the measured delta is +2.25 % and `@layer components` lands at 29 081 B, 1.4 % over the 28 kB target of §14.3 because the wide layout carries both the ramp and its pre-blurred replacement"
+    },
+    {
+      "stage": "T12 — S11/S14 (`@layer components` ceiling enforced, reveal and flare rework)",
+      "bytes": 76580,
+      "deltaPct": 3.28,
+      "source": "`pnpm check:css` now compares `@layer components` against `componentsCeiling` (28 672 B = §14.3's 28 KB) instead of only reporting it, and the layer is measured at 28 476 B: `.contact-actions` (no consumer), the `narrow-or-touch` reveal variant and the blur variant of `r-paint` left, and `.timeline-org`/`.timeline-desc`/`.about-portrait-role` moved to `@utility` because §13.2 keeps box and type out of the layer. The comment prose inside kept blocks does not reach this number: Tailwind strips comments before the layer is compiled (measured — moving ~1 kB of prose out changed the byte count by 0), which is why the 28 KB had to be earned with declarations. The sheet itself grew to 76 580 B (+3.28 %, still under the 5 % allowance) with the four flare keyframes (`flare`, `flare-22`, `flare-12`, `flare-6`), the `--ease-in-out-field` curve and the new 36-entry flare table's durations."
+    },
+    {
+      "stage": "perf-stress-harness — the plume is one element on narrow",
+      "bytes": 77418,
+      "componentsBytes": 29173,
+      "deltaPct": 4.41,
+      "source": "odd/tasks/archive/perf-stress-harness.md L7: the six promoted .field-blob layers become one stacked background-image under max-wide, because the compositor isolated the field every frame (p95 33.4 -> 16.8 ms on the phone profile). @layer components grows 697 B for the narrow block; the ceiling moves to 29440 B with the reason recorded here."
+    },
+    {
+      "stage": "about-perf — the coarse-pointer finished state",
+      "bytes": 77888,
+      "componentsBytes": 29645,
+      "deltaPct": 5.04,
+      "source": "odd/tasks/archive/about-perf.md: AboutScroll no longer runs on a coarse pointer (the statement scrub and the drawn rail were the section's whole frame bill), so the stylesheet owes the finished state — lit statement, drawn rail, lit dots — the same one the (scripting: none) block already promised. 472 B in @layer components; ceiling 29900 B and baseline re-registered here with the reason."
+    },
+    {
+      "stage": "scroll-flick — the fling state of the reveal",
+      "componentsBytes": 30035,
+      "source": "odd/tasks/mobile-motion-perf.md L17: two selectors and one declaration for the fling state of the reveal (+141 B). The layer was 6 B under the old ceiling, so the ceiling moves to 30120 B (85 B of slack)."
+    },
+    {
+      "stage": "scroll-flick — the halo drops during a fling",
+      "componentsBytes": 30142,
+      "source": "odd/tasks/mobile-motion-perf.md L17: one selector and one declaration so the 24 px text halo stops rastering while the reader is flinging (+107 B over 30035). Ceiling 30120 -> 30250 (108 B of slack)."
+    },
+    {
+      "stage": "phone flick — the reveal never hides on a coarse pointer",
+      "componentsBytes": 30287,
+      "source": "odd/tasks/mobile-perf-structural-plan.md (9 nov 2026 log): an Android fling scrolls on the compositor while the main thread is screens behind, so the prepainted tiles of unrevealed nodes were empty and the reader saw only the field. Two selectors under pointer-coarse show an unrevealed block and its heading words as they are (+145 B, the --reveal-rise token left). Ceiling 30250 -> 30350."
+    },
+    {
+      "stage": "phone flick — the coarse halo reset wins the cascade",
+      "componentsBytes": 30379,
+      "source": "odd/tasks/mobile-perf-structural-plan.md (7 nov 2026 log): the coarse reset named a bare `.site-shell`, which loses to `.section-y .site-shell` and `.site-footer .site-shell` on specificity, so the 24 px halo stayed on every section on the phone (traced on the g82: GPU 1130 -> 600 ms, max GPU task 85 -> 13-23 ms). The reset now repeats the halo's selectors (+92 B). Ceiling 30350 -> 30450."
+    }
+  ]
+}

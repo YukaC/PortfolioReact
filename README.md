@@ -62,6 +62,7 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 | `pnpm start`          | Run the production build            |
 | `pnpm lint`           | Run ESLint                          |
 | `pnpm e2e:a11y`       | Browser check of the real site      |
+| `pnpm e2e:runtime`    | Locale proxy + clipboard contracts  |
 | `pnpm e2e:motion`     | Footer wordmark motion, in a browser|
 | `pnpm check:motion`   | Static GSAP reset-target guard      |
 | `pnpm validate:bebop` | Validate Bebop easter egg invariants |
@@ -77,6 +78,27 @@ pnpm e2e:a11y                                      # uses browser-verify.json
 pnpm e2e:a11y -- --base-url http://localhost:3000  # reuse a specific server
 pnpm e2e:a11y -- --json --report .browser-verify/report.json
 ```
+
+`pnpm e2e:runtime` covers the two contracts that catalog cannot see, because it only ever
+opens `/` in English on a `127.0.0.1` origin: that the locale proxy answers `/` in the
+visitor's language (and that `?lang=` beats the request header), and that the contact button
+still puts the address on the clipboard when `navigator.clipboard` does not exist — the
+insecure origin a phone hits when it opens the dev server over the LAN. It reuses a running
+server, or boots `next dev` itself, so it exercises the development path where the proxy
+regression lived.
+
+```bash
+pnpm e2e:runtime                                   # reuse the server on :3000
+pnpm e2e:runtime -- --url http://127.0.0.1:3100    # or point it at another one
+```
+
+### Visual baseline
+
+`pnpm visual:baseline` captures the 45 screenshots of `audit.md` §14.5 into
+`visual/baseline/<viewport>/<scroll>/<lang>.png` and records the build, the renderer and the
+vitals in `visual/baseline/manifest.json`. The PNGs stay out of git
+(`visual/baseline/**/*.png`) and CI uploads its captures as an artifact, so the manifest is
+the part that gets reviewed and the 31 MB of pixels are regenerated instead of committed.
 
 ### Wordmark motion
 
@@ -121,32 +143,75 @@ Tailscale: if that matters, bind the tailnet address alone with `pnpm dev -- -H 
 Re-check the hosts after a tailnet rename or an IP change (`tailscale ip -4`,
 `tailscale status --json`).
 
+### Measuring on a real phone
+
+The dev-only `/test` route and its overlay were removed; the meter is still served, by the
+proxy, to the device that actually has the DPR and the GPU:
+`node scripts/perf/remote-proxy.mjs --target http://127.0.0.1:4173 --port 4300`, then open
+`http://<this-machine>:4300/es` on the phone and press the bubble. The proxy owns
+`/__perf/report`, which is the meter's default endpoint (`src/perf/meter.js`), and the report
+lands in `.perf/browser/` (gitignored).
+
+Both hosts must be reachable from the phone; the proxy binds the machine, not the tailnet, so
+start it on the same network or through Tailscale.
+
+## 🔄 Project data
+
+The work list is served from one file, `src/data/pinned-projects.json`, which is validated
+by `src/lib/validate-projects.js` (https-only allowlisted links, `name`/`description`/`tags`
+shape, ≤ 6 items, no duplicates) and rendered as-is: the build and the render never talk to
+GitHub.
+
+Refreshing it is a commit, not a request. `.github/workflows/projects-sync.yml` runs every
+6 h, checks the repository out with `contents: write`, runs
+`node scripts/sync-projects.mjs` (one GraphQL call, 4 s timeout, no redirects), and commits
+`src/data/pinned-projects.json` only when the file changed — so `generatedAt` moves only
+when the data did, and the sitemap `lastmod`, the JSON-LD `dateModified` and the page's
+"última actualización" stay honest.
+
+Without a token, `node scripts/sync-projects.mjs --public` does the same write from public
+endpoints: it reads the pinned names out of the profile page and one
+`https://api.github.com/repos/YukaC/<name>` per pin (4 s timeout, no redirects,
+unauthenticated limit), then runs the same `validate()` and the same atomic write.
+
+`/api/sync-projects` remains for a host whose repository directory is writable (a VPS, a
+container, `pnpm start` on your own box): same validation, same atomic write, guarded by
+`CRON_SECRET`. On a read-only filesystem it answers `501` with the job's name instead of
+failing with a 500 that looks like a bug.
+
 ## 🌍 Languages
 
 The site is written in English and translated into Spanish and Portuguese, and the
-visitor does not choose: `middleware.js` reads `Accept-Language`, and `/` answers with the
+visitor does not choose: `src/proxy.js` reads `Accept-Language`, and `/` answers with the
 matching prerendered page — `/es` or `/pt` — through an internal rewrite, so the URL bar
 keeps `/` and the language never becomes part of the public address.
 
-"Translated in advance" is literal: those pages are built by `next build` (ISR, one hour),
+"Translated in advance" is literal: those pages are built by `next build` (ISR, six hours),
 so the bytes that arrive already carry the translated copy, `<title>`, description and
 social tags. There is no dictionary swap after hydration and therefore no flash of
-English.
+English. The six hours are the snapshot's own cadence: the pages re-render from
+`src/data/pinned-projects.json` when the `projects-sync` CI job commits a refreshed
+snapshot, not on a timer of their own.
 
-Resolution order is `?lang=` → cookie → `Accept-Language` → English. The middleware stores
-the detected tag (one year, `SameSite=Lax`), sets `Vary: Accept-Language, Cookie` and sends
-the decision to the render as `x-pf-locale` / `x-pf-html-lang`.
+Resolution order is `?lang=` → cookie → `Accept-Language` → English. The proxy stores the
+detected tag (one year, `SameSite=Lax`) on `/` — the only route whose language is
+negotiated, and therefore the only one that answers with a cookie — sets
+`Vary: Accept-Language` and sends the decision to the render as `x-pf-locale` /
+`x-pf-html-lang`. `/es` and `/pt` carry their language in the path, so their response is
+the same for everybody and a shared cache can keep it (audit.md §24 S3).
 
 A static HTML file cannot know a region, so `<html lang>` ships as `es` and
 `LocaleProvider` refines it to `es-AR` / `pt-BR` from that cookie after mount — the
-attribute only, never the text. `es-419` keeps the language and drops the region: HTML has
+attribute only, never the text. The cookie is written on `/`, where the language is
+negotiated, so a reader who lands straight on `/es` keeps the base tag (which is still
+correct, just not regional). `es-419` keeps the language and drops the region: HTML has
 no exact regional tag for it.
 
 The decisions live in one pure module (`src/i18n/locale.js`) shared by the edge runtime,
 the document shell and React; the dictionaries are in `src/i18n/messages/` and fall back to
 English key by key, because translation lag is expected and a blank string is not. Project
 cards translate per field from the `i18n` block that already owns the slug in
-`src/data/projects.js`. Task notes: `odd/tasks/auto-locale.md`.
+`src/data/projects.js`. Task notes: `odd/tasks/archive/auto-locale.md`.
 
 ## 📁 Project Structure
 
@@ -200,47 +265,54 @@ Works with Netlify, Railway, and [Next.js Docker](https://nextjs.org/docs/deploy
 - **Node.js** 22+ (see `engines` in `package.json`, `.nvmrc`, and CI — local Node 26 OK)
 - **pnpm** 11+ (see `packageManager` in `package.json`)
 
-## 🐢 Local development on a slow disk (HDD)
+## ⚡ Local development: the tree lives on NVMe
 
-Stay on **Next.js** (Vercel, ISR pins, Bebop). The slow part is not “Next vs Vite” in the abstract: this app pulls **three / R3F / drei / postprocessing / gsap**, and Turbopack is I/O-heavy. On a spinning HDD (e.g. `/mnt/JuegosHDD`) cold compile hurts; the same tree on NVMe is fine.
+This repository lives on the NVMe drive (`/home/yuka/Proyectos/PortfolioReact`); the
+old path under `/mnt/JuegosHDD/Proyectos/PortfolioReact` is a symlink to it, so every
+existing command, script and editor session keeps working unchanged.
 
-**Do not** symlink `.next` or `node_modules` across disks — Turbopack rejects out-of-root `node_modules` symlinks, and a cross-device `.next` breaks PostCSS.
+That matters because this app pulls **three / R3F / drei / postprocessing / gsap** and
+Turbopack is I/O-heavy: on a spinning disk the cold compile hurts, and `next dev`
+reports it directly — `⚠ Slow filesystem detected. The benchmark took Nms`. On NVMe
+that warning is gone and `pnpm dev` / `pnpm dev:mobile` run from this tree with no
+indirection.
 
-**Recommended: NVMe git worktree**
-
-```bash
-# From the HDD checkout (stop any next first)
-pnpm setup:ssd         # creates ~/ssd-cache/PortfolioReact/wt
-pnpm setup:ssd:store   # optional: pnpm store-dir on NVMe inside the worktree
-# Open that folder in Cursor, then:
-cd ~/ssd-cache/PortfolioReact/wt && pnpm dev
-```
-
-Convenience from the HDD tree (runs inside the worktree — use after the worktree has your commits):
-
-```bash
-pnpm dev:nvme
-pnpm build:nvme
-```
+**Do not** reintroduce symlinked `.next` or `node_modules` across disks, and do not
+create a second worktree of this repo to "get speed": Turbopack rejects out-of-root
+`node_modules` symlinks, a cross-device `.next` breaks PostCSS, and a second tree
+means the code you edit is not the code you serve. One tree, on NVMe, is the whole
+fix.
 
 Prefer **pnpm** (`packageManager`); `npm run …` works but locks/CI use pnpm.
 
-**Not the main bottleneck:** GitHub pin scrape in `getStaticProps` (~hundreds of ms). See [#20](https://github.com/YukaC/PortfolioReact/issues/20).
+**Not the main bottleneck:** the project list is read from the versioned snapshot
+(`src/data/pinned-projects.json`) — a build makes no request to GitHub at all. The one
+network call lives in the scheduled refresh, which validates before it writes: the
+`projects-sync` workflow (`.github/workflows/projects-sync.yml`) runs
+`node scripts/sync-projects.mjs` every 6 h and commits the snapshot when it changed. A
+serverless filesystem is read-only, so `/api/sync-projects` cannot write there: it answers
+`501` naming that job and stays as the self-hosted trigger. See
+[#20](https://github.com/YukaC/PortfolioReact/issues/20).
 
 ## Visual system
 
 Bocanada is the north star, retoned for a navy field: the smoke, the coral
 lattice and its spring flares are the only things allowed to move on their own.
-Shared layout is `.site-shell` (max 80rem, 44–128px inset) and `.section-y`
-(top padding only — sections breathe through space, not borders).
+The shared frame is the `site-shell` utility (max 80rem, 44–128px inset) and
+`section-y` (top padding only — sections breathe through space, not borders);
+both are `@utility` recipes in `src/styles/globals.css`, and everything a node
+can express with Tailwind is a utility in its JSX (see `AGENTS.md`, "Where CSS
+goes").
 
 One motion channel feeds every layer: `useFieldMotion` writes `--scy`, `--p`,
 `--hf`, `--px/--py` and `--mx/--my` on `:root` from a single rAF loop with
 inertia; About and Footer own `--tlp` and `--fp` through ScrollTrigger scrubs.
 Text stands directly on the field and carries a dark halo; glass (`.glass`) is
 used only where a surface has a job — the scrolled nav pill, the work preview
-and its tag. Motion presets live in `src/motion/config.js`. Task notes:
-`odd/tasks/glass-motion-rebrand.md`.
+and its tag. One ramp feeds both motion layers: `src/motion/config.js` keeps the
+GSAP springs and reads every duration, stagger and curve from the
+`--duration-*` / `--stagger-*` / `--ease-*` tokens in `globals.css`. Task notes:
+`odd/tasks/archive/glass-motion-rebrand.md`.
 
 ### Field quality on a phone
 
@@ -261,12 +333,12 @@ scroll) and cost the smoke its detail. The canvas itself runs at `pixelRatio = 1
 Two consequences worth knowing before touching the constants: the dye's *fluidity* is the
 render-target grid, not the pointer, and the touch drag is part of the design — `touchstart` /
 `touchmove` drive the same field the desktop pointer does. Task notes:
-`odd/tasks/mobile-field-parity.md`.
+`odd/tasks/archive/mobile-field-parity.md`.
 
 ### What a 3G phone pays
 
 Measured at 390x844, DPR 3, CPU 4x throttle, on three network profiles
-(`odd/tasks/mobile-load-budget.md`):
+(`odd/tasks/archive/mobile-load-budget.md`):
 
 | network | load | FCP | LCP | canvas | JS |
 | --- | --- | --- | --- | --- | --- |
@@ -293,18 +365,23 @@ Dark tokens live in `@theme static` (`src/styles/globals.css`):
 ```css
 @theme static {
   --color-ink: #060b1a;
-  --color-night: #0a1226;
   --color-deep: #0e1830;
   --color-mist: #16233d;
-  --color-fog: #c9d6ea;
   --color-paper: #eef2ff;
-  --color-mut: #a9b6d3;
-  --color-dim: #93a2ba;
-  --color-sky: #8fcbff;   /* type accent */
-  --color-ice: #8fcbff;   /* alias of sky */
-  --color-coral: #e2727f; /* field lattice */
+  --color-mut: #c2cde4;
+  --color-dim: #9eabc4;
+  --color-sky: #8fcbff;        /* type accent */
+  --color-coral: #e2727f;      /* field lattice */
+  --color-live: #4ade80;       /* the status dot */
+  --color-on-solid: #07102a;   /* ink on the one white surface */
+  --color-white: #fff;
+  --color-amber-glow: #8fcbff; /* Bebop's own module */
 }
 ```
+
+A token enters that block only together with the rule or utility that consumes it, so the
+list is shorter than it once was (`night`, `fog` and `ice` are gone, and `mut`/`dim` are the
+AA-measured values the sheet actually ships).
 
 ## 📄 License
 

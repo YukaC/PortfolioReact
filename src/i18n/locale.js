@@ -1,7 +1,7 @@
 /**
  * Locale detection, in one pure place.
  *
- * The middleware, the document shell and the client all need the same answer to
+ * The proxy, the document shell and the client all need the same answer to
  * "which language is this visitor reading in?", so the decision is a set of pure
  * functions here instead of duplicated logic in the edge runtime and in React.
  * Nothing in this file touches `window`, cookies or headers directly.

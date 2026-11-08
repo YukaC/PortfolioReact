@@ -1,52 +1,24 @@
-import { useEffect, useRef, useState } from "react";
+import CopyButton from "@/components/CopyButton";
 import Reveal from "@/components/Reveal";
 import SplitHeading from "@/components/SplitHeading";
 import SwapArrow from "@/components/SwapArrow";
 import { CONTACT_EMAIL } from "@/data/constants";
-import { useT } from "@/i18n/LocaleProvider";
+import { translator } from "@/i18n/index.js";
 
 /**
  * Contact - one address, offered plainly.
  *
- * The giant mail reads as the action; the copy button shadows it for readers
- * who would rather paste than open a mail client. The confirmation is
- * announced through a live region, not just by the label that rolls.
+ * The giant mail reads as the action and it is a plain `mailto:` link, so the
+ * section works without a script; the copy button shadows it for readers who
+ * would rather paste than open a mail client (audit.md §16.2: server + a
+ * `CopyButton` island).
  */
-const Contact = () => {
-  const { t } = useT();
-  const [status, setStatus] = useState("idle");
-  const resetRef = useRef(0);
+const Contact = ({ locale = "en" }) => {
+  const { t } = translator(locale);
 
   const mailto = `mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent(
     t("contact.mailSubject"),
   )}`;
-
-  useEffect(() => () => window.clearTimeout(resetRef.current), []);
-
-  const copyAddress = async () => {
-    window.clearTimeout(resetRef.current);
-    try {
-      await navigator.clipboard.writeText(CONTACT_EMAIL);
-      setStatus("copied");
-    } catch {
-      setStatus("manual");
-    }
-    resetRef.current = window.setTimeout(() => setStatus("idle"), 1800);
-  };
-
-  const label =
-    status === "copied"
-      ? t("contact.copied")
-      : status === "manual"
-        ? t("contact.manual")
-        : t("contact.copy");
-
-  const announcement =
-    status === "copied"
-      ? t("contact.copiedAnnouncement")
-      : status === "manual"
-        ? t("contact.manualAnnouncement")
-        : "";
 
   return (
     <section
@@ -73,22 +45,7 @@ const Contact = () => {
             <SwapArrow direction="d" size={28} />
           </a>
 
-          <div className="contact-actions">
-            <button
-              id="copy-address"
-              type="button"
-              className={`btn focus-ring${status === "copied" ? " btn-ok" : ""}`}
-              onClick={copyAddress}
-            >
-              <span className="lb">
-                <span data-t={label}>{label}</span>
-              </span>
-            </button>
-          </div>
-
-          <p className="sr-only" role="status">
-            {announcement}
-          </p>
+          <CopyButton />
         </Reveal>
       </div>
     </section>
