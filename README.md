@@ -96,9 +96,10 @@ pnpm e2e:runtime -- --url http://127.0.0.1:3100    # or point it at another one
 
 `pnpm visual:baseline` captures the 45 screenshots of `audit.md` §14.5 into
 `visual/baseline/<viewport>/<scroll>/<lang>.png` and records the build, the renderer and the
-vitals in `visual/baseline/manifest.json`. The PNGs stay out of git
-(`visual/baseline/**/*.png`) and CI uploads its captures as an artifact, so the manifest is
-the part that gets reviewed and the 31 MB of pixels are regenerated instead of committed.
+vitals in `visual/baseline/manifest.json`. The captures are committed, so `pnpm visual:diff`
+can gate them in CI: it re-shoots the same 45 and fails when one is missing or over the 0.1 %
+pixel threshold. CI runs it through `browser-verify.ci.json`, and `scripts/vendor/browser-verify.mjs`
+is the copy of the house runner the workflow uses, so no job depends on `~/.agents`.
 
 ### Wordmark motion
 

@@ -135,6 +135,3 @@ odd/tasks/archive/
 
 # Playwright MCP session artifacts (console log + page snapshot)
 .playwright-mcp/
-
-# Visual baseline (§14.5): the manifest is tracked, the 45 captures are not
-visual/baseline/**/*.png
