@@ -13,6 +13,7 @@ node_modules/
 .next/
 out/
 build/
+dist/
 .swc/
 # `pnpm perf` artifacts (scripts/perf-suite.sh --out)
 .perf/
@@ -27,11 +28,10 @@ coverage/
 # ============================================
 # Environment Variables
 # ============================================
-.env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
+# One glob instead of five names: `.env.staging` and any future variant are
+# secrets too. A committed example file has to be named `env.example`.
+.env*
+*.env
 
 # ============================================
 # Debug & Logs
@@ -122,7 +122,6 @@ __pycache__/
 # Gentle skill registry (generated per machine)
 .atl/
 # Local AI runtime state
-.atl/
 .pi-glla/
 
 # design-taste-frontend inspector output (screenshots + report)
@@ -136,8 +135,6 @@ odd/tasks/archive/
 
 # Playwright MCP session artifacts (console log + page snapshot)
 .playwright-mcp/
-.vercel
-.env*
 
 # Visual baseline (§14.5): the manifest is tracked, the 45 captures are not
 visual/baseline/**/*.png
