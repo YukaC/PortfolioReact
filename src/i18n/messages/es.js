@@ -48,7 +48,7 @@ const es = {
     status: "Disponible para freelance y full-time",
     // The heading is the name, with the role as its second line (inside the h1).
     name: "Agustín Ciucani",
-    role: "desarrollador full-stack",
+    role: "Desarrollador full-stack",
     // The subtitle: the phrase at the end carries the sky accent, and the `\n`
     // puts it on its own line at every width. The break cannot ride on the
     // available width: at 1440 the phrase used to break after "de", leaving the
@@ -62,7 +62,7 @@ const es = {
     stackLabel: "Stack",
     // The band's accent track and the hero's second tag row: the same vocabulary,
     // read twice on the page (hero and `Marquee`), so it lives in one key.
-    focus: ["Interfaces", "Paneles", "PWAs", "APIs", "Accesible", "Responsive"],
+    focus: ["Interfaces", "Paneles", "PWAs", "APIs", "Accesible"],
   },
   work: {
     eyebrow: "Proyectos",

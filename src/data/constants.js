@@ -33,15 +33,17 @@ export const SKILLS = [
  * The hero's first tag row and the marquee's outline track. Technology names
  * are not copy — they read the same in every language — so the list lives here
  * instead of in the three dictionaries, and both band rows read this one array.
+ *
+ * The row has to fit the hero column on one line at `wide`, so it carries the
+ * six names the site actually leads with; TypeScript and Flask stay in `SKILLS`
+ * and in the projects' own tag rows, where there is no single-line budget.
  */
 export const TECH_TAGS = [
   "React",
   "Next.js",
-  "TypeScript",
   "Tailwind",
   "Node",
   "Python",
-  "Flask",
   "PostgreSQL",
 ];
 

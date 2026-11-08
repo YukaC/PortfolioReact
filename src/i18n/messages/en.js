@@ -58,14 +58,7 @@ const en = {
     seeWork: "See projects",
     getInTouch: "Write to me",
     stackLabel: "Stack",
-    focus: [
-      "Interfaces",
-      "Dashboards",
-      "PWAs",
-      "APIs",
-      "Accessible",
-      "Responsive",
-    ],
+    focus: ["Interfaces", "Dashboards", "PWAs", "APIs", "Accessible"],
   },
   work: {
     eyebrow: "Projects",
