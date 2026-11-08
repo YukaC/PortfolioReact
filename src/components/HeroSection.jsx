@@ -93,12 +93,12 @@ const HeroSection = ({ locale = "en" }) => {
                 data-r="paint"
                 style={{ "--d": "760ms" }}
               >
-                <p>
+                <p className="min-[72rem]:whitespace-nowrap">
                   {TECH_TAGS.map((item) => (
                     <span key={item}>{item}</span>
                   ))}
                 </p>
-                <p className="mt-1.5">
+                <p className="mt-1.5 min-[72rem]:whitespace-nowrap">
                   {t("hero.focus").map((item) => (
                     <span key={item}>{item}</span>
                   ))}

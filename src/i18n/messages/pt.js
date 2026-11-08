@@ -55,14 +55,7 @@ const pt = {
     seeWork: "Ver projetos",
     getInTouch: "Me escreve",
     stackLabel: "Stack",
-    focus: [
-      "Interfaces",
-      "Painéis",
-      "PWAs",
-      "APIs",
-      "Acessível",
-      "Responsivo",
-    ],
+    focus: ["Interfaces", "Painéis", "PWAs", "APIs", "Acessível"],
   },
   work: {
     eyebrow: "Projetos",
