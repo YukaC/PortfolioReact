@@ -54,7 +54,7 @@ const en = {
     title: "I build your software\nend to end.",
     accent: "end to end.",
     lead:
-      "I live in Coronel Dorrego, Buenos Aires. I build interfaces and dashboards with React, Next.js and Tailwind, and the backends behind them with Node or Flask on PostgreSQL.",
+      "I live in Coronel Dorrego, Buenos Aires. I build interfaces and dashboards with React, Next.js and Tailwind, and the backends behind them with Node or Python on PostgreSQL.",
     seeWork: "See projects",
     getInTouch: "Write to me",
     stackLabel: "Stack",
