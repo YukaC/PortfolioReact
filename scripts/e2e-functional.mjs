@@ -371,6 +371,7 @@ async function assertDrawer(page, route) {
         ? button.getAttribute("aria-expanded") === "true"
         : Boolean(details?.open);
       const focusable = panel?.querySelector("a[href], button:not([disabled])");
+      const items = [...(panel?.querySelectorAll("[data-menu-item]") ?? [])];
       const shown = (element) => {
         if (!element) return false;
         const style = getComputedStyle(element);
@@ -383,6 +384,16 @@ async function assertDrawer(page, route) {
         panelFound: Boolean(panel),
         panelVisible: shown(panel),
         linkVisible: shown(focusable),
+        /* The closed drawer plays its exit once on mount, and an open that
+           arrives while that tween is still running leaves the items at their
+           exit values and focus on the page (measured: the first item stays at
+           opacity 0, `document.activeElement` falls back to `<body>`). This is
+           how the check knows the drawer it is about to open is at rest. */
+        itemsResting:
+          items.length > 0 && items.every((item) => Number(getComputedStyle(item).opacity) === 0),
+        /* Under reduced motion the mount sets the items visible instead of
+           tweening them out, so a hidden panel is already the closed state. */
+        reducedMotion: window.matchMedia("(prefers-reduced-motion: reduce)").matches,
         focusInside: Boolean(panel && panel.contains(document.activeElement)),
         focusOnTrigger: Boolean(
           document.activeElement &&
@@ -393,53 +404,51 @@ async function assertDrawer(page, route) {
       };
     });
 
-  await trigger.click();
   /* The panel fades in and the drawer hands focus over after the transition, so
-     the check waits for that settled state instead of racing it: a fixed 700 ms
+     the check waits for that state instead of sleeping past it: a fixed 700 ms
      read passed or failed depending on the machine (two of three routes went
      red on one run and green on the next, with nothing in between). The
-     assertion below is unchanged and still strict — this only removes the race. */
-  /* A timeout is not swallowed: the record below fails on state either way, and
+     assertions below are unchanged and still strict — this only removes the
+     race. A timeout is not swallowed: the record fails on state either way, and
      the reason it waited in vain rides along in the detail instead of being lost. */
-  const settleTimeout = await page
-    .waitForFunction(
-      () => {
-        const panel = document.querySelector(".mobile-menu-panel");
-        if (!panel) return false;
-        const link = panel.querySelector("a[href], button:not([disabled])");
-        const shown = (element) => {
-          if (!element) return false;
-          const style = getComputedStyle(element);
-          const rect = element.getBoundingClientRect();
-          return (
-            style.display !== "none" &&
-            style.visibility !== "hidden" &&
-            Number(style.opacity) > 0.5 &&
-            rect.height > 1
-          );
-        };
-        return shown(panel) && shown(link) && panel.contains(document.activeElement);
-      },
-      null,
-      { timeout: 4000 },
-    )
-    .then(() => "")
-    .catch((error) => ` · did not settle in 4 s (${String(error?.message ?? error).split("\n")[0]})`);
+  const settled = async (want, timeout = 15_000) => {
+    const deadline = Date.now() + timeout;
+    let snapshot = await state();
+    while (!want(snapshot) && Date.now() < deadline) {
+      await page.waitForTimeout(50);
+      snapshot = await state();
+    }
+    return want(snapshot) ? "" : ` · did not settle in ${Math.round(timeout / 1000)} s`;
+  };
+
+  const isOpen = (snapshot) =>
+    snapshot.open && snapshot.panelVisible && snapshot.linkVisible && snapshot.focusInside;
+  const isClosed = (snapshot) => !snapshot.open && !snapshot.panelVisible && snapshot.focusOnTrigger;
+
+  /* Open a drawer at rest: clicking through the mount's exit tween is the race
+     this check used to lose. Bounded, and its reason is dropped here — the
+     record below is what fails. */
+  await settled(
+    (snapshot) => !snapshot.open && !snapshot.panelVisible && (snapshot.reducedMotion || snapshot.itemsResting),
+  );
+
+  await trigger.click();
+  const openTimeout = await settled(isOpen);
   const opened = await state();
   record(
     route,
     "drawer/open",
-    opened.open && opened.panelVisible && opened.linkVisible && opened.focusInside,
-    `${opened.side}: open=${opened.open} panel=${opened.panelVisible} link=${opened.linkVisible} focus inside=${opened.focusInside}${settleTimeout}`,
+    isOpen(opened),
+    `${opened.side}: open=${opened.open} panel=${opened.panelVisible} link=${opened.linkVisible} focus inside=${opened.focusInside}${openTimeout}`,
   );
 
   await page.keyboard.press("Escape");
-  await page.waitForTimeout(700);
+  let closeTimeout = await settled(isClosed);
   let closed = await state();
   let via = "Escape";
   if (closed.open) {
     await trigger.click();
-    await page.waitForTimeout(700);
+    closeTimeout = await settled(isClosed);
     closed = await state();
     via = "click";
   }
@@ -447,8 +456,8 @@ async function assertDrawer(page, route) {
   record(
     route,
     "drawer/close",
-    !closed.open && !closed.panelVisible && closed.focusOnTrigger,
-    `closed via ${via} · open=${closed.open} panel=${closed.panelVisible} focus on trigger=${closed.focusOnTrigger}`,
+    isClosed(closed),
+    `closed via ${via} · open=${closed.open} panel=${closed.panelVisible} focus on trigger=${closed.focusOnTrigger}${closeTimeout}`,
   );
 }
 
