@@ -95,7 +95,7 @@ const SplitHeading = ({
             return (
               <span key={`${word}-${index}`}>
                 {isAccentWord(word, accentWords) ? (
-                  <em className="not-italic font-semibold tracking-[inherit] text-sky">
+                  <em className="not-italic font-medium tracking-[inherit] text-sky">
                     {box}
                   </em>
                 ) : (
