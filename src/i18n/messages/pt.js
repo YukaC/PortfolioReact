@@ -46,8 +46,9 @@ const pt = {
     // O título é o nome, com o cargo como segunda linha (dentro do h1).
     name: "Agustín Ciucani",
     role: "desenvolvedor full-stack",
-    // O subtítulo: uma frase, com o trecho final em destaque.
-    title: "Desenvolvo seu software de ponta a ponta.",
+    // O subtítulo: o trecho final em destaque, e o `\n` o põe em linha própria em
+    // qualquer largura.
+    title: "Desenvolvo seu software\nde ponta a ponta.",
     accent: "de ponta a ponta.",
     lead:
       "Moro em Coronel Dorrego, Buenos Aires. Faço interfaces e painéis com React, Next.js e Tailwind, e os backends que os sustentam com Node ou Flask sobre PostgreSQL.",

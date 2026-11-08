@@ -49,8 +49,9 @@ const en = {
     // The heading is the name, with the role as its second line (inside the h1).
     name: "Agustín Ciucani",
     role: "full-stack developer",
-    // The subtitle: one sentence, the phrase at the end carries the sky accent.
-    title: "I build your software, end to end.",
+    // The subtitle: the phrase at the end carries the sky accent, and the `\n`
+    // puts it on its own line at every width.
+    title: "I build your software\nend to end.",
     accent: "end to end.",
     lead:
       "I live in Coronel Dorrego, Buenos Aires. I build interfaces and dashboards with React, Next.js and Tailwind, and the backends behind them with Node or Flask on PostgreSQL.",
