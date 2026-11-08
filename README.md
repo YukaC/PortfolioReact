@@ -96,9 +96,14 @@ pnpm e2e:runtime -- --url http://127.0.0.1:3100    # or point it at another one
 
 `pnpm visual:baseline` captures the 45 screenshots of `audit.md` §14.5 into
 `visual/baseline/<viewport>/<scroll>/<lang>.png` and records the build, the renderer and the
-vitals in `visual/baseline/manifest.json`. The PNGs stay out of git
-(`visual/baseline/**/*.png`) and CI uploads its captures as an artifact, so the manifest is
-the part that gets reviewed and the 31 MB of pixels are regenerated instead of committed.
+vitals in `visual/baseline/manifest.json`. The committed set was captured on the machine with
+the GPU (ANGLE, Radeon RX 570), which is where `pnpm visual:diff` can gate it: the same 45 are
+re-shot and a row fails when it is missing or over the 0.1 % pixel threshold. CI uploads its
+own captures as an artifact but does not gate them — a SwiftShader capture differs from that
+baseline by 98-99 %, so the pixel comparison there would measure the renderer. CI does run
+the a11y suite, through `browser-verify.ci.json` against `next start`, using
+`scripts/vendor/browser-verify.mjs` — the vendored copy of the house runner — so no job
+depends on `~/.agents`.
 
 ### Wordmark motion
 
