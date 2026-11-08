@@ -1,14 +1,14 @@
 {
   "protocol": "audit.md §14.5 — 5 anchos × 3 posiciones de scroll × 3 idiomas, umbral 0.1 %",
   "frozen": "prefers-reduced-motion: reduce + todas las animaciones en su estado final",
-  "generatedAt": "2026-11-01T18:52:55.391Z",
+  "generatedAt": "2026-11-08T12:15:31.464Z",
   "commit": {
-    "sha": "b9bf524",
-    "subject": "fix(data): serve the owner's real pins again, and keep the repo pill",
+    "sha": "6e8e5d5",
+    "subject": "test(visual): commit the 45 §14.5 captures the diff gate compares against",
     "branch": "feat/audit-program",
     "dirty": true
   },
-  "renderer": "ANGLE (AMD, AMD Radeon RX 570 Series (radeonsi polaris10 ACO), OpenGL ES 3.2)",
+  "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
   "vitals": null,
   "shots": [
     {
@@ -19,12 +19,12 @@
       },
       "scroll": "top",
       "scrollY": 0,
-      "documentHeight": 6653,
+      "documentHeight": 18613,
       "lang": "en",
       "url": "/",
       "path": "visual/baseline/390/top/en.png",
-      "bytes": 299480,
-      "sha256": "8b083d13e1639f7059de1441917af6b396d6ca49565fe2e37a5565031a24a2da"
+      "bytes": 86766,
+      "sha256": "c54f16cc177d8653bd0b5d87a596ee53fc5da546db78ab3bfddecd0fdf4d0a0e"
     },
     {
       "id": "390/top/es",
@@ -34,12 +34,12 @@
       },
       "scroll": "top",
       "scrollY": 0,
-      "documentHeight": 6813,
+      "documentHeight": 18057,
       "lang": "es",
       "url": "/es",
       "path": "visual/baseline/390/top/es.png",
-      "bytes": 304055,
-      "sha256": "6c1481c9148457e17f72edcf7729bdf82061d8347bfc2bc2c6531578b98f16be"
+      "bytes": 86766,
+      "sha256": "c54f16cc177d8653bd0b5d87a596ee53fc5da546db78ab3bfddecd0fdf4d0a0e"
     },
     {
       "id": "390/top/pt",
@@ -49,12 +49,12 @@
       },
       "scroll": "top",
       "scrollY": 0,
-      "documentHeight": 6760,
+      "documentHeight": 18659,
       "lang": "pt",
       "url": "/pt",
       "path": "visual/baseline/390/top/pt.png",
-      "bytes": 306377,
-      "sha256": "398226fedd91e89d6e5f7b55086ffb80f2224fe0fc6115571d81f2d6107e2bac"
+      "bytes": 86766,
+      "sha256": "c54f16cc177d8653bd0b5d87a596ee53fc5da546db78ab3bfddecd0fdf4d0a0e"
     },
     {
       "id": "390/hero-out/en",
@@ -64,12 +64,12 @@
       },
       "scroll": "hero-out",
       "scrollY": 844,
-      "documentHeight": 6653,
+      "documentHeight": 18613,
       "lang": "en",
       "url": "/",
       "path": "visual/baseline/390/hero-out/en.png",
-      "bytes": 285175,
-      "sha256": "c760827b8e1c1de8a375830b308871f93c31ef362173f0dae54023cf0168d440"
+      "bytes": 10473,
+      "sha256": "828520192d43510089a2016681edfc72b4f5ccb69eddb2377e37fe40da2b5d75"
     },
     {
       "id": "390/hero-out/es",
@@ -79,12 +79,12 @@
       },
       "scroll": "hero-out",
       "scrollY": 844,
-      "documentHeight": 6813,
+      "documentHeight": 18057,
       "lang": "es",
       "url": "/es",
       "path": "visual/baseline/390/hero-out/es.png",
-      "bytes": 291719,
-      "sha256": "c8106a52d50cc8428e9220229465ae086731a3512ab0c2e4debddb3fd7b0ddd2"
+      "bytes": 11188,
+      "sha256": "593d95b6a302535dcae39593d1668cecfe6db763a59df19a2ad46020f3e3c8e5"
     },
     {
       "id": "390/hero-out/pt",
@@ -94,12 +94,12 @@
       },
       "scroll": "hero-out",
       "scrollY": 844,
-      "documentHeight": 6760,
+      "documentHeight": 18659,
       "lang": "pt",
       "url": "/pt",
       "path": "visual/baseline/390/hero-out/pt.png",
-      "bytes": 292337,
-      "sha256": "6bf8ac54c942bd17509779f3fade2c27820cb5975e43ee3b9766ba6ec25715de"
+      "bytes": 10573,
+      "sha256": "a59f564f5e5fa22095d0c753119acfeac1ffa8211ed8dd75882b3e9b497622be"
     },
     {
       "id": "390/footer/en",
@@ -108,13 +108,13 @@
         "height": 844
       },
       "scroll": "footer",
-      "scrollY": 5809,
-      "documentHeight": 6653,
+      "scrollY": 17769,
+      "documentHeight": 18613,
       "lang": "en",
       "url": "/",
       "path": "visual/baseline/390/footer/en.png",
-      "bytes": 297216,
-      "sha256": "3438149a55c3cdfdd31ee107a90f2c343bf1bd80af86be2e8350569fca2849a7"
+      "bytes": 27456,
+      "sha256": "331495451dc5ba7e7d8e809b1bb73ae5d1705673a62b848eb869abcd6d1d6b4f"
     },
     {
       "id": "390/footer/es",
@@ -123,13 +123,13 @@
         "height": 844
       },
       "scroll": "footer",
-      "scrollY": 5969,
-      "documentHeight": 6813,
+      "scrollY": 17213,
+      "documentHeight": 18057,
       "lang": "es",
       "url": "/es",
       "path": "visual/baseline/390/footer/es.png",
-      "bytes": 294959,
-      "sha256": "fe907549fb96431f4c1d65094048691a0ac03e8bd9c74037b81aecca3b5b58c5"
+      "bytes": 27806,
+      "sha256": "875b64f2c2babc64f6f68b5856361ccc0553bc8a877a836e7d1fdbd751715114"
     },
     {
       "id": "390/footer/pt",
@@ -138,13 +138,13 @@
         "height": 844
       },
       "scroll": "footer",
-      "scrollY": 5916,
-      "documentHeight": 6760,
+      "scrollY": 17815,
+      "documentHeight": 18659,
       "lang": "pt",
       "url": "/pt",
       "path": "visual/baseline/390/footer/pt.png",
-      "bytes": 294879,
-      "sha256": "923fc0ce80929f9da9565ec92124b16c47d0fade41f65a72c62e25aedffb3209"
+      "bytes": 27623,
+      "sha256": "ff1b6927f4f8a3d09dfa249d5e6cff7536f99b8b5e18b5a69b4985579beaa2b2"
     },
     {
       "id": "768/top/en",
@@ -154,12 +154,12 @@
       },
       "scroll": "top",
       "scrollY": 0,
-      "documentHeight": 7714,
+      "documentHeight": 33320,
       "lang": "en",
       "url": "/",
       "path": "visual/baseline/768/top/en.png",
-      "bytes": 607612,
-      "sha256": "c72e4aa44ea8208be7aa1092feb340becd4c45f8b22a9b46cd1619d1e0a299e3"
+      "bytes": 159189,
+      "sha256": "b1b58ac1202d3198b630b9bea71a076e90c9a2535429bc186ea6bc14c91500dc"
     },
     {
       "id": "768/top/es",
@@ -169,12 +169,12 @@
       },
       "scroll": "top",
       "scrollY": 0,
-      "documentHeight": 7827,
+      "documentHeight": 32818,
       "lang": "es",
       "url": "/es",
       "path": "visual/baseline/768/top/es.png",
-      "bytes": 613815,
-      "sha256": "d97ad44f2c61a36d099251ef8544d70312dd75967a97ce3db3c725ebfe867429"
+      "bytes": 159189,
+      "sha256": "b1b58ac1202d3198b630b9bea71a076e90c9a2535429bc186ea6bc14c91500dc"
     },
     {
       "id": "768/top/pt",
@@ -184,12 +184,12 @@
       },
       "scroll": "top",
       "scrollY": 0,
-      "documentHeight": 7786,
+      "documentHeight": 33338,
       "lang": "pt",
       "url": "/pt",
       "path": "visual/baseline/768/top/pt.png",
-      "bytes": 617167,
-      "sha256": "cd04b89a32d0afb4934144a6f697e8a36c0883dc5849b04743506eea9ebec789"
+      "bytes": 159189,
+      "sha256": "b1b58ac1202d3198b630b9bea71a076e90c9a2535429bc186ea6bc14c91500dc"
     },
     {
       "id": "768/hero-out/en",
@@ -199,12 +199,12 @@
       },
       "scroll": "hero-out",
       "scrollY": 1024,
-      "documentHeight": 7714,
+      "documentHeight": 33320,
       "lang": "en",
       "url": "/",
       "path": "visual/baseline/768/hero-out/en.png",
-      "bytes": 555097,
-      "sha256": "044d79ffae87f6d51d11763b286b855a50869d820fe16aa620aadc838ba3ef83"
+      "bytes": 12757,
+      "sha256": "a68a4df0d4b1ce05b99a166968210c83ff4440ce4c048fce8728ac16482b9eba"
     },
     {
       "id": "768/hero-out/es",
@@ -214,12 +214,12 @@
       },
       "scroll": "hero-out",
       "scrollY": 1024,
-      "documentHeight": 7827,
+      "documentHeight": 32818,
       "lang": "es",
       "url": "/es",
       "path": "visual/baseline/768/hero-out/es.png",
-      "bytes": 576900,
-      "sha256": "fcebc104fdc59f903b57b1881536ef47477f3f6759693b7886ae97cf7338630d"
+      "bytes": 13560,
+      "sha256": "0e091a8ae10e3840231850cb9d26d696d5b8f5f31d8ab77a9d57eb48bc31484e"
     },
     {
       "id": "768/hero-out/pt",
@@ -229,12 +229,12 @@
       },
       "scroll": "hero-out",
       "scrollY": 1024,
-      "documentHeight": 7786,
+      "documentHeight": 33338,
       "lang": "pt",
       "url": "/pt",
       "path": "visual/baseline/768/hero-out/pt.png",
-      "bytes": 577402,
-      "sha256": "9eeb9a941512afb4140571ac28a2f316911aa3b5d34a1885938cb7511d33e753"
+      "bytes": 12876,
+      "sha256": "d5cd5f27e86f2e9c421a7d0e14c5fcce640ed0cc782267102e3d668e70b30e81"
     },
     {
       "id": "768/footer/en",
@@ -243,13 +243,13 @@
         "height": 1024
       },
       "scroll": "footer",
-      "scrollY": 6690,
-      "documentHeight": 7714,
+      "scrollY": 32296,
+      "documentHeight": 33320,
       "lang": "en",
       "url": "/",
       "path": "visual/baseline/768/footer/en.png",
-      "bytes": 619534,
-      "sha256": "1747eee99397cabc368cee7b4f8229a27d45d63d4fb7bcf3e2c07803e918b322"
+      "bytes": 35037,
+      "sha256": "211d1519f1b1d4d07fb9bb49c682b5ae275d7edd880f6541d6276e667d951fdf"
     },
     {
       "id": "768/footer/es",
@@ -258,13 +258,13 @@
         "height": 1024
       },
       "scroll": "footer",
-      "scrollY": 6803,
-      "documentHeight": 7827,
+      "scrollY": 31794,
+      "documentHeight": 32818,
       "lang": "es",
       "url": "/es",
       "path": "visual/baseline/768/footer/es.png",
-      "bytes": 621076,
-      "sha256": "151bd13624b4647e56c0f1e2029840d81d171e1ed895b447260f640e0d3c97eb"
+      "bytes": 35882,
+      "sha256": "96416826f0f9787bd97a69a4c446052070874fff646c18e5640c8cbeaa6bf7ce"
     },
     {
       "id": "768/footer/pt",
@@ -273,13 +273,13 @@
         "height": 1024
       },
       "scroll": "footer",
-      "scrollY": 6762,
-      "documentHeight": 7786,
+      "scrollY": 32314,
+      "documentHeight": 33338,
       "lang": "pt",
       "url": "/pt",
       "path": "visual/baseline/768/footer/pt.png",
-      "bytes": 620521,
-      "sha256": "026ca4e1b13e6ab3307cb5915451c22fbc59cfb546db2d15c7fa49c4e961c8fa"
+      "bytes": 35311,
+      "sha256": "0b64e1a4342becaaa6207e81c6492a1a6bb7ea4a2192b17daaf1ea2c52581e0f"
     },
     {
       "id": "900/top/en",
@@ -289,12 +289,12 @@
       },
       "scroll": "top",
       "scrollY": 0,
-      "documentHeight": 7939,
+      "documentHeight": 38552,
       "lang": "en",
       "url": "/",
       "path": "visual/baseline/900/top/en.png",
-      "bytes": 722890,
-      "sha256": "c6d24ab184387f6fb245ab6094ef5d23a854c2d42dd3e545ca534828c72263e9"
+      "bytes": 175233,
+      "sha256": "2cf63b215fdbf672e915c5041dd1c27936a535ff1bab218869e75c7aca88be4c"
     },
     {
       "id": "900/top/es",
@@ -304,12 +304,12 @@
       },
       "scroll": "top",
       "scrollY": 0,
-      "documentHeight": 8058,
+      "documentHeight": 38068,
       "lang": "es",
       "url": "/es",
       "path": "visual/baseline/900/top/es.png",
-      "bytes": 729312,
-      "sha256": "9dc6dca3ec31714862f34443e765a475cbf54a78e2fded78a791e2c0361d0019"
+      "bytes": 175233,
+      "sha256": "2cf63b215fdbf672e915c5041dd1c27936a535ff1bab218869e75c7aca88be4c"
     },
     {
       "id": "900/top/pt",
@@ -319,12 +319,12 @@
       },
       "scroll": "top",
       "scrollY": 0,
-      "documentHeight": 8039,
+      "documentHeight": 38552,
       "lang": "pt",
       "url": "/pt",
       "path": "visual/baseline/900/top/pt.png",
-      "bytes": 732061,
-      "sha256": "7927b21d1ccf255839f8e354b74c82d88797153f0b2a4409e63305e32357cdc9"
+      "bytes": 175233,
+      "sha256": "2cf63b215fdbf672e915c5041dd1c27936a535ff1bab218869e75c7aca88be4c"
     },
     {
       "id": "900/hero-out/en",
@@ -334,12 +334,12 @@
       },
       "scroll": "hero-out",
       "scrollY": 1000,
-      "documentHeight": 7939,
+      "documentHeight": 38552,
       "lang": "en",
       "url": "/",
       "path": "visual/baseline/900/hero-out/en.png",
-      "bytes": 664731,
-      "sha256": "b4386a33d3a5f2641ee6a41f04fbd0492badfed41954d82653d6ea2e43e6cffd"
+      "bytes": 8062,
+      "sha256": "0550c8bd33c5bccb0d3f4dde623f59558c135f4227e94bb931bd22fdfc0b1dae"
     },
     {
       "id": "900/hero-out/es",
@@ -349,12 +349,12 @@
       },
       "scroll": "hero-out",
       "scrollY": 1000,
-      "documentHeight": 8058,
+      "documentHeight": 38068,
       "lang": "es",
       "url": "/es",
       "path": "visual/baseline/900/hero-out/es.png",
-      "bytes": 684945,
-      "sha256": "6e965060d866fb05b6a73592a940fbe6846951c44a1baad6e90375287410bb12"
+      "bytes": 8062,
+      "sha256": "0550c8bd33c5bccb0d3f4dde623f59558c135f4227e94bb931bd22fdfc0b1dae"
     },
     {
       "id": "900/hero-out/pt",
@@ -364,12 +364,12 @@
       },
       "scroll": "hero-out",
       "scrollY": 1000,
-      "documentHeight": 8039,
+      "documentHeight": 38552,
       "lang": "pt",
       "url": "/pt",
       "path": "visual/baseline/900/hero-out/pt.png",
-      "bytes": 685521,
-      "sha256": "0f0033ca1764e0ba4c3703dadad83de7ab289439c091769fa0410c1735bd8705"
+      "bytes": 8062,
+      "sha256": "0550c8bd33c5bccb0d3f4dde623f59558c135f4227e94bb931bd22fdfc0b1dae"
     },
     {
       "id": "900/footer/en",
@@ -378,13 +378,13 @@
         "height": 1000
       },
       "scroll": "footer",
-      "scrollY": 6939,
-      "documentHeight": 7939,
+      "scrollY": 37552,
+      "documentHeight": 38552,
       "lang": "en",
       "url": "/",
       "path": "visual/baseline/900/footer/en.png",
-      "bytes": 717387,
-      "sha256": "7eb969d68d364cb1ffae6e1fec42e680e0ce7e613bd7c8249d7548c1de2d0ffb"
+      "bytes": 35565,
+      "sha256": "4a4435589546300d706a8ac1537c103e16dddefc9659f7bd2d596438b4d0b520"
     },
     {
       "id": "900/footer/es",
@@ -393,13 +393,13 @@
         "height": 1000
       },
       "scroll": "footer",
-      "scrollY": 7058,
-      "documentHeight": 8058,
+      "scrollY": 37068,
+      "documentHeight": 38068,
       "lang": "es",
       "url": "/es",
       "path": "visual/baseline/900/footer/es.png",
-      "bytes": 721907,
-      "sha256": "8cabe703b1d507d25fc04db17906deb8d2e564adcc84e54676fb7f8c18924ca2"
+      "bytes": 36420,
+      "sha256": "75825c72565b3fb6c95503004ea2f01444f4cf3c7a44d9bc0a4ce4e8c8197470"
     },
     {
       "id": "900/footer/pt",
@@ -408,13 +408,13 @@
         "height": 1000
       },
       "scroll": "footer",
-      "scrollY": 7039,
-      "documentHeight": 8039,
+      "scrollY": 37552,
+      "documentHeight": 38552,
       "lang": "pt",
       "url": "/pt",
       "path": "visual/baseline/900/footer/pt.png",
-      "bytes": 720029,
-      "sha256": "1d054a38e414c852cdeb5be23f2213a83ee8a585bcf772e6a068eaa95827f9ee"
+      "bytes": 35838,
+      "sha256": "1825cd83d74edab9de75fc35484e110f4a6b9c9f822320c2629b0578e63a3481"
     },
     {
       "id": "1280/top/en",
@@ -424,12 +424,12 @@
       },
       "scroll": "top",
       "scrollY": 0,
-      "documentHeight": 5335,
+      "documentHeight": 53700,
       "lang": "en",
       "url": "/",
       "path": "visual/baseline/1280/top/en.png",
-      "bytes": 883862,
-      "sha256": "364c0071c669e53d64260610353debba00ca14834fcf18d285af8248926f8a58"
+      "bytes": 186354,
+      "sha256": "f304352683d64cadd3aa4830d652cd93bf52afbdc01b6a570cae8ed7ad1acc27"
     },
     {
       "id": "1280/top/es",
@@ -439,12 +439,12 @@
       },
       "scroll": "top",
       "scrollY": 0,
-      "documentHeight": 5444,
+      "documentHeight": 53270,
       "lang": "es",
       "url": "/es",
       "path": "visual/baseline/1280/top/es.png",
-      "bytes": 888617,
-      "sha256": "c07bd3442d8495912927e275670e282390288b754603603fd4cfc7fa751b556a"
+      "bytes": 186354,
+      "sha256": "f304352683d64cadd3aa4830d652cd93bf52afbdc01b6a570cae8ed7ad1acc27"
     },
     {
       "id": "1280/top/pt",
@@ -454,12 +454,12 @@
       },
       "scroll": "top",
       "scrollY": 0,
-      "documentHeight": 5395,
+      "documentHeight": 53718,
       "lang": "pt",
       "url": "/pt",
       "path": "visual/baseline/1280/top/pt.png",
-      "bytes": 889588,
-      "sha256": "ddbc8e48766a07b5ba42c1663f7fc908bb93b584349d4759123861d06ad4fb5f"
+      "bytes": 186354,
+      "sha256": "f304352683d64cadd3aa4830d652cd93bf52afbdc01b6a570cae8ed7ad1acc27"
     },
     {
       "id": "1280/hero-out/en",
@@ -469,12 +469,12 @@
       },
       "scroll": "hero-out",
       "scrollY": 800,
-      "documentHeight": 5335,
+      "documentHeight": 53700,
       "lang": "en",
       "url": "/",
       "path": "visual/baseline/1280/hero-out/en.png",
-      "bytes": 863207,
-      "sha256": "044fb2fff69da06790abfa7f9129838b105d9cd762d0f24782c75d209e83a4bf"
+      "bytes": 9886,
+      "sha256": "0f219d7642967e52f1dad2b03705ec19eea2165926903507ffb6f5ca65b7b87c"
     },
     {
       "id": "1280/hero-out/es",
@@ -484,12 +484,12 @@
       },
       "scroll": "hero-out",
       "scrollY": 800,
-      "documentHeight": 5444,
+      "documentHeight": 53270,
       "lang": "es",
       "url": "/es",
       "path": "visual/baseline/1280/hero-out/es.png",
-      "bytes": 866631,
-      "sha256": "0f3bf67c993ca625604fff4d3e4962f946f47769d9f3ba955dca082013ad84fe"
+      "bytes": 9886,
+      "sha256": "0f219d7642967e52f1dad2b03705ec19eea2165926903507ffb6f5ca65b7b87c"
     },
     {
       "id": "1280/hero-out/pt",
@@ -499,12 +499,12 @@
       },
       "scroll": "hero-out",
       "scrollY": 800,
-      "documentHeight": 5395,
+      "documentHeight": 53718,
       "lang": "pt",
       "url": "/pt",
       "path": "visual/baseline/1280/hero-out/pt.png",
-      "bytes": 868551,
-      "sha256": "a4d910ae257507b5fe1bd9916fa28d854f9c6b61b4ebd0b608855542fe79d5fb"
+      "bytes": 9886,
+      "sha256": "0f219d7642967e52f1dad2b03705ec19eea2165926903507ffb6f5ca65b7b87c"
     },
     {
       "id": "1280/footer/en",
@@ -513,13 +513,13 @@
         "height": 800
       },
       "scroll": "footer",
-      "scrollY": 4535,
-      "documentHeight": 5335,
+      "scrollY": 52900,
+      "documentHeight": 53700,
       "lang": "en",
       "url": "/",
       "path": "visual/baseline/1280/footer/en.png",
-      "bytes": 821172,
-      "sha256": "39be869e9690a20b5ce5e0ff3431809e48b1afc1baf111ee923ab046d7654667"
+      "bytes": 33402,
+      "sha256": "ef1f7b4e1587a40a4705d98bc0bed3dc16679322a1aaccb0489b3cb96eaf50c9"
     },
     {
       "id": "1280/footer/es",
@@ -528,13 +528,13 @@
         "height": 800
       },
       "scroll": "footer",
-      "scrollY": 4644,
-      "documentHeight": 5444,
+      "scrollY": 52470,
+      "documentHeight": 53270,
       "lang": "es",
       "url": "/es",
       "path": "visual/baseline/1280/footer/es.png",
-      "bytes": 823016,
-      "sha256": "0ba7cd14c10a1c3217a2717f6163035707643fc582639d81b5e0ea3983df2a98"
+      "bytes": 34268,
+      "sha256": "fefd06267ddba1b52367692e09c93df0fe53399b0900affab3de2f0376a77ad4"
     },
     {
       "id": "1280/footer/pt",
@@ -543,13 +543,13 @@
         "height": 800
       },
       "scroll": "footer",
-      "scrollY": 4595,
-      "documentHeight": 5395,
+      "scrollY": 52918,
+      "documentHeight": 53718,
       "lang": "pt",
       "url": "/pt",
       "path": "visual/baseline/1280/footer/pt.png",
-      "bytes": 821082,
-      "sha256": "f27dee7e3bfcd26c3fa85db06523cdfc8fef240b22c80ae716fb1ad65071a38c"
+      "bytes": 33657,
+      "sha256": "6e747ca3c5b74da9f6520a6aaae1e1bc0f36adf2a21f1f26d0be28dacf1126d1"
     },
     {
       "id": "1440/top/en",
@@ -559,12 +559,12 @@
       },
       "scroll": "top",
       "scrollY": 0,
-      "documentHeight": 5570,
+      "documentHeight": 60108,
       "lang": "en",
       "url": "/",
       "path": "visual/baseline/1440/top/en.png",
-      "bytes": 1062219,
-      "sha256": "2f628225f931b35c0d8c5b2358eb510bd3208ad5ae648be53adcbe245a2c079d"
+      "bytes": 219940,
+      "sha256": "d96bbe173c80d16a0ae85a73166108ea61d0bed30e662be5b04712f1c4d71373"
     },
     {
       "id": "1440/top/es",
@@ -574,12 +574,12 @@
       },
       "scroll": "top",
       "scrollY": 0,
-      "documentHeight": 5680,
+      "documentHeight": 59678,
       "lang": "es",
       "url": "/es",
       "path": "visual/baseline/1440/top/es.png",
-      "bytes": 1067548,
-      "sha256": "e22f2bff1b005b7be17843080cccee4bdb69e26756565783d02824eac0775df3"
+      "bytes": 219940,
+      "sha256": "d96bbe173c80d16a0ae85a73166108ea61d0bed30e662be5b04712f1c4d71373"
     },
     {
       "id": "1440/top/pt",
@@ -589,12 +589,12 @@
       },
       "scroll": "top",
       "scrollY": 0,
-      "documentHeight": 5630,
+      "documentHeight": 60108,
       "lang": "pt",
       "url": "/pt",
       "path": "visual/baseline/1440/top/pt.png",
-      "bytes": 1067789,
-      "sha256": "98cb497dbad0b4e7d60e67d7194d8b266b7dfcee9e669983eaf9e550ca812265"
+      "bytes": 219940,
+      "sha256": "d96bbe173c80d16a0ae85a73166108ea61d0bed30e662be5b04712f1c4d71373"
     },
     {
       "id": "1440/hero-out/en",
@@ -604,12 +604,12 @@
       },
       "scroll": "hero-out",
       "scrollY": 900,
-      "documentHeight": 5570,
+      "documentHeight": 60108,
       "lang": "en",
       "url": "/",
       "path": "visual/baseline/1440/hero-out/en.png",
-      "bytes": 1052198,
-      "sha256": "71444a6ca1defe5676a06d5f51d43978211ffffd53b38d27e51f63cde8d93148"
+      "bytes": 11466,
+      "sha256": "01698f710bb54d9bfa2df694ece5bee18058c5395bf6d890d82006e985b20e34"
     },
     {
       "id": "1440/hero-out/es",
@@ -619,12 +619,12 @@
       },
       "scroll": "hero-out",
       "scrollY": 900,
-      "documentHeight": 5680,
+      "documentHeight": 59678,
       "lang": "es",
       "url": "/es",
       "path": "visual/baseline/1440/hero-out/es.png",
-      "bytes": 1058835,
-      "sha256": "276b35e713cb438b2def35392081e719e5d88ad35ffc193b9160802613046059"
+      "bytes": 11466,
+      "sha256": "01698f710bb54d9bfa2df694ece5bee18058c5395bf6d890d82006e985b20e34"
     },
     {
       "id": "1440/hero-out/pt",
@@ -634,12 +634,12 @@
       },
       "scroll": "hero-out",
       "scrollY": 900,
-      "documentHeight": 5630,
+      "documentHeight": 60108,
       "lang": "pt",
       "url": "/pt",
       "path": "visual/baseline/1440/hero-out/pt.png",
-      "bytes": 1059607,
-      "sha256": "3bbfd32861eb199b4774abd85326951ea5e75678cb3878e3560746a25023d6f1"
+      "bytes": 11466,
+      "sha256": "01698f710bb54d9bfa2df694ece5bee18058c5395bf6d890d82006e985b20e34"
     },
     {
       "id": "1440/footer/en",
@@ -648,13 +648,13 @@
         "height": 900
       },
       "scroll": "footer",
-      "scrollY": 4670,
-      "documentHeight": 5570,
+      "scrollY": 59208,
+      "documentHeight": 60108,
       "lang": "en",
       "url": "/",
       "path": "visual/baseline/1440/footer/en.png",
-      "bytes": 1013181,
-      "sha256": "b74ef469e0a8606cf47f282b630d783370b7967aed3daa5cfe611a2d6722eec4"
+      "bytes": 36645,
+      "sha256": "e323bccaa7e058ce85de0950aa79b636caab2953c50a04798f1cc0cbfec37c9d"
     },
     {
       "id": "1440/footer/es",
@@ -663,13 +663,13 @@
         "height": 900
       },
       "scroll": "footer",
-      "scrollY": 4780,
-      "documentHeight": 5680,
+      "scrollY": 58778,
+      "documentHeight": 59678,
       "lang": "es",
       "url": "/es",
       "path": "visual/baseline/1440/footer/es.png",
-      "bytes": 1017279,
-      "sha256": "b0cd80fdfb04da3ab8b299cc47977556e8fafc2c8ded4db6c175d80e105fa05a"
+      "bytes": 37489,
+      "sha256": "a9366e2bc4c2713377cbbc8d6182659f2b384fd6ee4921cff92326bf5bda41b9"
     },
     {
       "id": "1440/footer/pt",
@@ -678,13 +678,13 @@
         "height": 900
       },
       "scroll": "footer",
-      "scrollY": 4730,
-      "documentHeight": 5630,
+      "scrollY": 59208,
+      "documentHeight": 60108,
       "lang": "pt",
       "url": "/pt",
       "path": "visual/baseline/1440/footer/pt.png",
-      "bytes": 1016548,
-      "sha256": "dea2e8ad2052b360b665d588f6f7e90272d25c807891be7c6cd6bb6efeedf619"
+      "bytes": 36877,
+      "sha256": "9b4109a65eb76c4c48beb2a8199a5c7bc5d813cc12cbeef018b977f2df2b32df"
     }
   ]
 }
