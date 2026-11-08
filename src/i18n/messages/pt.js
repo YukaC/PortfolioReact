@@ -51,7 +51,7 @@ const pt = {
     title: "Desenvolvo seu software\nde ponta a ponta.",
     accent: "de ponta a ponta.",
     lead:
-      "Moro em Coronel Dorrego, Buenos Aires. Faço interfaces e painéis com React, Next.js e Tailwind, e os backends que os sustentam com Node ou Flask sobre PostgreSQL.",
+      "Moro em Coronel Dorrego, Buenos Aires. Faço interfaces e painéis com React, Next.js e Tailwind, e os backends que os sustentam com Node ou Python sobre PostgreSQL.",
     seeWork: "Ver projetos",
     getInTouch: "Me escreve",
     stackLabel: "Stack",
