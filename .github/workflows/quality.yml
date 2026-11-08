@@ -298,9 +298,13 @@ jobs:
         run: pnpm measure:vitals --json | tee vitals.json
         env:
           VITALS_BUDGET_TBT: "500"
-      - name: Repose budgets (0 draws, ≤ 1.5 recalc/frame, ≤ 100 ms task)
-        if: matrix.profile == 'desktop'
-        run: pnpm measure:idle --out idle.json
+      # `measure:idle` is deliberately NOT run here. Its own probe says why: under
+      # SwiftShader "the field resolves to `static` and mounts no canvas — use the
+      # default launch for the hardware claim", so `idle/canvas` and `idle/draws`
+      # cannot pass by construction, and the CPU-bound 411 ms task window against a
+      # 100 ms budget measures the renderer, not the page. The repose claim needs
+      # hardware: `pnpm measure:idle --out idle.json` on the machine with the GPU.
+      # Scroll budgets and lab vitals above do run, with software-renderer numbers.
       - name: Vitals, idle and scroll reports
         if: always()
         uses: actions/upload-artifact@v4
