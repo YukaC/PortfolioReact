@@ -1,16 +1,24 @@
 /**
- * Brazilian Portuguese copy (neutral register).
+ * Brazilian Portuguese copy (neutral register), a translation of `es.js`.
  *
  * Any key missing here falls back to the English dictionary — that fallback is
  * explicit in `getMessages`, never silent in the components.
+ *
+ * Voice: full-stack React/Next. Frases curtas, o verbo primeiro, sem adjetivo
+ * que não possa ser medido.
  */
 const pt = {
   meta: {
-    title: "Agustin Ciucani, desenvolvedor full-stack em Buenos Aires",
+    // Uma tradução de `es.js`, que carrega as strings do brief na íntegra (S7).
+    // `ogTitle`/`ogDescription` são o par mais curto do card social.
+    title: "Agustín Ciucani · Desenvolvedor full-stack em Buenos Aires",
     description:
-      "Agustin Ciucani é desenvolvedor full-stack em Buenos Aires, Argentina. Ele cria produtos em React e Next.js com interfaces acessíveis e animações que não atrapalham.",
+      "Desenvolvedor full-stack em Buenos Aires. Apps web, painéis e PWAs com React, Next.js, Node e Python. Disponível para freelance e tempo integral.",
+    ogTitle: "Agustín Ciucani · Desenvolvedor full-stack",
+    ogDescription:
+      "Desenvolvo seu software de ponta a ponta. React, Next.js, Node e Python.",
     imageAlt:
-      "Retrato de Agustin Ciucani, desenvolvedor full-stack em Buenos Aires",
+      "Retrato de Agustín Ciucani, desenvolvedor full-stack em Buenos Aires",
   },
   a11y: {
     skipToContent: "Ir para o conteúdo",
@@ -23,7 +31,7 @@ const pt = {
     home: "Ir para o início",
     openMenu: "Abrir menu",
     closeMenu: "Fechar menu",
-    contact: "Vamos conversar",
+    contact: "Contato",
     links: {
       portfolio: "Projetos",
       about: "Sobre mim",
@@ -35,29 +43,25 @@ const pt = {
   },
   hero: {
     status: "Disponível para freelance e tempo integral",
-    title: "Transformo problemas reais em software que funciona",
-    accent: "funciona",
+    // O título é o nome, com o cargo como segunda linha (dentro do h1).
+    name: "Agustín Ciucani",
+    role: "desenvolvedor full-stack",
+    // O subtítulo: o trecho final em destaque, e o `\n` o põe em linha própria em
+    // qualquer largura.
+    title: "Desenvolvo seu software\nde ponta a ponta.",
+    accent: "de ponta a ponta.",
     lead:
-      "Agustin Ciucani. Desenvolvedor full-stack em Buenos Aires. Crio produtos em React e Next.js que as pessoas realmente usam.",
+      "Moro em Coronel Dorrego, Buenos Aires. Faço interfaces e painéis com React, Next.js e Tailwind, e os backends que os sustentam com Node ou Flask sobre PostgreSQL.",
     seeWork: "Ver projetos",
-    getInTouch: "Falar comigo",
+    getInTouch: "Me escreve",
     stackLabel: "Stack",
-  },
-  marquee: {
-    traits: [
-      "Interfaces",
-      "Painéis",
-      "PWAs",
-      "Full-stack",
-      "Acessível",
-      "Responsivo",
-    ],
+    focus: ["Interfaces", "Painéis", "PWAs", "APIs", "Acessível"],
   },
   work: {
-    eyebrow: "Trabalhos selecionados",
-    title: "Software que está em produção",
-    accent: "produção",
-    lead: "Interfaces, painéis e ferramentas. Cada um com seu código-fonte.",
+    eyebrow: "Projetos",
+    title: "O que venho construindo",
+    accent: "construindo",
+    lead: "Cada um tem demo com dados de exemplo e o código no GitHub.",
     filterLabel: "Filtrar projetos",
     filters: {
       all: "Todos",
@@ -66,56 +70,70 @@ const pt = {
       systems: "Sistemas",
       pwa: "PWA",
     },
-    empty: "Ainda não há nada aqui.",
+    empty: "Nada com esse filtro.",
     viewDemo: "Ver demo",
     github: "GitHub",
     githubProfile: "Perfil no GitHub",
     repoAria: "{title} no GitHub",
-    demoAria: "{title} — ver demo",
+    demoAria: "Ver demo de {title}",
   },
   about: {
     eyebrow: "Sobre mim",
-    title: "Como eu trabalho e onde aprendi",
-    accent: "aprendi",
+    title: "Da oficina ao código",
+    accent: "código",
     statement:
-      "Atuo em interfaces, painéis, PWAs e produtos full-stack em React e Next.js. Acessíveis, responsivos e sem sustos ao usar.",
+      "Antes de programar trabalhei como operário metalúrgico, fazendo controle de qualidade sob normas como a ISO 9001, numa oficina mecânica e como repositor. Depois comecei o tecnólogo em programação na UTN de Bahía Blanca e terminei na UPSO. O App Despensa saiu desse caminho: estoque e caixa eu já conhecia do outro lado do balcão.",
     portraitAlt: "Retrato de {name}",
     role: "Desenvolvedor full-stack",
     socialAria: "{name} (abre em uma nova aba)",
-    workTitle: "Como eu gosto de trabalhar",
-    introStrong: "Trabalho em produção com React, Next.js e Tailwind.",
-    introRest: "Acessível, responsivo e sem sustos ao usar.",
-    offClock:
-      "Fora do horário eu escuto música, toco guitarra e mexo num Ford Fiesta 95.",
+    workTitle: "Como eu trabalho",
+    workP1:
+      "Me importa que a interface responda rápido e se explique sozinha. Agora estou focado em levar meus projetos a um nível profissional e em dar o salto para o meu primeiro trabalho em TI.",
+    workP2: "Fora do computador: violão, música e MUITO mate.",
     skillsLabel: "Ferramentas",
     source: "Ver o código",
     educationTitle: "Formação",
+    // As mesmas quatro entradas de `EDUCATION` em src/data/constants.js (o
+    // JSON-LD e o llms.txt leem aquela); esta é a cópia que a linha do tempo
+    // renderiza.
     education: [
       {
+        period: "2024 – 2025",
         title: "Tecnólogo Universitário em Tecnologias da Programação",
         company: "Universidad Provincial del Sudoeste (UPSO)",
-        description:
-          "Formação em desenvolvimento de software, bancos de dados, metodologias ágeis e boas práticas de programação.",
+        description: "Desenvolvimento de software, bancos de dados e métodos ágeis.",
       },
       {
+        period: "2021 – 2022",
+        title: "Tecnólogo Universitário em Programação (um ano e meio cursado)",
+        company:
+          "Universidad Tecnológica Nacional, Facultad Regional Bahía Blanca (UTN FRBB)",
+        description: "Primeira etapa do curso, que terminei na UPSO.",
+      },
+      {
+        period: "2018 – 2020",
         title: "Técnico em Informática Pessoal e Profissional",
-        company: "EEST N°1 / Instituto San José",
-        description:
-          "Fundamentos de programação, redes, hardware e suporte técnico.",
+        company: "Instituto San José",
+        description: "Programação, redes, hardware e suporte.",
+      },
+      {
+        period: "2014 – 2017",
+        title: "Eletrônica",
+        company: "EEST N°1",
       },
     ],
   },
   contact: {
     eyebrow: "Contato",
-    title: "Me conta o que você está construindo.",
-    accent: "construindo.",
+    title: "Conta o que você está construindo",
+    accent: "construindo",
     lead:
-      "Freelance ou tempo integral. Me manda o problema, a stack e o prazo que eu respondo como seguir.",
-    copy: "Copiar endereço",
+      "Freelance ou tempo integral. Me manda a ideia, a stack e para quando você precisa, e eu respondo como a gente desenvolveria.",
+    copy: "Copiar e-mail",
     copied: "Copiado ✓",
     manual: "Selecione acima",
-    copiedAnnouncement: "Endereço copiado para a área de transferência",
-    manualAnnouncement: "Não foi possível copiar. Selecione o endereço acima.",
+    copiedAnnouncement: "E-mail copiado para a área de transferência",
+    manualAnnouncement: "Não foi possível copiar. Selecione o e-mail acima.",
     mailSubject: "Consulta de projeto",
   },
   footer: {
@@ -125,7 +143,7 @@ const pt = {
     triggerTitle: "Segure por 1,5 segundos...",
     triggerAria: "Segure por 1,5 segundos para abrir o easter egg",
     socialLabel: "Redes sociais",
-    copyright: "© {year} Agustin Ciucani",
+    copyright: "© {year} Agustín Ciucani",
   },
 };
 

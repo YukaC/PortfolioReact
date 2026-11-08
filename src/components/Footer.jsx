@@ -1,5 +1,14 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+"use client";
+
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react";
 import dynamic from "next/dynamic";
+import { BUILD_YEAR, currentYear } from "@/lib/copyright-year";
 import { SOCIAL_LINKS } from "@/data/constants";
 import { useBebopAnimation } from "@/hooks/useBebopAnimation";
 import { useT } from "@/i18n/LocaleProvider";
@@ -18,6 +27,27 @@ const WORDMARK = "CIUCANI";
 const clamp01 = (value) => Math.min(1, Math.max(0, value));
 
 /**
+ * The copyright year the prerendered HTML carries.
+ *
+ * Both answers live in `src/lib/copyright-year.js` (and are pinned in its test):
+ * the server keeps answering with the year the served snapshot belongs to
+ * (`generatedAt` in `src/data/pinned-projects.json`) and the client answer is
+ * the current year, which lands as a post-hydration update instead of a
+ * hydration mismatch on 1 January. See that module for the why.
+ */
+const buildYear = () => BUILD_YEAR;
+
+/**
+ * "Is a script actually running?" — the honest answer for a control only a
+ * script can back. The server cannot know, so it answers `false` and the client
+ * flips to `true` after hydration; `useSyncExternalStore` is React's own way to
+ * read a value the server cannot compute, without a state write in an effect.
+ */
+const subscribeToNothing = () => () => {};
+const onClient = () => true;
+const onServer = () => false;
+
+/**
  * Footer - the last frame, and the wordmark that closes it.
  *
  * Three columns on the reference's grid, then the surname at scale: each letter
@@ -27,13 +57,26 @@ const clamp01 = (value) => Math.min(1, Math.max(0, value));
  */
 const Footer = () => {
   const { t } = useT();
-  const currentYear = new Date().getFullYear();
   const footerRef = useRef(null);
   const markRef = useRef(null);
   // The wordmark's serif is a 45 KB italic; it is only worth a request when the
   // footer is about to be seen. The stylesheet starts on the system serif and
   // `is-serif` switches the family, which is what makes the browser fetch it.
   const [serif, setSerif] = useState(false);
+  // The year the reader sees: the client's own, once hydration is done.
+  const year = useSyncExternalStore(
+    subscribeToNothing,
+    currentYear,
+    buildYear,
+  );
+  // Bebop is a script. The tagline is a button only in a document that can run
+  // one; server-rendered and scriptless it stays the sentence it looks like, so
+  // it is not a focusable control that cannot answer (audit.md §10 P1-7).
+  const isInteractive = useSyncExternalStore(
+    subscribeToNothing,
+    onClient,
+    onServer,
+  );
   const {
     phase,
     isActive,
@@ -77,19 +120,30 @@ const Footer = () => {
 
     registerMotion();
 
+    /* `--fp` drives `opacity` and `translate` on the 70 px `background-clip:
+       text` wordmark, so every write is a recalc of the footer subtree and a
+       repaint of that text. A scrub reports its progress on every frame of a
+       scroll whether the value moved or not, and three decimals of a five-
+       hundred-pixel travel means most frames repeat the previous value. The
+       comparison is the same one `AboutScroll` makes for `--tlp`: write only
+       the change, at the precision the CSS was tuned for. */
+    let lastProgress = null;
     const rise = ScrollTrigger.create({
       trigger: footer,
       start: "top 85%",
       end: "bottom bottom",
       scrub: true,
       onUpdate(self) {
-        footer.style.setProperty("--fp", self.progress.toFixed(3));
+        const progress = self.progress.toFixed(3);
+        if (progress === lastProgress) return;
+        lastProgress = progress;
+        footer.style.setProperty("--fp", progress);
       },
     });
 
-    if (!hasFinePointer()) {
-      return () => rise.kill();
-    }
+    /* The rise runs on every pointer (traced neutral on the phone, testinG82.md);
+       the letter wave below follows a cursor, so a coarse pointer stops here. */
+    if (!hasFinePointer()) return () => rise.kill();
 
     const letters = [...mark.children];
     // `scale` is a CSSPlugin alias that expands into scaleX/scaleY, so a quickTo()
@@ -207,11 +261,15 @@ const Footer = () => {
             <SiteLogo className="h-8 w-auto opacity-80" />
             <p
               ref={setTriggerRef}
-              tabIndex={0}
-              role="button"
-              className="tagline focus-ring max-w-fit cursor-help select-none touch-none"
-              title={t("footer.triggerTitle")}
-              aria-label={t("footer.triggerAria")}
+              tabIndex={isInteractive ? 0 : undefined}
+              role={isInteractive ? "button" : undefined}
+              className={`tagline max-w-fit${isInteractive ? " focus-ring cursor-help select-none touch-none" : ""}`}
+              title={isInteractive ? t("footer.triggerTitle") : undefined}
+              aria-label={
+                isInteractive
+                  ? `${t("footer.tagline")} — ${t("footer.triggerAria")}`
+                  : undefined
+              }
               onMouseEnter={handleTriggerEnter}
               onMouseLeave={handleTriggerLeave}
               onPointerDown={handleTriggerPointerDown}
@@ -252,8 +310,8 @@ const Footer = () => {
             </ul>
           </nav>
 
-          <p className="footer-copy">
-            {t("footer.copyright", { year: currentYear })}
+          <p className="text-right text-sm text-dim max-wide:text-left">
+            {t("footer.copyright", { year })}
           </p>
         </div>
       </div>

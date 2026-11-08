@@ -1,7 +1,7 @@
 overrides:
   # Next's PostCSS chain. Pinned because Tailwind 4 + Autoprefixer + Next all
   # depend on it; bump together with the devDependency in package.json.
-  postcss: 8.5.23
+  postcss: 8.5.32
 
   # No direct dependency can pull a patched release, so pin the minimum
   # version that clears the advisory.
@@ -17,8 +17,8 @@ overrides:
   # Scoped: the tree holds two independent brace-expansion major lines and
   # minimatch 3 vs 10 are not API-compatible with each other's expansion.
   # A flat override would force 5.x into minimatch 3 and break it.
-  "minimatch@3>brace-expansion": 1.1.18
-  "minimatch@10>brace-expansion": 5.0.9
+  "minimatch@3>brace-expansion": 1.1.21
+  "minimatch@10>brace-expansion": 5.0.12
 
 peerDependencyRules:
   allowAny:
@@ -27,3 +27,25 @@ peerDependencyRules:
 allowBuilds:
   sharp: true
   unrs-resolver: true
+
+# pnpm 11 quarantines any release younger than 24 h (its own default; stated here
+# so the exception below is readable instead of implied). The two exclusions are
+# deliberate and narrow: next 16.4.5 is the release that closes both critical
+# advisories this branch is fixing, and eslint-config-next tracks next's version
+# plus the eight platform builds of @next/swc it resolves. Only that exact
+# version is exempt — the next bump goes back behind the quarantine.
+minimumReleaseAge: 1440
+
+minimumReleaseAgeExclude:
+  - '@next/env@16.4.5'
+  - '@next/eslint-plugin-next@16.4.5'
+  - '@next/swc-darwin-arm64@16.4.5'
+  - '@next/swc-darwin-x64@16.4.5'
+  - '@next/swc-linux-arm64-gnu@16.4.5'
+  - '@next/swc-linux-arm64-musl@16.4.5'
+  - '@next/swc-linux-x64-gnu@16.4.5'
+  - '@next/swc-linux-x64-musl@16.4.5'
+  - '@next/swc-win32-arm64-msvc@16.4.5'
+  - '@next/swc-win32-x64-msvc@16.4.5'
+  - eslint-config-next@16.4.5
+  - next@16.4.5

@@ -14,7 +14,7 @@
     {
       "path": "/",
       "rules": [
-        { "rule": "document", "lang": "en" },
+        { "rule": "document", "lang": "en", "spec": "S11" },
         "h1",
         "img-alt",
         "anchors",
@@ -28,8 +28,40 @@
         { "rule": "count", "selector": "[data-work-row]", "min": 5 },
         { "rule": "text", "selector": ".marquee", "contains": "Next.js" },
         { "rule": "text", "selector": "#contact .bigmail", "contains": "@" },
-        { "rule": "text", "selector": ".footer-mark", "contains": "CIUCANI" }
+        { "rule": "text", "selector": ".footer-mark", "contains": "CIUCANI" },
 
+        { "rule": "reduced-motion", "selector": "#work-heading", "viewport": "all", "spec": "S11" },
+        { "rule": "reduced-motion", "selector": ".statement .sw", "viewport": "all", "spec": "S11" },
+        { "rule": "reduced-motion", "selector": "#contact .bigmail", "viewport": "all", "spec": "S11" },
+        { "rule": "reduced-motion", "selector": ".footer-mark", "viewport": "all", "spec": "S11" },
+
+        { "rule": "count", "selector": ".js-only", "min": 1, "viewport": "all", "spec": "S6" },
+        { "rule": "count", "selector": "header details > summary", "min": 1, "viewport": "all", "spec": "S6" },
+        { "rule": "count", "selector": ".mobile-menu-panel", "min": 1, "spec": "S6" }
+      ]
+    },
+    {
+      "path": "/es",
+      "rules": [
+        { "rule": "document", "lang": "es", "spec": "S11" },
+        "h1",
+        "console",
+        "anchors",
+        { "rule": "count", "selector": "[data-work-row]", "min": 5 },
+        { "rule": "reduced-motion", "selector": "#about-heading", "viewport": "all", "spec": "S11" },
+        { "rule": "no-overflow", "viewport": "all" }
+      ]
+    },
+    {
+      "path": "/pt",
+      "rules": [
+        { "rule": "document", "lang": "pt", "spec": "S11" },
+        "h1",
+        "console",
+        "anchors",
+        { "rule": "count", "selector": "[data-work-row]", "min": 5 },
+        { "rule": "reduced-motion", "selector": "#about-heading", "viewport": "all", "spec": "S11" },
+        { "rule": "no-overflow", "viewport": "all" }
       ]
     }
   ]

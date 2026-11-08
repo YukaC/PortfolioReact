@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { accentWordSet, isAccentWord } from "@/lib/heading-accent";
 
 /**
  * Heading that arrives word by word.
@@ -12,7 +12,38 @@ import { useMemo } from "react";
  *
  * `parallax` gives every word its own slow travel against the scroll, which is
  * what makes the hero title move in layers rather than as one block.
+ *
+ * A `\n` in the copy is a line the designer asked for, not something the
+ * available width gets to decide: the words on each side of it render in their
+ * own block line, so the break holds at every viewport instead of moving as the
+ * heading grows a line. The stagger index keeps counting across the break, so
+ * the second line continues the first instead of restarting.
+ *
+ * No hooks: the split is arithmetic on a string, and this is a Server Component
+ * now (audit.md §16.2), so the em-dash-free memo it used to carry would only be a
+ * hook a server render cannot call.
  */
+const splitLines = (text) => {
+  const lines = text
+    .split("\n")
+    .map((line) => line.split(/\s+/).filter(Boolean))
+    .filter((words) => words.length > 0);
+  const counts = lines.map((words) => words.length);
+
+  return lines.map((words, lineIndex) => {
+    // Words before this line, so the stagger keeps counting across the break.
+    const offset = counts
+      .slice(0, lineIndex)
+      .reduce((total, count) => total + count, 0);
+
+    return words.map((word, column) => ({
+      word,
+      index: offset + column,
+      last: column === words.length - 1,
+    }));
+  });
+};
+
 const SplitHeading = ({
   as: Tag = "h2",
   text,
@@ -23,40 +54,59 @@ const SplitHeading = ({
   reveal = "",
   ...rest
 }) => {
-  const words = useMemo(() => text.split(/\s+/).filter(Boolean), [text]);
-  const accentWords = useMemo(
-    () => new Set(accent.split(/\s+/).filter(Boolean)),
-    [accent],
-  );
+  const lines = splitLines(text);
+
+  // The accessible name reads as one sentence: a line break is layout, not
+  // punctuation, so a screen reader should not pause for it.
+  const label = text.replace(/\s+/g, " ").trim();
+
+  // Punctuation is part of the sentence, not part of the word: `accent:
+  // "software"` has to emphasise `software,` in the heading.
+  const accentWords = accentWordSet(accent);
 
   return (
     <Tag
       data-r={reveal}
-      aria-label={text}
+      aria-label={label}
       style={{ "--d": `${delayMs}ms` }}
       className={className}
       {...rest}
     >
-      {words.map((word, index) => {
-        const box = (
-          <span
-            className="w"
-            aria-hidden="true"
-            style={
-              parallax ? { "--k": (-0.014 * (index + 1)).toFixed(3) } : undefined
-            }
-          >
-            <span style={{ "--i": index }}>{word}</span>
-          </span>
-        );
+      {lines.map((words, lineIndex) => (
+        <span
+          key={`line-${lineIndex}`}
+          className={lines.length > 1 ? "block" : undefined}
+          aria-hidden="true"
+        >
+          {words.map(({ word, index, last }) => {
+            const box = (
+              <span
+                className="w"
+                style={
+                  parallax
+                    ? { "--k": (-0.014 * (index + 1)).toFixed(3) }
+                    : undefined
+                }
+              >
+                <span style={{ "--i": index }}>{word}</span>
+              </span>
+            );
 
-        return (
-          <span key={`${word}-${index}`}>
-            {accentWords.has(word) ? <em className="accent">{box}</em> : box}
-            {index < words.length - 1 ? " " : null}
-          </span>
-        );
-      })}
+            return (
+              <span key={`${word}-${index}`}>
+                {isAccentWord(word, accentWords) ? (
+                  <em className="not-italic font-medium tracking-[inherit] text-sky">
+                    {box}
+                  </em>
+                ) : (
+                  box
+                )}
+                {last ? null : " "}
+              </span>
+            );
+          })}
+        </span>
+      ))}
     </Tag>
   );
 };

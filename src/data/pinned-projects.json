@@ -1,0 +1,112 @@
+{
+  "$comment": "Generated file — do not edit by hand. Every entry is a pinned repository from the profile, with copy and screenshots from PROJECT_OVERRIDES in src/data/projects.js; the file was first seeded from that same set. The projects-sync CI job runs scripts/sync-projects.mjs every 6 h, and the documented manual refresh is `node scripts/sync-projects.mjs --public` (README); every network refresh, scheduled or local, must pass validate() before it can touch this file.",
+  "generatedAt": "2026-11-07T23:42:37.948Z",
+  "projects": [
+    {
+      "name": "MuniDgoSaaS",
+      "title": "Turnos App",
+      "description": "Multi-tenant appointment booking for the different areas of my town's municipality: a portal for residents and an admin panel with live validation and ECharts metrics.",
+      "problem": "One municipality, several areas, no shared place to take appointments.",
+      "outcome": "Flask and React on MySQL: live validation, a dashboard, and ECharts.",
+      "imgSrc": "/munidgo.webp",
+      "alt": "Turnos App Screenshot",
+      "tags": [
+        "JavaScript",
+        "Python",
+        "Flask",
+        "MySQL"
+      ],
+      "repoLink": "https://github.com/YukaC/MuniDgoSaaS",
+      "siteUrl": "https://muniturnos.vercel.app/",
+      "isFeatured": true
+    },
+    {
+      "name": "OpenBalance",
+      "title": "OpenBalance",
+      "description": "It came out of a need of my own: a budget that runs by the month, with an optional weekly mode for anyone paid by the week.",
+      "problem": "Most budgeting apps hide the month behind a week-based model.",
+      "outcome": "Local-first Next.js with Zustand persistence and no backend.",
+      "imgSrc": "/openbalance.webp",
+      "alt": "OpenBalance monthly summary screenshot",
+      "tags": [
+        "React",
+        "Next.js",
+        "TypeScript"
+      ],
+      "repoLink": "https://github.com/YukaC/OpenBalance",
+      "siteUrl": "https://openbalance.vercel.app/",
+      "isFeatured": true
+    },
+    {
+      "name": "MyrkStudio",
+      "title": "Myrk Studio",
+      "description": "Site for a studio that makes Minecraft series, with 3D scenes in Three.js.",
+      "problem": "A fictional series needed a site that felt like a studio, not a template.",
+      "outcome": "React, Vite, and Tailwind with GSAP and Three, tuned for mobile scroll.",
+      "imgSrc": "/myrkstudio.webp",
+      "alt": "Myrk Studio home page screenshot",
+      "tags": [
+        "React",
+        "Vite",
+        "Tailwind",
+        "Three.js"
+      ],
+      "repoLink": "https://github.com/YukaC/MyrkStudio",
+      "siteUrl": "https://myrkstudio.vercel.app/",
+      "isFeatured": true
+    },
+    {
+      "name": "PelisEnCasa",
+      "title": "Pelis en Casa",
+      "description": "My 2022 final project (jQuery and Flask), migrated to React with animations in Motion.",
+      "problem": "A 2022 academic build (HTML, jQuery, Flask) nobody could show.",
+      "outcome": "Rebuilt as a static React app with embedded data and spring motion.",
+      "imgSrc": "/peliscasa.webp",
+      "alt": "Pelis en Casa movie catalog screenshot",
+      "tags": [
+        "React",
+        "Vite",
+        "Motion"
+      ],
+      "repoLink": "https://github.com/YukaC/PelisEnCasa",
+      "siteUrl": "https://yukac.github.io/PelisEnCasa/",
+      "isFeatured": true
+    },
+    {
+      "name": "AhorrAR",
+      "title": "AhorrAR",
+      "description": "Argentine supermarket prices scraped live, ranked and verifiable.",
+      "problem": "Grocery prices scattered across store sites.",
+      "outcome": "A live ranking with confirmed shipping.",
+      "imgSrc": "/ahorrar.webp",
+      "alt": "AhorrAR price comparison landing page screenshot",
+      "tags": [
+        "React",
+        "TypeScript",
+        "Express",
+        "Scrapling"
+      ],
+      "repoLink": "https://github.com/YukaC/AhorrAR",
+      "siteUrl": "https://ahorrarg.vercel.app/",
+      "isFeatured": false
+    },
+    {
+      "name": "AppDespensa",
+      "title": "App Despensa",
+      "description": "Point of sale for a pantry store: sales, cash drawer and stock. A local-first PWA built to work offline.",
+      "problem": "A pantry store needed sales, cash, and stock without a SaaS bill.",
+      "outcome": "A local-first PWA POS on React, Node, and PostgreSQL.",
+      "imgSrc": "/appdespensa.webp",
+      "alt": "App Despensa admin dashboard screenshot",
+      "tags": [
+        "React",
+        "Node",
+        "PostgreSQL",
+        "PWA"
+      ],
+      "repoLink": "https://github.com/YukaC/AppDespensa",
+      "siteUrl": "https://despensapos.vercel.app/",
+      "isFeatured": false
+    }
+  ]
+}

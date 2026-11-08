@@ -1,20 +1,28 @@
-import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import Reveal from "@/components/Reveal";
 import SplitHeading from "@/components/SplitHeading";
 import SwapArrow from "@/components/SwapArrow";
+import WorkFilters from "@/components/WorkFilters";
 import {
   GITHUB_USERNAME,
   MAX_PINNED_PROJECTS,
-  PINNED_FALLBACK,
-  WORK_FILTERS,
   projectCategories,
   projectMonogram,
 } from "@/data/projects";
-import { prefersReducedMotion, hasFinePointer } from "@/motion/prefersReducedMotion";
-import { gsap, registerMotion } from "@/motion/register";
-import { useT } from "@/i18n/LocaleProvider";
+import { translator } from "@/i18n/index.js";
+import { BREAKPOINT, mediaQuery } from "@/lib/breakpoints";
 import { resolveProjectLinks } from "@/lib/project-links";
+import { projectPath } from "@/lib/project-slugs";
+
+/**
+ * `sizes` for the inline cover: the thumb only exists below the `wide`
+ * breakpoint, so the descriptor is the breakpoint's own query instead of a
+ * second copy of `900` in a string (S9). It is read from the same module the
+ * islands use, which falls back to the shipped number on the server where
+ * there is no `document`.
+ */
+const THUMB_SIZES = `${mediaQuery.max(BREAKPOINT.wide)} 100vw, 1px`;
 
 const COVER_BLUR =
   "data:image/svg+xml;charset=utf-8," +
@@ -24,16 +32,12 @@ const COVER_BLUR =
     </svg>`,
   );
 
-const PREVIEW_WIDTH = 320;
-const PREVIEW_GAP = 60;
-const PREVIEW_MARGIN = 40;
-
 /**
  * Cover art for a project: its screenshot when there is one, otherwise a
  * generated haze with the project's monogram (the reference's placeholder,
  * keyed to the index so the list has variety without inventing assets).
  */
-const ProjectCover = memo(({ project, index, sizes }) => {
+const ProjectCover = ({ project, index, sizes }) => {
   if (project.imgSrc) {
     return (
       <Image
@@ -57,17 +61,30 @@ const ProjectCover = memo(({ project, index, sizes }) => {
       </span>
     </div>
   );
-});
-
-ProjectCover.displayName = "ProjectCover";
+};
 
 /**
- * Project row: the whole card opens the live demo, and a small secondary
- * action keeps the repository one click away when it is a different place.
+ * Project row: the title opens the project's own page (§24 S6), the overlay
+ * opens the live demo, and the pill under the copy opens the repository.
+ *
+ * Three destinations, three elements, no lie: the demo keeps the label it
+ * always had (`work.demoAria`), the repository keeps its own, and the new
+ * internal link carries nothing but the project's name — so a crawler finds the
+ * citable URL and a reader who wanted the demo still lands on the demo.
+ *
+ * The two conditions are opposite halves of `resolveProjectLinks()`, and that
+ * is on purpose. The pill follows the repository, not "the demo is somewhere
+ * else": sharing `showRepoLink` with the overlay meant a pin with no homepage
+ * (every `PROJECT_OVERRIDES` entry today, and any repository whose Website
+ * field is empty) rendered a row with no GitHub link at all, which is exactly
+ * the affordance the list lost. The overlay follows the demo, because with no
+ * demo it used to point at the repository under the label "view demo" — a
+ * control that lies (§20.4-3).
+ *
+ * Rendered on the server and handed to the filter island as an element, so the
+ * copy in a row is in the HTML whether or not a script runs.
  */
-const WorkRow = ({ project, index }) => {
-  const { t } = useT();
-
+const WorkRow = ({ project, index, labels, href }) => {
   // `project.siteUrl` is already resolved upstream (override → GitHub "Website"
   // → repo); re-running the resolver keeps the fallback entries in sync.
   const { siteUrl, repoUrl, showRepoLink } = resolveProjectLinks({
@@ -86,27 +103,42 @@ const WorkRow = ({ project, index }) => {
         <ProjectCover
           project={project}
           index={index}
-          sizes="(max-width: 900px) 100vw, 1px"
+          sizes={THUMB_SIZES}
         />
       </div>
 
       <span className="work-num">{String(index + 1).padStart(2, "0")}</span>
 
       <div className="work-body">
-        <h3>{project.title}</h3>
-        <p className="work-problem">{project.problem ?? project.description}</p>
+        <h3>
+          {/* Above the row's overlay (`z-index: 2`), like the repo action, so
+              the two links are both reachable and neither steals the other.
+              `z-main` is the semantic layer from §14.4, not a literal. */}
+          <Link
+            href={href}
+            className="focus-ring relative z-main transition-colors hover:text-sky"
+          >
+            {project.title}
+          </Link>
+        </h3>
+        {/* The row prints the card's own line — the project's description — and
+            falls back to the problem statement only when there is none. The
+            problem/outcome pair is the project page's copy, not the list's. */}
+        <p className="work-problem">
+          {project.description ?? project.problem}
+        </p>
         {project.tags?.length ? (
           <p className="work-tags">{project.tags.join(" · ")}</p>
         ) : null}
-        {showRepoLink ? (
+        {repoUrl ? (
           <a
             href={repoUrl}
             target="_blank"
             rel="noopener noreferrer"
-            aria-label={t("work.repoAria", { title: project.title })}
-            className="work-repo focus-ring relative z-[3] mt-3 inline-flex items-center gap-1.5 rounded-full border border-white/15 px-2.5 py-1 font-mono text-[0.6875rem] uppercase tracking-[0.14em] text-white/55 transition-colors hover:border-white/40 hover:text-white/90"
+            aria-label={labels.repoAria}
+            className="focus-ring relative z-main mt-3 inline-flex items-center gap-1.5 rounded-full border border-white/15 px-2.5 py-1 font-mono text-[0.6875rem] uppercase tracking-[0.14em] text-white/55 transition-colors hover:border-white/40 hover:text-white/90"
           >
-            {t("work.github")}
+            {labels.github}
             <SwapArrow direction="d" size={11} />
           </a>
         ) : null}
@@ -116,13 +148,15 @@ const WorkRow = ({ project, index }) => {
         <SwapArrow direction="d" />
       </span>
 
-      <a
-        className="work-hit focus-ring"
-        href={siteUrl}
-        target="_blank"
-        rel="noopener noreferrer"
-        aria-label={t("work.demoAria", { title: project.title })}
-      />
+      {showRepoLink ? (
+        <a
+          className="absolute inset-0 focus-ring"
+          href={siteUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label={labels.demoAria}
+        />
+      ) : null}
     </li>
   );
 };
@@ -131,131 +165,60 @@ const WorkRow = ({ project, index }) => {
  * WorkList - selected work as a filtered list.
  *
  * Rows are the reference's: index, title, problem, tags and a circular arrow.
- * On a fine pointer the list dims its siblings, lights the row under the
- * cursor and floats a glass preview of that project's cover; on touch the cover
- * rides inline above each row instead.
+ * On a fine pointer the list dims its siblings, lights the row under the cursor
+ * and floats a glass preview of that project's cover; on touch the cover rides
+ * inline above each row instead.
+ *
+ * A Server Component (audit.md §16.2): the rows are markup, and they arrive in
+ * the HTML complete. `WorkFilters` is the island — the tabs, the pointer
+ * choreography and the preview — and it receives the rows (and the preview
+ * layers) as already-rendered elements, so filtering is the only thing it
+ * decides. That is also why the no-script page shows every project: the island
+ * server-renders with `filter === "all"`.
+ *
+ * `projects` is required. It used to default to `PINNED_FALLBACK`, a second,
+ * unvalidated copy of the cards: a call site that forgot the prop rendered
+ * seven stale rows instead of the six the snapshot serves, and nothing failed.
+ * There is one source now (`src/data/pinned-projects.json`, through
+ * `PageFrame`), so a missing prop has to be loud.
  */
-const WorkList = ({ projects = PINNED_FALLBACK }) => {
-  const { t } = useT();
-  const items = useMemo(
-    () => projects.slice(0, MAX_PINNED_PROJECTS),
-    [projects],
-  );
-  const [filter, setFilter] = useState("all");
+const WorkList = ({ projects, locale = "en" }) => {
+  if (!Array.isArray(projects)) {
+    throw new TypeError(
+      "[WorkList] projects is required: pass the validated snapshot (readProjectsSnapshot().projects)",
+    );
+  }
 
-  const tabsRef = useRef(null);
-  const tabIndicatorRef = useRef(null);
-  const listRef = useRef(null);
-  const previewRef = useRef(null);
+  const { t } = translator(locale);
+  const items = projects.slice(0, MAX_PINNED_PROJECTS);
 
-  const visible = useMemo(
-    () =>
-      items.filter(
-        (project) =>
-          filter === "all" || projectCategories(project).includes(filter),
-      ),
-    [items, filter],
-  );
+  const rows = items.map((project, index) => ({
+    key: project.name ?? project.repoLink,
+    categories: projectCategories(project),
+    element: (
+      <WorkRow
+        key={project.name ?? project.repoLink}
+        project={project}
+        index={index}
+        href={projectPath(locale, project)}
+        labels={{
+          github: t("work.github"),
+          repoAria: t("work.repoAria", { title: project.title }),
+          demoAria: t("work.demoAria", { title: project.title }),
+        }}
+      />
+    ),
+  }));
 
-  const placeTabIndicator = useCallback(() => {
-    const tabs = tabsRef.current;
-    const indicator = tabIndicatorRef.current;
-    if (!tabs || !indicator) return;
-    const active = tabs.querySelector('[aria-pressed="true"]');
-    if (!active) return;
-    indicator.style.width = `${active.offsetWidth}px`;
-    indicator.style.translate = `${active.offsetLeft}px 0`;
-  }, []);
-
-  useEffect(() => {
-    placeTabIndicator();
-    window.addEventListener("resize", placeTabIndicator);
-    if (document.fonts?.ready) document.fonts.ready.then(placeTabIndicator);
-    return () => window.removeEventListener("resize", placeTabIndicator);
-  }, [filter, placeTabIndicator]);
-
-  useEffect(() => {
-    const list = listRef.current;
-    const preview = previewRef.current;
-    if (!list || !preview) return undefined;
-    if (window.innerWidth <= 900 || !hasFinePointer() || prefersReducedMotion()) {
-      return undefined;
-    }
-
-    registerMotion();
-
-    const xTo = gsap.quickTo(preview, "x", { duration: 0.4, ease: "power3.out" });
-    const yTo = gsap.quickTo(preview, "y", { duration: 0.4, ease: "power3.out" });
-    const rotateTo = gsap.quickTo(preview, "rotation", {
-      duration: 0.3,
-      ease: "power3.out",
-    });
-
-    let isShown = false;
-    let lastX = 0;
-    let rotateTimer = 0;
-
-    const hide = () => {
-      if (!isShown) return;
-      isShown = false;
-      preview.classList.remove("is-on");
-      gsap.to(preview, { scale: 0.92, duration: 0.25, ease: "power2.out" });
-    };
-
-    const onPointerMove = (event) => {
-      const row = event.target.closest?.("[data-work-row]");
-      if (!row) {
-        hide();
-        return;
-      }
-
-      const bounds = row.getBoundingClientRect();
-      row.style.setProperty("--rx", `${event.clientX - bounds.left}px`);
-      row.style.setProperty("--ry", `${event.clientY - bounds.top}px`);
-
-      const key = row.dataset.workKey;
-      preview.querySelectorAll("[data-preview-key]").forEach((layer) => {
-        layer.classList.toggle("is-on", layer.dataset.previewKey === key);
-      });
-
-      const listBounds = list.getBoundingClientRect();
-      const maxX = listBounds.right - PREVIEW_WIDTH - PREVIEW_MARGIN;
-      const x = Math.min(
-        Math.max(maxX, event.clientX + PREVIEW_GAP),
-        listBounds.right - PREVIEW_MARGIN * 0.5 - PREVIEW_WIDTH * 0.8,
-      );
-      const y = event.clientY - PREVIEW_WIDTH * 0.3;
-
-      if (!isShown) {
-        isShown = true;
-        preview.classList.add("is-on");
-        gsap.set(preview, { x, y, scale: 1 });
-        gsap.to(preview, { scale: 1, duration: 0.3, ease: "power2.out" });
-        lastX = event.clientX;
-        return;
-      }
-
-      const tilt = Math.min(9, Math.max(-9, (event.clientX - lastX) * 0.5));
-      lastX = event.clientX;
-      xTo(x);
-      yTo(y);
-      rotateTo(tilt);
-      window.clearTimeout(rotateTimer);
-      rotateTimer = window.setTimeout(() => rotateTo(0), 80);
-    };
-
-    const onPointerLeave = () => hide();
-
-    list.addEventListener("pointermove", onPointerMove, { passive: true });
-    list.addEventListener("pointerleave", onPointerLeave);
-
-    return () => {
-      window.clearTimeout(rotateTimer);
-      list.removeEventListener("pointermove", onPointerMove);
-      list.removeEventListener("pointerleave", onPointerLeave);
-      gsap.killTweensOf(preview);
-    };
-  }, []);
+  const previewLayers = items.map((project, index) => (
+    <div
+      key={project.name ?? project.repoLink}
+      className="work-preview-layer"
+      data-preview-key={project.name ?? project.title}
+    >
+      <ProjectCover project={project} index={index} sizes="320px" />
+    </div>
+  ));
 
   return (
     <section
@@ -264,7 +227,7 @@ const WorkList = ({ projects = PINNED_FALLBACK }) => {
       aria-labelledby="work-heading"
     >
       <div className="site-shell">
-        <div className="section-head">
+        <div className="flex flex-wrap items-end justify-between gap-6">
           <div>
             <Reveal className="eyebrow">{t("work.eyebrow")}</Reveal>
             <SplitHeading
@@ -280,44 +243,7 @@ const WorkList = ({ projects = PINNED_FALLBACK }) => {
           </Reveal>
         </div>
 
-        <div
-          className="work-tabs"
-          ref={tabsRef}
-          data-r=""
-          role="group"
-          aria-label={t("work.filterLabel")}
-        >
-          <i className="work-tab-ind" ref={tabIndicatorRef} aria-hidden="true" />
-          {WORK_FILTERS.map((option) => (
-            <button
-              key={option.id}
-              type="button"
-              className="work-tab"
-              data-work-tab=""
-              aria-pressed={filter === option.id}
-              onClick={() => setFilter(option.id)}
-            >
-              {t(`work.filters.${option.id}`)}
-            </button>
-          ))}
-        </div>
-
-        <ul className="work-list" ref={listRef} key={filter}>
-          {visible.length > 0 ? (
-            visible.map((project, index) => (
-              <WorkRow
-                key={project.name ?? project.repoLink}
-                project={project}
-                index={index}
-              />
-            ))
-          ) : (
-            <li className="work-row">
-              <span className="work-num">—</span>
-              <p className="work-problem">{t("work.empty")}</p>
-            </li>
-          )}
-        </ul>
+        <WorkFilters rows={rows} previewLayers={previewLayers} />
 
         <Reveal style={{ marginTop: "2.125rem" }}>
           <a
@@ -331,22 +257,6 @@ const WorkList = ({ projects = PINNED_FALLBACK }) => {
             <span className="sr-only">{t("a11y.newTab")}</span>
           </a>
         </Reveal>
-      </div>
-
-      <div className="work-preview glass" ref={previewRef} aria-hidden="true">
-        {items.map((project, index) => (
-          <div
-            key={project.name ?? project.repoLink}
-            className="work-preview-layer"
-            data-preview-key={project.name ?? project.title}
-          >
-            <ProjectCover project={project} index={index} sizes="320px" />
-          </div>
-        ))}
-        <span className="work-preview-tag">
-          {t("work.viewDemo")}
-          <SwapArrow direction="d" size={13} />
-        </span>
       </div>
     </section>
   );

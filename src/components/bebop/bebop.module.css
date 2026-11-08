@@ -179,7 +179,13 @@
   color: var(--color-amber-glow, #ffbf00);
   border-color: rgba(255, 191, 0, 0.5);
   background: rgba(255, 191, 0, 0.08);
-  outline: none;
+}
+
+/* This is the only focusable control inside a role="dialog", so the ring is the
+   only thing that says where the keyboard is: it cannot be cancelled. */
+.bebopSkipButton:focus-visible {
+  outline: 2px solid #ffbf00;
+  outline-offset: 3px;
 }
 
 .bebopIntroOverlay::after {
