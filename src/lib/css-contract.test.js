@@ -441,7 +441,7 @@ test("every recipe and every house class in the JSX has a rule", () => {
   // this project names is owned by this stylesheet — Tailwind's own utilities
   // never start with one of these prefixes — so a house-prefixed token with no
   // rule is dead, whether it is in `@layer components` or in `@utility`.
-  const HOUSE = /^(bocanada|field|site|nav|hero|orn|mq|marquee|work|about|timeline|skill|statement|bigmail|contact|footer|tagline|menu|mobile-menu|btn|glass|eyebrow|lead|stackline|status|section|skip|lang|is-|w$|lb$|ar$|hl$)/;
+  const HOUSE = /^(bocanada|field|site|nav|hero|orn|mq|marquee|work|about|timeline|skill|statement|bigmail|contact|footer|tagline|menu|mobile-menu|btn|glass|eyebrow|lead$|stackline|status|section|skip|lang|is-|w$|lb$|ar$|hl$)/;
   // `focus-ring` is the one documented hook: the ring lives on the global
   // `:focus-visible` rule and the class only records the intent of a call site.
   const HOOKS = new Set(["focus-ring"]);
