@@ -56,7 +56,7 @@ const es = {
     title: "Armo tu software\nde punta a punta.",
     accent: "de punta a punta.",
     lead:
-      "Vivo en Coronel Dorrego, Buenos Aires. Hago interfaces y paneles con React, Next.js y Tailwind, y los backends que los sostienen con Node o Flask sobre PostgreSQL.",
+      "Vivo en Coronel Dorrego, Buenos Aires. Hago interfaces y paneles con React, Next.js y Tailwind, y los backends que los sostienen con Node o Python sobre PostgreSQL.",
     seeWork: "Ver proyectos",
     getInTouch: "Escribime",
     stackLabel: "Stack",
