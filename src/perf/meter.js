@@ -1,4 +1,3 @@
-/* eslint-env browser */
 /**
  * The measuring script the phone runs, served by remote-proxy.mjs at /__perf/meter.js.
  *
