@@ -16,7 +16,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
-    "test": "node --test src/lib",
+    "test": "node --test src/lib/*.test.js",
     "test:all": "pnpm gate",
     "gate": "node scripts/gate.mjs",
     "check:css": "node scripts/check-css.mjs",
