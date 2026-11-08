@@ -221,9 +221,16 @@ jobs:
       # baseline is replaced by the owner, not by CI. The diff images land in
       # `.browser-verify/` (gitignored) so the uploaded artifact path is the one
       # this job already used.
-      - name: Visual diff (45 tomas · umbral 0.1 %)
-        run: pnpm visual:diff --swiftshader --out .browser-verify/visual-diff
-      - name: Upload the visual diff
+      # Capture, not gate. The pixel gate compares against captures taken on the
+      # owner's GPU (ANGLE, Radeon RX 570); a runner answers with SwiftShader, and
+      # a baseline re-shot under SwiftShader still differed by 98-99 % against the
+      # runner's own capture — the two renderer paths do not produce the same
+      # pixels, so a 0.1 % gate cannot be honest here. The screenshots are uploaded
+      # and the gate keeps its home: `pnpm visual:diff` on the machine whose
+      # renderer the committed baseline was taken with.
+      - name: Visual capture (45 tomas, uploaded)
+        run: pnpm e2e:a11y --config browser-verify.ci.json --only screenshot
+      - name: Upload the screenshots
         if: always()
         uses: actions/upload-artifact@v4
         with:
@@ -243,27 +250,29 @@ jobs:
           # Every profile renders through SwiftShader on `ubuntu-latest`, so the
           # absolute defaults in `scripts/measure-scroll-perf.mjs` (p95 ≤ 24 ms,
           # jank ≤ 2 %) are device budgets this runner cannot meet: measured there
-          # are p95 66.7 ms / jank 13.51 % (desktop), 33.3 ms / 2.38 % (mobile-4x)
-          # and 50.1 ms / 5.38 % (software-gl). The budgets below keep ~40 %
-          # headroom over those measurements. They are a regression guard for CI,
-          # not a device budget, and the script's own defaults stay untouched.
+          # are p95 66.7 ms / jank 13.51 % (desktop), 33.3-50 ms / 2.2-2.4 %
+          # (mobile-4x) and 50.1 ms / 5.38 % (software-gl). One sample is not a
+          # budget either — the same mobile-4x profile measured 33.3 ms in one run
+          # and 50 ms in the next — so the numbers below are variance-tolerant
+          # thresholds for a shared runner (~2x the best sample), never a device
+          # budget. The script's own defaults stay untouched.
           - profile: desktop
             run: pnpm measure:scroll --profile desktop --out scroll-desktop.json
-            budget: p95 ≤ 94 ms · jank ≤ 19 % · blur ≤ 2 Mpx
-            p95: "94"
-            jank: "0.19"
+            budget: p95 ≤ 100 ms · jank ≤ 20 % · blur ≤ 2 Mpx
+            p95: "100"
+            jank: "0.2"
             blur: "2"
           - profile: mobile-4x
             run: pnpm measure:scroll --profile mobile-4x --out scroll-mobile.json
-            budget: p95 ≤ 47 ms · jank ≤ 3.4 % · blur ≤ 2 Mpx
-            p95: "47"
-            jank: "0.034"
+            budget: p95 ≤ 70 ms · jank ≤ 5 % · blur ≤ 2 Mpx
+            p95: "70"
+            jank: "0.05"
             blur: "2"
           - profile: software-gl
             run: pnpm measure:scroll --software-gl --out scroll-software-gl.json
-            budget: p95 ≤ 70 ms · jank ≤ 7.5 % · blur ≤ 2 Mpx
-            p95: "70"
-            jank: "0.075"
+            budget: p95 ≤ 90 ms · jank ≤ 10 % · blur ≤ 2 Mpx
+            p95: "90"
+            jank: "0.1"
             blur: "2"
     steps:
       - uses: actions/checkout@v7
