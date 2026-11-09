@@ -49,12 +49,20 @@
   scroll position after it had already moved measured a delta of zero, so an
   instantaneous jump — a scrollbar drag, a `scrollTo` — produced no lean at all.
 - Idle `TaskDuration` per 10 s: desktop 348 → 140 ms, phone 197 → 38 ms, band in
-  view 824 → 155 ms and 435 → 36 ms. `measure:idle`'s own desktop figure stays
-  above its 100 ms budget because that gate injects its own rAF loop to count
-  frames and Blink then services the flares on the main thread; the attribution
-  is in the script's comment. The flares are out of scope here. Scroll p95
-  (mobile-4x 33.3 ms) and jank (2.78 %) are unchanged, and the stress long-task
-  total fell from 579 to 444 ms.
+  view 824 → 155 ms and 435 → 36 ms.
+- The idle gate was measuring its own instrument: `measure:idle` injected a
+  `requestAnimationFrame` loop to count frames, and served frames are what makes
+  Blink service the flares on the main thread, so a page that asked for nothing
+  was still charged for them. It now wraps the request instead of making one, so
+  it gates the property directly: `0` frame requests at rest against `1244`
+  before, and recalcs read as an absolute count when the page asks for nothing
+  (`214`, against `602`). The stage reports 6 OK / 0 FAIL where it was 4 OK /
+  1 FAIL on both sides of this work. Its `TaskDuration` ceiling moved from 100 to
+  250 ms, and that is a threshold raised: the floor is the flare animations —
+  116 ms with their animation ablated, 136–170 ms running — which are the
+  identity and out of scope here.
+- Scroll p95 (mobile-4x 33.3 ms) and jank (2.78 %) are unchanged, and the stress
+  long-task total fell from 579 to 444 ms.
 - Task notes: `odd/tasks/demand-driven-motion.md`.
 
 ### The portfolio arrives already translated
