@@ -37,10 +37,16 @@ const HeroSection = ({ locale = "en" }) => {
   return (
     <section
       id="home"
-      className="relative flex min-h-svh items-center pt-[8.125rem] pb-[4.375rem]"
+      className="relative flex min-h-svh w-full items-center pt-[8.125rem] pb-[4.375rem] portrait:min-h-0"
     >
+      {/* `w-full`: `main` centres its children, so without it the section
+          shrank to its content and the column width followed the title's
+          size — 457px at 980px wide. The column keeps the desktop measure
+          (six display sizes, centred) but never drops under 40rem where the
+          shell has the room. A portrait screen gets no forced full height:
+          on a tall viewport it only opened empty bands above and below. */}
       <div className="site-shell">
-        <div className="hero-copy">
+        <div className="hero-copy relative mx-auto w-[max(min(100%,40rem),calc(var(--text-display)*6))]">
           {/* `status` is not decoration: it is the class the stylesheet's dot
               and its pulse hang off (`.status i` + `.status i::before`, and the
               reduced-motion reset that silences both). The layout and the type
@@ -105,15 +111,19 @@ const HeroSection = ({ locale = "en" }) => {
                 </p>
               </div>
             </div>
+          </div>
 
-            <div
-              className="absolute right-0 bottom-0 h-72 w-[min(32%,24rem)] pointer-events-none max-wide:hidden"
-              aria-hidden="true"
-            >
-              <i className="orn orn-orb" style={{ "--od": "1.6" }} />
-              <i className="orn orn-ring" style={{ "--od": "-0.9" }} />
-              <i className="orn orn-spark" style={{ "--od": "2.6" }} />
-            </div>
+          {/* The depth cluster stands in the right gutter, beside the copy
+              column and never over it: anchored inside the CTA block it landed
+              on the lead and the tag rows. It only shows where the gutter can
+              hold it. */}
+          <div
+            className="pointer-events-none absolute bottom-0 left-full ml-[clamp(2rem,4vw,4rem)] hidden h-72 w-72 min-[88rem]:block"
+            aria-hidden="true"
+          >
+            <i className="orn orn-orb" style={{ "--od": "1.6" }} />
+            <i className="orn orn-ring" style={{ "--od": "-0.9" }} />
+            <i className="orn orn-spark" style={{ "--od": "2.6" }} />
           </div>
         </div>
       </div>
