@@ -14,7 +14,7 @@ const HOVER_DELAY_MS = 1500;
  * transition regardless. Cold start (server restart / hard reload) has to
  * pay for webpack compiling the `BebopShipScene` chunk + GLTF fetch + first
  * shader compile for the Bloom/Halftone passes — that can lag well past
- * PHASE_TIMINGS.SHIP. Anchored to phase duration + warm headroom (SPEC B19).
+ * PHASE_TIMINGS.SHIP. Anchored to phase duration + warm headroom.
  */
 const SHIP_READY_FALLBACK_MS = PHASE_TIMINGS.SHIP + 10000;
 
@@ -169,7 +169,7 @@ export function useBebopAnimation() {
   }, [phase, clearPhaseTimer, isShipDebug]);
 
   // Called by BebopScene once GLTF is visible + timeline actually starts —
-  // anchors SHIP→ENDCARD to real playback start (SPEC B19).
+  // anchors SHIP→ENDCARD to real playback start.
   const handleShipReady = useCallback(() => {
     if (phaseRef.current !== ANIMATION_PHASES.SHIP) return;
     if (isShipDebug) return; // debug freeze — never auto-advance
