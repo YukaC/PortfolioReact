@@ -20,7 +20,7 @@ const BebopAnimation = memo(
     const reducedMotion = prefersBebopReducedMotion();
 
     // Keep ship mounted through ENDCARD + CRT_OFF so CSS can fade opacity
-    // 1→0 instead of hard-unmounting (SPEC V33). CRT_OFF still runs
+    // 1→0 instead of hard-unmounting. CRT_OFF still runs
     // crtPowerOff on the overlay. Skip WebGL entirely under reduced-motion.
     const showShip =
       !reducedMotion &&

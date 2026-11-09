@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * §V invariants — Bebop ship animation R3F silhouette
+ * Invariants — Bebop ship animation R3F silhouette
  * Supersedes V14 (literal MP4 playback) — Approach B R3F invariants.
  */
 import { readFileSync, existsSync } from "node:fs";
