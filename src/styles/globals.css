@@ -627,6 +627,19 @@
         color-mix(in srgb, var(--color-sky) 70%, transparent);
     }
   }
+
+  /* The spy writes `aria-current` here too when the reader is in Contact.
+     The sliding indicator only runs under the links, so without this the
+     section had no mark at all. The pill takes its own hover light (the
+     `--soft` fill and the sky glow) plus a sky hairline, so the mark reads
+     on a touch screen that never hovers. After the hover rule so a pointer
+     resting on it keeps the hairline. */
+  &[aria-current="true"] {
+    background-color: var(--soft);
+    box-shadow:
+      inset 0 0 0 1px color-mix(in srgb, var(--color-sky) 55%, transparent),
+      0 10px 30px -10px color-mix(in srgb, var(--color-sky) 70%, transparent);
+  }
 }
 
 /* The pill that slides under the pointed link. Its geometry is written inline

@@ -69,7 +69,6 @@ function measureNavSpy() {
   const contact = document.getElementById("contact");
 
   return {
-    spyY: Math.max(120, Math.round(viewport * 0.33)),
     viewport,
     scrollHeight: scrollRoot.scrollHeight,
     sections,
@@ -77,19 +76,28 @@ function measureNavSpy() {
   };
 }
 
-function resolveSpyId(geometry, scrollY) {
+/* `viewport` is read live by the caller: on a phone or a tablet the toolbar
+   collapses while the reader scrolls, which changes the height and not the
+   width, so the measured value goes stale (the resize handler only
+   re-measures on a width change). At the end of the page the stale height left
+   `remaining` at the toolbar's height — past 96px on a 980px desktop-mode
+   layout — and Contact never became active. Callers read `innerHeight` next
+   to `scrollY`, before any write in the frame: both only force a layout when
+   one is pending, so read first they cost nothing extra. */
+function resolveSpyId(geometry, scrollY, viewport = geometry?.viewport) {
   if (!geometry) return "";
+  const spyY = Math.max(120, Math.round(viewport * 0.33));
 
   let activeId = "";
   for (let i = 0; i < geometry.sections.length; i += 1) {
-    if (geometry.sections[i].top - scrollY <= geometry.spyY) {
+    if (geometry.sections[i].top - scrollY <= spyY) {
       activeId = geometry.sections[i].id;
     }
   }
 
   if (geometry.contactTop !== null) {
-    const remaining = geometry.scrollHeight - (scrollY + geometry.viewport);
-    if (geometry.contactTop - scrollY <= geometry.spyY || remaining < 96) {
+    const remaining = geometry.scrollHeight - (scrollY + viewport);
+    if (geometry.contactTop - scrollY <= spyY || remaining < 96) {
       activeId = "contact";
     }
   }
@@ -135,13 +143,18 @@ const NavLinks = ({ scrollToSection, isMobile = false }) => {
   );
 };
 
-const ContactButton = ({ scrollToSection, isMobile = false }) => {
+const ContactButton = ({
+  scrollToSection,
+  onPointerEnter,
+  isMobile = false,
+}) => {
   const { t } = useT();
 
   return (
     <a
       href="#contact"
       onClick={(e) => scrollToSection(e, "#contact")}
+      onPointerEnter={onPointerEnter}
       data-nav-href="#contact"
       data-menu-item={isMobile ? "" : undefined}
       className={`nav-cta focus-ring ${isMobile ? "mt-8 w-full justify-center" : ""}`}
@@ -240,8 +253,12 @@ const Navbar = () => {
     // actually changes, not once per scroll frame. `remeasured` is the one case
     // where the section can stay the same and the pill still has to move: the
     // layout above it did.
-    const syncSpy = (scrollY = window.scrollY, remeasured = false) => {
-      const nextId = resolveSpyId(geometry, scrollY);
+    const syncSpy = (
+      scrollY = window.scrollY,
+      remeasured = false,
+      viewport = window.innerHeight,
+    ) => {
+      const nextId = resolveSpyId(geometry, scrollY, viewport);
       const changed = nextId !== activeId;
       if (changed) {
         activeId = nextId;
@@ -303,13 +320,16 @@ const Navbar = () => {
          settled re-check on `scrollend` and after 140 ms of silence is what makes a
          lost or stale event self-correcting rather than sticky. */
       const applyScrollState = () => {
+        // Both reads before the class write below: read after it, the
+        // height would force a style pass on the frame the pill turns solid.
         const scrollY = window.scrollY;
+        const viewport = window.innerHeight;
         const scrolled = scrollY > 24;
         if (scrolled !== isScrolled) {
           isScrolled = scrolled;
           header.classList.toggle("is-scrolled", scrolled);
         }
-        syncSpy(scrollY);
+        syncSpy(scrollY, false, viewport);
       };
       onScroll = () => {
         applyScrollState();
@@ -658,7 +678,19 @@ const Navbar = () => {
                   {t(`nav.links.${link.href.replace("#", "")}`)}
                 </a>
               ))}
-              <ContactButton scrollToSection={scrollToSection} />
+              {/* The CTA sits inside the links' `nav`, so reaching it never
+                  fires the `nav`'s pointer leave: the hover flag set by the
+                  link crossed on the way stayed up, the spy kept skipping the
+                  indicator, and a click on Contact scrolled to the end with
+                  the pill still under About. Entering the CTA ends the link
+                  hover and hands the indicator back to the spy. */}
+              <ContactButton
+                scrollToSection={scrollToSection}
+                onPointerEnter={() => {
+                  isHoveringRef.current = false;
+                  placeOnActive();
+                }}
+              />
             </nav>
 
             <LanguageSwitcher className="ml-2" />
