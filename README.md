@@ -313,7 +313,8 @@ goes").
 
 One motion channel feeds every layer: `useFieldMotion` writes `--scy`, `--p`,
 `--hf`, `--px/--py` and `--mx/--my` on `:root` from a single rAF loop with
-inertia; About and Footer own `--tlp` and `--fp` through ScrollTrigger scrubs.
+inertia; About and Footer own `--tlp` and `--fp` from the scroll ranges in
+`src/motion/scrollProgress.js`, fed by the scroll events the page already reports.
 Text stands directly on the field and carries a dark halo; glass (`.glass`) is
 used only where a surface has a job — the scrolled nav pill, the work preview
 and its tag. One ramp feeds both motion layers: `src/motion/config.js` keeps the

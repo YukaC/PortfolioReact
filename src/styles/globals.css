@@ -294,9 +294,10 @@
   --ease-in-out-field: cubic-bezier(0.45, 0, 0.55, 1);
 
   /* Motion channel. `useFieldMotion` writes each property on the elements that
-     read it (see the hook), ScrollTrigger owns `--tlp` and `--fp`. These are the
-     settled values: a reader that never gets a write — or a reader with no JS at
-     all — still gets a composed page. */
+     read it (see the hook); the scroll ranges own `--tlp` and `--fp`
+     (`src/motion/scrollProgress.js`). These are the settled values: a reader that
+     never gets a write — or a reader with no JS at all — still gets a composed
+     page. */
   --p: 0;
   --scy: 0;
   --hf: 1;
@@ -3029,7 +3030,8 @@ html:not(.js) .mobile-menu-panel {
 }
 
 /* The reading bar is fed by `--p` and the timeline rail by `--tlp`, both written
-   by ScrollTrigger. With no script they would sit at zero forever: one has no
+   from the scroll (`src/motion/scrollProgress.js` for the rail, `useFieldMotion`
+   for the bar). With no script they would sit at zero forever: one has no
    static equivalent and is removed, the other is drawn at its finished state. */
 html:not(.js) .field-progress {
   display: none;

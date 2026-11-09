@@ -8,7 +8,7 @@ import { NAV_LINKS } from "@/data/constants";
 import { useT } from "@/i18n/LocaleProvider";
 import { DURATION, EASE, STAGGER } from "@/motion/config";
 import { prefersReducedMotion } from "@/motion/prefersReducedMotion";
-import { gsap, registerMotion, ScrollTrigger } from "@/motion/register";
+import { gsap, registerMotion } from "@/motion/register";
 import {
   lockSmoothScroll,
   unlockSmoothScroll,
@@ -20,25 +20,16 @@ const isValidHash = (href) => typeof href === "string" && /^#[\w-]+$/.test(href)
 
 const SPY_SECTION_IDS = ["portfolio", "about", "contact"];
 
-/** Asked once per mount, the way `useRevealOnEnter.js` and `quality-tier.js` ask it:
-    a media query inside a scroll handler is a query per event. */
-const coarsePointer = () => {
-  try {
-    return window.matchMedia("(pointer: coarse)").matches;
-  } catch {
-    return false;
-  }
-};
-
 /* Every read below costs a layout: `getBoundingClientRect` per section,
    `scrollHeight` for the whole document, `offsetWidth`/`offsetLeft` for the pill.
    On Android the URL bar collapsing resizes the body on scroll frames, so the
    observer that watches the document re-asked for all of it inside a gesture —
    a forced synchronous layout per frame, on the path that was already long. The
-   burst now waits for the same 200 ms `REFRESH_DEBOUNCE_MS` in
-   `src/motion/smoothScroll.js`, and whatever is left of it is coalesced into one
-   requestAnimationFrame. Nothing here delays a write: the pill is placed from
-   the scroll handler's cached geometry, and this only re-measures what moved. */
+   burst now waits for the same 200 ms the scroll ranges wait out
+   (`REFRESH_DEBOUNCE_MS` in `src/motion/scrollProgress.js`), and whatever is left
+   of it is coalesced into one requestAnimationFrame. Nothing here delays a write:
+   the pill is placed from the scroll handler's cached geometry, and this only
+   re-measures what moved. */
 const NAV_SETTLE_MS = 200;
 /* A flick can end on the boundary between the two pill states, and then the last
    event carries a value from before the reader arrived. This is how long the state
@@ -275,10 +266,11 @@ const Navbar = () => {
       placeIndicator(active);
     };
 
-    const syncFromScroll = () => syncSpy(window.scrollY);
-
     /* One re-measure per frame, however many sources asked for it: the window
-       resize, the font swap and the body observer all land here. */
+       resize, the font swap and the body observer all land here. It is also the
+       whole of the old fine-pointer `onRefresh` duty — the geometry the spy
+       resolves against is refreshed ahead of the re-resolved section, so a
+       layout change never leaves the pill on a stale offset. */
     const settle = () => {
       if (settleFrame || disposed) return;
       settleFrame = requestAnimationFrame(() => {
@@ -302,72 +294,46 @@ const Navbar = () => {
     refreshGeometry();
     syncSpy();
 
-    let trigger = null;
-    let onScroll = null;
-    let applyState = null;
-
-    if (coarsePointer()) {
-      /* On a coarse pointer there is no smoothed layer to borrow a trigger from: the
-         scroll arrives on the one passive listener `smoothScroll.js` mounts, so the
-         pill reads the same cached offset from there instead of paying for a second
-         scroll reader and a per-event update that resolves to a value already
-         written. Only the boolean is written, and only when it changes; the spy
-         resolves against geometry measured on a layout change, never per event. */
-      /* The state reads the offset the browser reports when the event arrives, never
-         a cached copy: a cache shared with the scroll layer is one frame behind, and a
-         flick that ends exactly on the boundary then leaves the pill solid for good —
-         the 8 nov report, "flick hacia la navbar y queda fijo el color oscuro". The
-         settled re-check on `scrollend` and after 140 ms of silence is what makes a
-         lost or stale event self-correcting rather than sticky. */
-      const applyScrollState = () => {
-        // Both reads before the class write below: read after it, the
-        // height would force a style pass on the frame the pill turns solid.
-        const scrollY = window.scrollY;
-        const viewport = window.innerHeight;
-        const scrolled = scrollY > 24;
-        if (scrolled !== isScrolled) {
-          isScrolled = scrolled;
-          header.classList.toggle("is-scrolled", scrolled);
-        }
-        syncSpy(scrollY, false, viewport);
-      };
-      onScroll = () => {
-        applyScrollState();
-        if (stateTimer) clearTimeout(stateTimer);
-        stateTimer = window.setTimeout(applyScrollState, STATE_SETTLE_MS);
-      };
-      window.addEventListener("scroll", onScroll, { passive: true });
-      applyState = applyScrollState;
-      window.addEventListener("scrollend", applyState, { passive: true });
-      applyState();
-    } else {
-      trigger = ScrollTrigger.create({
-        start: 0,
-        end: "max",
-        invalidateOnRefresh: true,
-        onRefresh() {
-          // A refresh has already measured the page; this rides it rather than
-          // scheduling a second pass.
-          refreshGeometry();
-          syncSpy(window.scrollY, true);
-        },
-        onUpdate(self) {
-          const scrolled = self.scroll() > 24;
-          if (scrolled !== isScrolled) {
-            isScrolled = scrolled;
-            header.classList.toggle("is-scrolled", scrolled);
-          }
-          syncSpy(self.scroll());
-        },
-      });
-
-      ScrollTrigger.addEventListener("scrollEnd", syncFromScroll);
-    }
+    /* Both pointers read the scroll the same way, on the one passive listener the
+       page already has. The fine-pointer branch used to borrow ScrollTrigger's
+       per-frame loop for it — a loop that existed on every page whether the pill
+       moved or not — and the native branch had already proved the listener is
+       enough: the event carries the offset the browser settled on, so no cache
+       goes stale and nothing has to re-interpolate a value that is already final.
+       Only the boolean is written, only when it changes; the spy resolves against
+       geometry measured on a layout change, never per event. */
+    /* The state reads the offset the browser reports when the event arrives, never
+       a cached copy: a cache shared with the scroll layer is one frame behind, and a
+       flick that ends exactly on the boundary then leaves the pill solid for good —
+       the 8 nov report, "flick hacia la navbar y queda fijo el color oscuro". The
+       settled re-check on `scrollend` and after 140 ms of silence is what makes a
+       lost or stale event self-correcting rather than sticky. */
+    const applyScrollState = () => {
+      // Both reads before the class write below: read after it, the
+      // height would force a style pass on the frame the pill turns solid.
+      const scrollY = window.scrollY;
+      const viewport = window.innerHeight;
+      const scrolled = scrollY > 24;
+      if (scrolled !== isScrolled) {
+        isScrolled = scrolled;
+        header.classList.toggle("is-scrolled", scrolled);
+      }
+      syncSpy(scrollY, false, viewport);
+    };
+    const onScroll = () => {
+      applyScrollState();
+      if (stateTimer) clearTimeout(stateTimer);
+      stateTimer = window.setTimeout(applyScrollState, STATE_SETTLE_MS);
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("scrollend", applyScrollState, { passive: true });
+    applyScrollState();
 
     /* Only a width change can move a section horizontally or re-wrap the pill. A
     height-only resize is the URL bar showing or hiding mid-gesture, which this
     component has no answer for and which arrives on scroll frames — the same
-    policy, and the same reason, as the resize handler in `smoothScroll.js`. */
+    policy, and the same reason, as the resize handler in
+    `src/motion/scrollProgress.js`. */
     let lastWidth = window.innerWidth;
     const onResize = () => {
       if (window.innerWidth === lastWidth) return;
@@ -390,18 +356,13 @@ const Navbar = () => {
         clearTimeout(stateTimer);
         stateTimer = 0;
       }
-      if (applyState) window.removeEventListener("scrollend", applyState);
-      if (onScroll) {
-        window.removeEventListener("scroll", onScroll);
-      } else {
-        ScrollTrigger.removeEventListener("scrollEnd", syncFromScroll);
-      }
+      window.removeEventListener("scrollend", applyScrollState);
+      window.removeEventListener("scroll", onScroll);
       window.removeEventListener("resize", onResize);
       if (settleFrame) cancelAnimationFrame(settleFrame);
       if (settleTimer) clearTimeout(settleTimer);
       settleFrame = 0;
       settleTimer = 0;
-      if (trigger) trigger.kill();
       gsap.killTweensOf(header);
     };
   }, [placeIndicator]);

@@ -9,6 +9,7 @@ import {
 } from "react";
 import dynamic from "next/dynamic";
 import { BUILD_YEAR, currentYear } from "@/lib/copyright-year";
+import { SPECS } from "@/lib/scroll-range";
 import { SOCIAL_LINKS } from "@/data/constants";
 import { useBebopAnimation } from "@/hooks/useBebopAnimation";
 import { useT } from "@/i18n/LocaleProvider";
@@ -16,7 +17,8 @@ import {
   hasFinePointer,
   prefersReducedMotion,
 } from "@/motion/prefersReducedMotion";
-import { gsap, registerMotion, ScrollTrigger } from "@/motion/register";
+import { gsap, registerMotion } from "@/motion/register";
+import { createScrollRange } from "@/motion/scrollProgress";
 import SiteLogo from "./SiteLogo";
 
 const BebopAnimation = dynamic(() => import("./BebopAnimation"), {
@@ -122,19 +124,18 @@ const Footer = () => {
 
     /* `--fp` drives `opacity` and `translate` on the 70 px `background-clip:
        text` wordmark, so every write is a recalc of the footer subtree and a
-       repaint of that text. A scrub reports its progress on every frame of a
-       scroll whether the value moved or not, and three decimals of a five-
-       hundred-pixel travel means most frames repeat the previous value. The
-       comparison is the same one `AboutScroll` makes for `--tlp`: write only
-       the change, at the precision the CSS was tuned for. */
+       repaint of that text. A range reports its progress on every scroll event
+       whether the value moved or not, and three decimals of a five-hundred-pixel
+       travel means most events repeat the previous value. The comparison is the
+       same one `AboutScroll` makes for `--tlp`: write only the change, at the
+       precision the CSS was tuned for. */
     let lastProgress = null;
-    const rise = ScrollTrigger.create({
-      trigger: footer,
-      start: "top 85%",
-      end: "bottom bottom",
-      scrub: true,
-      onUpdate(self) {
-        const progress = self.progress.toFixed(3);
+    const rise = createScrollRange({
+      element: footer,
+      start: SPECS.rise.start,
+      end: SPECS.rise.end,
+      onUpdate(progressValue) {
+        const progress = progressValue.toFixed(3);
         if (progress === lastProgress) return;
         lastProgress = progress;
         footer.style.setProperty("--fp", progress);
@@ -143,7 +144,7 @@ const Footer = () => {
 
     /* The rise runs on every pointer (traced neutral on the phone);
        the letter wave below follows a cursor, so a coarse pointer stops here. */
-    if (!hasFinePointer()) return () => rise.kill();
+    if (!hasFinePointer()) return () => rise.destroy();
 
     const letters = [...mark.children];
     // `scale` is a CSSPlugin alias that expands into scaleX/scaleY, so a quickTo()
@@ -239,7 +240,7 @@ const Footer = () => {
       document.fonts?.removeEventListener("loadingdone", onResize);
       window.removeEventListener("pointermove", onPointerMove);
       cancelAnimationFrame(frame);
-      rise.kill();
+      rise.destroy();
     };
   }, []);
 

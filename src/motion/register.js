@@ -1,6 +1,5 @@
 import { gsap } from "gsap";
 import { CustomEase } from "gsap/CustomEase";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { DRAWER_BEZIER, SPRING_EASE_PATH } from "./config";
 
 let isRegistered = false;
@@ -12,7 +11,7 @@ let isRegistered = false;
 export function registerMotion() {
   if (typeof window === "undefined" || isRegistered) return;
 
-  gsap.registerPlugin(CustomEase, ScrollTrigger);
+  gsap.registerPlugin(CustomEase);
   CustomEase.create("springSoft", SPRING_EASE_PATH.soft);
   CustomEase.create("springMedium", SPRING_EASE_PATH.medium);
   CustomEase.create("springLively", SPRING_EASE_PATH.lively);
@@ -20,4 +19,4 @@ export function registerMotion() {
   isRegistered = true;
 }
 
-export { gsap, ScrollTrigger };
+export { gsap };

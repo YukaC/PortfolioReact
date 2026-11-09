@@ -1,26 +1,17 @@
 import Lenis from "lenis";
 import { prefersReducedMotion, subscribeReducedMotion } from "./prefersReducedMotion";
-import { gsap, registerMotion, ScrollTrigger } from "./register";
+import { gsap, registerMotion } from "./register";
 
 /* One owner of the smoothed scroll (docs/audit.md §10 P0-2).
 
 The instance used to be created with `lerp: 0.07` **and** `duration: 0.55`:
 Lenis ignores `duration` when `lerp` is present, so the pair looked like a
 balanced configuration and was really one value plus a lie. Exactly one
-smoothing parameter is passed now, and every reader of the scroll (the field
-channel, ScrollTrigger via `update`) consumes this instance's own value instead
-of re-interpolating it. */
+smoothing parameter is passed now, and every reader of the scroll consumes this
+instance's own value instead of re-interpolating it: the field channel reads
+`lenis.scroll`, and the scroll ranges are notified from this instance's own
+`scroll` event, so the page keeps one scroll source. */
 const SCROLL_LERP = 0.07;
-
-/* A window resize fires every frame while a window edge is dragged, and on iOS
-it also fires when the URL bar collapses mid-gesture. A `ScrollTrigger.refresh`
-re-measures every trigger, so refreshing per event stutters exactly when the
-reader is moving (docs/audit.md §10 P2-6). The refresh waits for the resize to stop.
-
-`ignoreMobileResize` is not the answer for the URL bar here: it only gates the
-listener ScrollTrigger registers itself (`gsap/ScrollTrigger.js:395-397`), not
-the one below. */
-const REFRESH_DEBOUNCE_MS = 200;
 
 /* A fling is a scroll nobody is reading through: the smoothed layer is
 travelling faster than an entrance can finish inside it, which is how a
@@ -49,8 +40,8 @@ const FLING_GAP_MS = 250;
 
 /* A coarse pointer never got smoothing from Lenis: with its defaults it copies the
 native scroll instead of interpolating it, so the phone paid for `lenis.raf` on the
-GSAP ticker every frame, plus `onNativeScroll` → `onScroll` and `ScrollTrigger.update`
-per scroll event, to reproduce a position the browser had already settled. On that
+GSAP ticker every frame, plus `onNativeScroll` → `onScroll` per scroll event, to
+reproduce a position the browser had already settled. On that
 pointer this module mounts one passive listener instead, which keeps the two things
 every other reader asks it for — the position and the `fling` latch — and reads
 `window.scrollY` once per event, in one place. Asked the way `useRevealOnEnter.js`
@@ -70,10 +61,58 @@ let tickerCallback = null;
    no reader has to ask the document again inside a handler (`getScrollPosition`). */
 let nativeScrollY = 0;
 let nativeListener = null;
-let refreshTimer = 0;
 let lastFlingPosition = 0;
 let lastFlingTime = 0;
 let flingWatchdog = 0;
+
+/* The readers of the scroll offset that are not the field channel: the page's
+scroll ranges (`src/motion/scrollProgress.js`). One module-level set, notified
+inside the listeners this module already installs — the Lenis `scroll` event on
+the smoothed path and the one passive `scroll` listener on the native one — so
+the page keeps exactly one scroll source however many ranges exist, and none of
+them owns a frame.
+
+A subscription is bookkeeping only: it mounts nothing and, at rest, runs nothing.
+The scroll layer starts listening when `startSmoothScroll()` runs, the same way
+the ranges start resolving when their elements mount. */
+const scrollSubscribers = new Set();
+
+/* The listener that keeps the subscribers fed when the page has no scroll layer:
+under reduced motion nothing is mounted, and the islands' trim at mount only
+covers a page loaded with the preference already on. A session that flips it
+half-way still has running ranges, and they have to keep answering — the source
+ScrollTrigger used to be. Mounted only while no other source exists, so the
+smoothed path never notifies twice. */
+let fallbackListener = null;
+
+function notifyScroll() {
+  scrollSubscribers.forEach((fn) => fn());
+}
+
+function syncScrollSource() {
+  if (typeof window === "undefined") return;
+  const needed = scrollSubscribers.size > 0 && !lenisInstance && !nativeListener;
+  if (needed && !fallbackListener) {
+    fallbackListener = () => notifyScroll();
+    window.addEventListener("scroll", fallbackListener, { passive: true });
+  } else if (!needed && fallbackListener) {
+    window.removeEventListener("scroll", fallbackListener);
+    fallbackListener = null;
+  }
+}
+
+/**
+ * Calls `fn` on every scroll the page reports. Returns the unsubscribe.
+ */
+export function subscribeScroll(fn) {
+  if (typeof fn !== "function") return () => {};
+  scrollSubscribers.add(fn);
+  syncScrollSource();
+  return () => {
+    scrollSubscribers.delete(fn);
+    syncScrollSource();
+  };
+}
 
 export function getLenis() {
   return lenisInstance;
@@ -124,35 +163,11 @@ export function startSmoothScroll() {
   syncPreference(prefersReducedMotion());
   const unsubscribe = subscribeReducedMotion(syncPreference);
 
-  ScrollTrigger.config({ ignoreMobileResize: true });
-
-  let lastWidth = window.innerWidth;
-  const onResize = () => {
-    /* Only a width change can move a trigger. The height-only resize a phone
-    reports when the URL bar shows or hides is the case an app handler must let
-    go of entirely: `refresh()` with no argument is a FORCED refresh, and its
-    first act is to jump the scroll to 0 and restore a position recorded on the
-    main thread (`gsap/ScrollTrigger.js:483-546`). During a gesture that stops
-    the native fling and re-anchors the page behind the reader's thumb — the
-    hero → footer → hero jump of the 8 nov recording. `refresh(true)` is the debounced path
-    ScrollTrigger's own listener takes, and it never runs for a height change. */
-    if (window.innerWidth === lastWidth) return;
-    lastWidth = window.innerWidth;
-    if (refreshTimer) clearTimeout(refreshTimer);
-    refreshTimer = window.setTimeout(() => {
-      refreshTimer = 0;
-      ScrollTrigger.refresh(true);
-    }, REFRESH_DEBOUNCE_MS);
-  };
-  window.addEventListener("resize", onResize);
-
+  /* The resize policy that used to live here — width-only, debounced — is now
+     `src/motion/scrollProgress.js`'s: it is the module that caches geometry, so
+     it is the module that decides when geometry is stale. */
   return () => {
     unsubscribe();
-    window.removeEventListener("resize", onResize);
-    if (refreshTimer) {
-      clearTimeout(refreshTimer);
-      refreshTimer = 0;
-    }
     teardown();
   };
 }
@@ -185,8 +200,10 @@ function mountNative() {
 
   nativeListener = () => {
     nativeScrollY = window.scrollY;
+    notifyScroll();
   };
   window.addEventListener("scroll", nativeListener, { passive: true });
+  syncScrollSource();
 }
 
 function mountLenis() {
@@ -197,7 +214,10 @@ function mountLenis() {
     lerp: SCROLL_LERP,
   });
 
-  lenis.on("scroll", ScrollTrigger.update);
+  /* The ranges first, the latch second: the same order the two readers were fed
+     in when a trigger owned the update, so the fling class is decided against
+     the position the ranges just used. */
+  lenis.on("scroll", notifyScroll);
   lenis.on("scroll", syncFling);
   lastFlingPosition = lenis.scroll;
   lastFlingTime = 0;
@@ -209,6 +229,7 @@ function mountLenis() {
   gsap.ticker.lagSmoothing(0);
 
   lenisInstance = lenis;
+  syncScrollSource();
 }
 
 function stopSmoothScroll() {
@@ -224,6 +245,7 @@ function stopSmoothScroll() {
   }
 
   if (lenisInstance) {
+    lenisInstance.off("scroll", notifyScroll);
     lenisInstance.off("scroll", syncFling);
     lenisInstance.destroy();
     lenisInstance = null;
@@ -233,9 +255,8 @@ function stopSmoothScroll() {
   clearFling();
   lastFlingTime = 0;
 
-  /* Same rule as the resize handler: a forced refresh re-anchors the scroll,
-     and this one runs on a reduced-motion flip, which can land mid-gesture. */
-  ScrollTrigger.refresh(true);
+  // With no layer left, the subscribers fall back to the passive listener.
+  syncScrollSource();
 }
 
 /**

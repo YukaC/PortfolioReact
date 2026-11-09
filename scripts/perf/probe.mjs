@@ -192,7 +192,7 @@ const longTasksBetween = (page, from, to) =>
 
 /**
  * Full-page scroll with real wheel input (the technique `measure-scroll-perf.mjs`
- * established): Lenis, the ScrollTrigger scrubs and the reveal observer only
+ * established): Lenis, the scroll ranges and the reveal observer only
  * take part when the events are real wheels, and a `scrollTo` would measure a
  * page nobody visits.
  */

@@ -44,7 +44,7 @@ const FAR_INDEX = LETTER_COUNT - 1; // last letter, out of the falloff radius
 
 const EASE_SETTLE_MS = 750; // quickTo duration 0.5s + margin
 const STILL_SETTLE_MS = 1100; // long enough for the tail to finish
-const SCROLL_SETTLE_MS = 700; // IntersectionObserver + ScrollTrigger
+const SCROLL_SETTLE_MS = 700; // IntersectionObserver + the footer rise range
 
 const TOLERANCE = { scale: 0.02, axes: 0.002, lift: 2, rest: 0.001 };
 
