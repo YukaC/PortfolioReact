@@ -46,7 +46,7 @@ const About = ({ locale = "en" }) => {
   return (
     <section
       id="about"
-      className="section-y w-full"
+      className="section-y w-full scroll-mt-26"
       aria-labelledby="about-heading"
     >
       <div className="site-shell">

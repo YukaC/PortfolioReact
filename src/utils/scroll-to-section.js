@@ -18,13 +18,18 @@ export function scrollToSectionByHash(href) {
 
   const isReduced = prefersReducedMotion();
   const lenis = getLenis();
+  /* A section that carries its own `scroll-margin-top` (`scroll-mt-26`, so a
+     `/#about` link from another page lands below the pill too) already holds
+     the offset. Lenis reads that margin itself, so adding ours on top landed the
+     heading twice as far down; the native path subtracts the margin instead. */
+  const margin = Number.parseFloat(getComputedStyle(section).scrollMarginTop) || 0;
 
   if (lenis && !isReduced) {
     /* The layer's frame is demand-driven: it is detached while the page is still,
        so `scrollTo` on its own would queue a target with nothing to advance it and
        the CTA would do nothing until the next wheel. The wake comes first. */
     wakeSmoothScroll();
-    lenis.scrollTo(section, { offset: -HEADER_OFFSET_PX });
+    lenis.scrollTo(section, { offset: margin > 0 ? 0 : -HEADER_OFFSET_PX });
   } else {
     /* There is no layer on a coarse pointer, so the offset has to be applied here:
        `scrollIntoView` puts the heading at the top of the viewport, under the pill.
@@ -32,7 +37,7 @@ export function scrollToSectionByHash(href) {
        `html` declares `scroll-behavior: auto` and an explicit option wins over it. */
     const top = Math.max(
       0,
-      section.getBoundingClientRect().top + window.scrollY - HEADER_OFFSET_PX,
+      section.getBoundingClientRect().top + window.scrollY - (margin || HEADER_OFFSET_PX),
     );
     window.scrollTo({ top, behavior: isReduced ? "auto" : "smooth" });
   }

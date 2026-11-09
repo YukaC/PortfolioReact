@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useId, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import SiteLogo from "@/components/SiteLogo";
 import SwapArrow from "@/components/SwapArrow";
@@ -179,7 +180,8 @@ const MenuToggleIcon = () => (
  * reader is actually in.
  */
 const Navbar = () => {
-  const { t } = useT();
+  const { t, locale } = useT();
+  const router = useRouter();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuId = useId();
   const detailsRef = useRef(null);
@@ -200,7 +202,12 @@ const Navbar = () => {
       closeMenu();
       return;
     }
-    scrollToSectionByHash(href);
+    /* The sections live on the home page. From a project or the privacy page
+       there is nothing to scroll to, so the link goes home in the same language
+       and lands on the section there instead of doing nothing. */
+    if (!scrollToSectionByHash(href)) {
+      router.push(`${locale === "en" ? "/" : `/${locale}`}${href}`);
+    }
     closeMenu();
   };
 

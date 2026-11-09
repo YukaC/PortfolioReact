@@ -23,7 +23,7 @@ const Contact = ({ locale = "en" }) => {
   return (
     <section
       id="contact"
-      className="section-y w-full"
+      className="section-y w-full scroll-mt-26"
       aria-labelledby="contact-heading"
     >
       <div className="site-shell">

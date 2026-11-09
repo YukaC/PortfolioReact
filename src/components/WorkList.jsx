@@ -223,7 +223,7 @@ const WorkList = ({ projects, locale = "en" }) => {
   return (
     <section
       id="portfolio"
-      className="section-y w-full overflow-x-clip"
+      className="section-y w-full overflow-x-clip scroll-mt-26"
       aria-labelledby="work-heading"
     >
       <div className="site-shell">
