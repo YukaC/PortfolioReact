@@ -1,397 +1,161 @@
-# 🎷 Portfolio - Agustin Ciucani
+# 🎷 Agustín Ciucani — Portfolio
 
-> Fullstack Developer portfolio.
+> *I build your software, end to end.*
 
-![Next.js](https://img.shields.io/badge/Next.js-16.3-black?logo=next.js)
+**[ciucani.vercel.app](https://ciucani.vercel.app)** · English · Español · Português
+
+Hey, welcome in. Pull up a chair — this is the room where I keep my work.
+
+It's my personal portfolio: a single page that plays like a set. A quiet intro,
+the projects up front, a little about me, and an easy way to get in touch.
+Under it all the background never stops moving — slow smoke, a grid of coral
+lights breathing in time, and one secret waiting at the very end.
+
+## 🎺 Why I built it
+
+I made this portfolio to show my work, get known in the IT world and land my
+first job in the field. This is its second take: the first version had fallen
+behind and no longer represented the work I'm doing today, so I rebuilt it from
+the ground up.
+
+## 🎶 The little winks
+
+- **The smoke and the coral lights come from _Bocanada_.** The dots behind every
+  page pulse at **128 BPM** — the tempo of Cerati's song *Bocanada* — peaking
+  right on the beat.
+- **The smoke listens to you.** Move the cursor (or drag a finger) and it
+  follows; leave it alone and it settles and goes still.
+- **Your surname, played by hand.** The big *Ciucani* in the footer leans toward
+  the pointer, letter by letter.
+- **The logo is my signature.** Point at it and a stroke draws itself underneath
+  while the ink catches the light.
+- **The tech band feels your scroll.** The rows speed up and lean into a fast
+  scroll, then straighten out on their own when you stop.
+- **"I think it's time to blow this scene."** Hover that line in the footer (or
+  hold it on a phone) and see what happens: an old CRT switches on and the
+  ship flies past in halftone print, straight out of the *Tank!* opening.
+  3, 2, 1… let's jam.
+- **It speaks your language.** English, Spanish or Portuguese, picked from your
+  browser before the page even arrives.
+
+## 🌌 Inspiration
+
+Two records play in this room.
+
+**_Bocanada_ by Gustavo Cerati** — one of my favorite artists, and the album
+that gives the visual system its name. The smoke drifting behind every page and
+the coral dots glowing through it come straight from that cover.
+
+**_Cowboy Bebop_** — the jazz, the late-night navy, and a ship that crosses the
+screen when you find the easter egg in the footer.
+
+---
+
+## ✨ Features
+
+- **Living background** — a WebGL fluid smoke over a CSS coral lattice; the
+  lattice keeps the identity when WebGL, motion or JavaScript are off.
+- **Motion that rests** — scroll-driven effects, a drifting tech marquee and
+  word-by-word reveals, with zero frames requested while the page is still.
+- **Three languages** — English, Spanish and Portuguese, prerendered and
+  negotiated from the browser with no flash of English.
+- **Accessible** — semantic structure, keyboard focus, `prefers-reduced-motion`
+  and a readable no-JS version.
+- **Fast on a phone** — the live smoke waits for a connection that can afford
+  it; above-the-fold text paints on the first frame.
+- **The Bebop easter egg** — a CRT intro and a React Three Fiber ship fly-by.
+
+## 🛠️ Tech stack
+
+![Next.js](https://img.shields.io/badge/Next.js-16-black?logo=next.js)
 ![React](https://img.shields.io/badge/React-19-61DAFB?logo=react)
-![Tailwind CSS](https://img.shields.io/badge/Tailwind-4.3-38B2AC?logo=tailwindcss)
+![Tailwind CSS](https://img.shields.io/badge/Tailwind-4-38B2AC?logo=tailwindcss)
 ![Three.js](https://img.shields.io/badge/Three.js-R3F-000000?logo=threedotjs)
-![GSAP](https://img.shields.io/badge/GSAP-88CE02?logo=greensock&logoColor=white)
+![GSAP](https://img.shields.io/badge/GSAP-3-88CE02?logo=greensock&logoColor=white)
 ![pnpm](https://img.shields.io/badge/pnpm-11-F69220?logo=pnpm&logoColor=white)
 ![License](https://img.shields.io/badge/License-MIT-green)
 
-## 📚 Description
+| Category  | Technology                                          |
+| --------- | --------------------------------------------------- |
+| Framework | Next.js 16 (App Router) · React 19                  |
+| Styling   | Tailwind CSS 4 (`@theme static` tokens)             |
+| Motion    | GSAP 3 · Lenis · Web Animations                     |
+| 3D / FX   | Three.js · React Three Fiber · Drei · postprocessing |
+| Fonts     | Manrope · Space Grotesk · Fraunces (`next/font`)    |
+| Testing   | Node test runner · Playwright                       |
+| Tooling   | ESLint · pnpm 11 · Node 22+                         |
 
-Personal portfolio built with **Next.js 16** and **React 19**, showcasing my projects and skills as a Fullstack Developer. It features a modern dark UI, smooth motion, and a Cowboy Bebop–themed easter egg (WebGL silhouette via React Three Fiber).
-
-### ✨ Features
-
-- **🚀 Performance** — Below-the-fold code-splitting, `next/image` (AVIF/WebP), Bebop timings kept off the critical path
-- **♿ Accessibility** — ARIA labels, semantic roles, featured-repo pause/previous/next (44px targets), focus trap/restore in the easter egg
-- **🎨 Responsive design** — Mobile-first, dark theme
-- **🔤 Typography** — Manrope + Space Grotesk via `next/font`
-- **🎬 Motion** — GSAP springs, scroll reveal, hero intro, image parallax; CRT intro + R3F fly-by
-- **📱 Touch** — Hold the footer line to trigger the easter egg on mobile
-
-## 🛠️ Tech Stack
-
-| Category     | Technology                                 |
-| ------------ | ------------------------------------------ |
-| Framework    | Next.js 16 (Pages Router)                  |
-| UI Library   | React 19                                   |
-| Styling      | Tailwind CSS 4 + CSS variables (`@theme`)  |
-| 3D / FX      | Three.js, R3F, Drei, postprocessing, GSAP  |
-| Fonts        | Google Fonts (optimized)                   |
-| Icons        | Custom SVGs (`Icon.jsx`)                   |
-| Linting      | ESLint 9 + eslint-config-next              |
-| Package mgr  | pnpm 11                                    |
-
-## 🚀 Getting Started
+## 🚀 Getting started
 
 ```bash
-# Clone the repository
 git clone https://github.com/YukaC/PortfolioReact.git
 cd PortfolioReact
-
-# Install dependencies
+git lfs install   # the visual baseline screenshots live in Git LFS
 pnpm install
-
-# Start the development server
-pnpm dev
+pnpm dev          # http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) in your browser.
+Requires **Node.js 22+** and **pnpm 11+**. To open the dev server from a phone on
+the same network, run `pnpm dev:mobile` (the host must be listed in
+`allowedDevOrigins` in `next.config.js`).
 
-## 📦 Available Scripts
+## 📦 Scripts
 
-| Command               | Description                         |
-| --------------------- | ----------------------------------- |
-| `pnpm dev`            | Start the development server        |
-| `pnpm dev:mobile`     | Same, bound to `0.0.0.0` for a phone|
-| `pnpm build`          | Create a production build           |
-| `pnpm start`          | Run the production build            |
-| `pnpm lint`           | Run ESLint                          |
-| `pnpm e2e:a11y`       | Browser check of the real site      |
-| `pnpm e2e:runtime`    | Locale proxy + clipboard contracts  |
-| `pnpm e2e:motion`     | Footer wordmark motion, in a browser|
-| `pnpm check:motion`   | Static GSAP reset-target guard      |
-| `pnpm validate:bebop` | Validate Bebop easter egg invariants |
-
-`pnpm e2e:a11y` runs the house browser verifier (`~/.agents/scripts/browser-verify`) against
-the real site, using the rules declared in `browser-verify.json`: document metadata, a single
-`h1`, `alt` on every image, resolvable in-page anchors, no console errors, a usable first Tab
-stop, accessible names, a hero that survives `prefers-reduced-motion`, and no horizontal
-overflow. It reuses a dev server already running for this checkout, or starts one.
-
-```bash
-pnpm e2e:a11y                                      # uses browser-verify.json
-pnpm e2e:a11y -- --base-url http://localhost:3000  # reuse a specific server
-pnpm e2e:a11y -- --json --report .browser-verify/report.json
-```
-
-`pnpm e2e:runtime` covers the two contracts that catalog cannot see, because it only ever
-opens `/` in English on a `127.0.0.1` origin: that the locale proxy answers `/` in the
-visitor's language (and that `?lang=` beats the request header), and that the contact button
-still puts the address on the clipboard when `navigator.clipboard` does not exist — the
-insecure origin a phone hits when it opens the dev server over the LAN. It reuses a running
-server, or boots `next dev` itself, so it exercises the development path where the proxy
-regression lived.
-
-```bash
-pnpm e2e:runtime                                   # reuse the server on :3000
-pnpm e2e:runtime -- --url http://127.0.0.1:3100    # or point it at another one
-```
-
-### Visual baseline
-
-`pnpm visual:baseline` captures the 45 screenshots of `docs/audit.md` §14.5 into
-`visual/baseline/<viewport>/<scroll>/<lang>.png` and records the build, the renderer and the
-vitals in `visual/baseline/manifest.json`. The PNGs are stored in Git LFS (`.gitattributes`),
-so a fresh clone needs `git lfs install` once before the baseline lands on disk — without it
-the files are 130-byte pointers and `pnpm visual:diff` finds no baseline. The committed set
-was captured on the machine with the GPU (ANGLE, Radeon RX 570), which is where `pnpm visual:diff` can gate it: the same 45 are
-re-shot and a row fails when it is missing or over the 0.1 % pixel threshold. CI uploads its
-own captures as an artifact but does not gate them — a SwiftShader capture differs from that
-baseline by 98-99 %, so the pixel comparison there would measure the renderer. CI does run
-the a11y suite, through `browser-verify.ci.json` against `next start`, using
-`scripts/vendor/browser-verify.mjs` — the vendored copy of the house runner — so no job
-depends on `~/.agents`.
-
-### Wordmark motion
-
-The footer surname reacts to the pointer: each letter lifts, scales and brightens. That
-contract needs real input and computed styles, which the declarative catalog cannot express,
-so it has its own runner. `pnpm e2e:motion` drives real pointer moves and asserts every
-observable effect — the `--b` brightness channel, `scaleX`/`scaleY` staying equal and above 1,
-the `translateY` lift, the falloff for letters out of reach, the return to rest when the
-pointer leaves, a clean console — plus `prefers-reduced-motion: reduce` and a touch device,
-where the effect must stay off. It reuses a running dev server or starts one.
-
-```bash
-pnpm e2e:motion                                   # reuses localhost:3000
-pnpm e2e:motion -- --base-url http://localhost:3000
-pnpm e2e:motion -- --headed                       # watch it happen
-```
-
-`pnpm check:motion` is the cheap half: a static guard, no browser. `gsap.quickTo()` resets a
-tween through `resetTo()`, which can only rewrite a property GSAP already tracks under that
-exact name. CSSPlugin expands a few properties before that point (`scale` → `scaleX` +
-`scaleY`, and the same for `autoAlpha`/`alpha`), so a `quickTo(…, "scale")` warns
-"not eligible for reset" once per call and animates nothing. The guard reads the alias list
-from the installed GSAP and fails on any alias used as a reset target.
-
-### Phone access (Tailscale or LAN)
-
-Next 16 already binds `next dev` to `0.0.0.0`; `pnpm dev:mobile` states it explicitly for the
-case where the flag matters (older Next, or a wrapper that overrides the default). What
-actually blocks a phone is `allowedDevOrigins` in `next.config.js`: an origin that is not
-listed gets its `/_next/*` requests rejected, so the HTML loads but the client chunks and
-HMR do not.
-
-```bash
-pnpm dev:mobile
-# then on the phone, same tailnet:
-#   http://yuka.tail901e3b.ts.net:3000   (MagicDNS)
-#   http://100.120.254.30:3000           (Tailscale IP, no DNS needed)
-```
-
-Both hosts are allow-listed. `0.0.0.0` also exposes the dev server to the LAN, not only to
-Tailscale: if that matters, bind the tailnet address alone with `pnpm dev -- -H 100.120.254.30`.
-Re-check the hosts after a tailnet rename or an IP change (`tailscale ip -4`,
-`tailscale status --json`).
-
-### Measuring on a real phone
-
-The dev-only `/test` route and its overlay were removed; the meter is still served, by the
-proxy, to the device that actually has the DPR and the GPU:
-`node scripts/perf/remote-proxy.mjs --target http://127.0.0.1:4173 --port 4300`, then open
-`http://<this-machine>:4300/es` on the phone and press the bubble. The proxy owns
-`/__perf/report`, which is the meter's default endpoint (`src/perf/meter.js`), and the report
-lands in `.perf/browser/` (gitignored).
-
-Both hosts must be reachable from the phone; the proxy binds the machine, not the tailnet, so
-start it on the same network or through Tailscale.
-
-## 🔄 Project data
-
-The work list is served from one file, `src/data/pinned-projects.json`, which is validated
-by `src/lib/validate-projects.js` (https-only allowlisted links, `name`/`description`/`tags`
-shape, ≤ 6 items, no duplicates) and rendered as-is: the build and the render never talk to
-GitHub.
-
-Refreshing it is a commit, not a request. `.github/workflows/projects-sync.yml` runs every
-6 h, checks the repository out with `contents: write`, runs
-`node scripts/sync-projects.mjs` (one GraphQL call, 4 s timeout, no redirects), and commits
-`src/data/pinned-projects.json` only when the file changed — so `generatedAt` moves only
-when the data did, and the sitemap `lastmod`, the JSON-LD `dateModified` and the page's
-"última actualización" stay honest.
-
-Without a token, `node scripts/sync-projects.mjs --public` does the same write from public
-endpoints: it reads the pinned names out of the profile page and one
-`https://api.github.com/repos/YukaC/<name>` per pin (4 s timeout, no redirects,
-unauthenticated limit), then runs the same `validate()` and the same atomic write.
-
-`/api/sync-projects` remains for a host whose repository directory is writable (a VPS, a
-container, `pnpm start` on your own box): same validation, same atomic write, guarded by
-`CRON_SECRET`. On a read-only filesystem it answers `501` with the job's name instead of
-failing with a 500 that looks like a bug.
+| Command               | What it does                                             |
+| --------------------- | -------------------------------------------------------- |
+| `pnpm dev`            | Development server                                       |
+| `pnpm dev:mobile`     | Development server reachable from a phone                |
+| `pnpm build` / `start`| Production build / serve it                              |
+| `pnpm gate`           | Every quality gate (lint, unit, CSS, motion…) in one run |
+| `pnpm test`           | Unit tests                                               |
+| `pnpm lint`           | ESLint                                                   |
+| `pnpm check:css`      | CSS budget: colour literals, dead classes, size drift    |
+| `pnpm e2e:*`          | Browser suites: `a11y`, `functional`, `nojs`, `runtime`, `motion` |
+| `pnpm visual:baseline` / `visual:diff` | Capture / compare the visual baseline   |
+| `pnpm perf`           | Full performance and stress suite ([details](scripts/perf/README.md)) |
+| `pnpm validate:bebop` | Bebop easter egg timing invariants                       |
 
 ## 🌍 Languages
 
-The site is written in English and translated into Spanish and Portuguese, and the
-visitor does not choose: `src/proxy.js` reads `Accept-Language`, and `/` answers with the
-matching prerendered page — `/es` or `/pt` — through an internal rewrite, so the URL bar
-keeps `/` and the language never becomes part of the public address.
+`/` answers in the visitor's language through an internal rewrite to the
+prerendered `/es` or `/pt` page, so the URL stays `/`. The order is `?lang=` →
+cookie → `Accept-Language` → English. The logic lives in `src/proxy.js` and
+`src/i18n/locale.js`; the dictionaries in `src/i18n/messages/` fall back to
+English key by key.
 
-"Translated in advance" is literal: those pages are built by `next build` (ISR, six hours),
-so the bytes that arrive already carry the translated copy, `<title>`, description and
-social tags. There is no dictionary swap after hydration and therefore no flash of
-English. The six hours are the snapshot's own cadence: the pages re-render from
-`src/data/pinned-projects.json` when the `projects-sync` CI job commits a refreshed
-snapshot, not on a timer of their own.
+## 🔄 Project data
 
-Resolution order is `?lang=` → cookie → `Accept-Language` → English. The proxy stores the
-detected tag (one year, `SameSite=Lax`) on `/` — the only route whose language is
-negotiated, and therefore the only one that answers with a cookie — sets
-`Vary: Accept-Language` and sends the decision to the render as `x-pf-locale` /
-`x-pf-html-lang`. `/es` and `/pt` carry their language in the path, so their response is
-the same for everybody and a shared cache can keep it (docs/audit.md §24 S3).
+The work list comes from `src/data/pinned-projects.json`, validated by
+`src/lib/validate-projects.js`. The build never calls GitHub: a scheduled
+workflow (`.github/workflows/projects-sync.yml`) refreshes the file every 6 hours
+and commits it only when it changed.
 
-A static HTML file cannot know a region, so `<html lang>` ships as `es` and
-`LocaleProvider` refines it to `es-AR` / `pt-BR` from that cookie after mount — the
-attribute only, never the text. The cookie is written on `/`, where the language is
-negotiated, so a reader who lands straight on `/es` keeps the base tag (which is still
-correct, just not regional). `es-419` keeps the language and drops the region: HTML has
-no exact regional tag for it.
-
-The decisions live in one pure module (`src/i18n/locale.js`) shared by the edge runtime,
-the document shell and React; the dictionaries are in `src/i18n/messages/` and fall back to
-English key by key, because translation lag is expected and a blank string is not. Project
-cards translate per field from the `i18n` block that already owns the slug in
-`src/data/projects.js`.
-
-## 📁 Project Structure
+## 📁 Project structure
 
 ```
 PortfolioReact/
 ├── src/
-│   ├── components/           # UI + Bebop
-│   │   ├── Layout.jsx
-│   │   ├── Navbar.jsx
-│   │   ├── HeroSection.jsx
-│   │   ├── Marquee.jsx
-│   │   ├── WorkList.jsx
-│   │   ├── About.jsx
-│   │   ├── Contact.jsx
-│   │   ├── Footer.jsx
-│   │   ├── AppBackground.jsx
-│   │   ├── LiquidEther.jsx
-│   │   ├── Reveal.jsx        # + SplitHeading, RollingLabel, SwapArrow
-│   │   ├── Icon.jsx
-│   │   ├── BebopAnimation.jsx
-│   │   ├── BebopShip.jsx
-│   │   └── bebop/            # R3F scene, ship, halftone, CSS module
-│   ├── pages/                # Next.js Pages Router
-│   ├── styles/               # globals.css (Tailwind v4 @theme static)
-│   ├── data/                 # constants, projects, bebop-timings, bebopShip, bebopShots
-│   ├── hooks/                # useFieldMotion, useRevealOnEnter, usePointerLight, useBebopAnimation
-│   └── utils/                # scroll-to-section
-├── public/                   # Static assets (WebP, bebop GLTF), robots.txt, sitemap
-├── scripts/                  # e2e-a11y, e2e-footer-motion, check-motion-aliases, validate-bebop-timing
-├── .github/workflows/        # CI (Node 22, pnpm)
-├── .nvmrc                    # Node 22 (matches CI)
-├── LICENSE                   # MIT
-└── package.json
+│   ├── app/          # App Router routes, metadata, sitemap, OG images
+│   ├── components/   # Sections, the field (AppBackground, LiquidEther), Bebop
+│   ├── motion/       # Smooth scroll, scroll progress, GSAP setup
+│   ├── hooks/        # Field motion, reveals, pointer light, Bebop
+│   ├── i18n/         # Locale negotiation and dictionaries
+│   ├── data/         # Projects, constants, Bebop timings
+│   ├── lib/          # Pure helpers + unit tests
+│   └── styles/       # globals.css (Tailwind v4 tokens and recipes)
+├── public/           # Images, Bebop model, icons
+├── scripts/          # Quality gates, e2e suites, perf tooling
+├── docs/             # Design audit and CSS map
+└── visual/           # Visual baseline (Git LFS)
 ```
 
-## 🌐 Deploy
-
-### Vercel (recommended)
-
-```bash
-pnpm add -g vercel
-vercel
-```
-
-### Other platforms
-
-Works with Netlify, Railway, and [Next.js Docker](https://nextjs.org/docs/deployment#docker-image).
-
-## 🔧 Requirements
-
-- **Node.js** 22+ (see `engines` in `package.json`, `.nvmrc`, and CI — local Node 26 OK)
-- **pnpm** 11+ (see `packageManager` in `package.json`)
-
-## ⚡ Local development: the tree lives on NVMe
-
-This repository lives on the NVMe drive (`/home/yuka/Proyectos/PortfolioReact`); the
-old path under `/mnt/JuegosHDD/Proyectos/PortfolioReact` is a symlink to it, so every
-existing command, script and editor session keeps working unchanged.
-
-That matters because this app pulls **three / R3F / drei / postprocessing / gsap** and
-Turbopack is I/O-heavy: on a spinning disk the cold compile hurts, and `next dev`
-reports it directly — `⚠ Slow filesystem detected. The benchmark took Nms`. On NVMe
-that warning is gone and `pnpm dev` / `pnpm dev:mobile` run from this tree with no
-indirection.
-
-**Do not** reintroduce symlinked `.next` or `node_modules` across disks, and do not
-create a second worktree of this repo to "get speed": Turbopack rejects out-of-root
-`node_modules` symlinks, a cross-device `.next` breaks PostCSS, and a second tree
-means the code you edit is not the code you serve. One tree, on NVMe, is the whole
-fix.
-
-Prefer **pnpm** (`packageManager`); `npm run …` works but locks/CI use pnpm.
-
-**Not the main bottleneck:** the project list is read from the versioned snapshot
-(`src/data/pinned-projects.json`) — a build makes no request to GitHub at all. The one
-network call lives in the scheduled refresh, which validates before it writes: the
-`projects-sync` workflow (`.github/workflows/projects-sync.yml`) runs
-`node scripts/sync-projects.mjs` every 6 h and commits the snapshot when it changed. A
-serverless filesystem is read-only, so `/api/sync-projects` cannot write there: it answers
-`501` naming that job and stays as the self-hosted trigger. See
-[#20](https://github.com/YukaC/PortfolioReact/issues/20).
-
-## Visual system
-
-Bocanada is the north star, retoned for a navy field: the smoke, the coral
-lattice and its spring flares are the only things allowed to move on their own.
-The shared frame is the `site-shell` utility (max 80rem, 44–128px inset) and
-`section-y` (top padding only — sections breathe through space, not borders);
-both are `@utility` recipes in `src/styles/globals.css`, and everything a node
-can express with Tailwind is a utility in its JSX (see `AGENTS.md`, "Where CSS
-goes").
-
-One motion channel feeds every layer: `useFieldMotion` writes `--scy`, `--p`,
-`--hf`, `--px/--py` and `--mx/--my` on `:root` from a single rAF loop with
-inertia; About and Footer own `--tlp` and `--fp` from the scroll ranges in
-`src/motion/scrollProgress.js`, fed by the scroll events the page already reports.
-Text stands directly on the field and carries a dark halo; glass (`.glass`) is
-used only where a surface has a job — the scrolled nav pill, the work preview
-and its tag. One ramp feeds both motion layers: `src/motion/config.js` keeps the
-GSAP springs and reads every duration, stagger and curve from the
-`--duration-*` / `--stagger-*` / `--ease-*` tokens in `globals.css`.
-
-### Field quality on a phone
-
-The liquid field is one simulation with one set of constants. `getSimQuality` in
-`src/components/AppBackground.jsx` returns `{ resolution: 0.32, iterationsPoisson: 12 }` for
-every device; the only things that turn it off are `prefers-reduced-motion` and
-`navigator.connection.saveData`, and then the CSS field underneath carries the section on its
-own.
-
-`resolution` is relative to the canvas, so one constant means one thing everywhere: the dye's
-simulation targets are 0.32 of the viewport, which is the same density of dye cells per CSS
-pixel on a phone as on a desktop. A 390×844 phone gets 125×270 targets against a 1440×900
-desktop's 460×288 — a third of the cells, and a third of the cost. That is also why there is no
-separate coarse-pointer profile any more: measured on a 4× throttled Pixel 8 profile, the old
-`0.22 / 8` bought nothing (59.8 vs 59.9 fps, 0 janky on both, renderer within 20 ms over 6 s of
-scroll) and cost the smoke its detail. The canvas itself runs at `pixelRatio = 1`
-(`LiquidEther.jsx`), so a DPR-3 phone is not paying three times the pixels either.
-Two consequences worth knowing before touching the constants: the dye's *fluidity* is the
-render-target grid, not the pointer, and the touch drag is part of the design — `touchstart` /
-`touchmove` drive the same field the desktop pointer does.
-
-### What a 3G phone pays
-
-Measured at 390x844, DPR 3, CPU 4x throttle, on three network profiles:
-
-| network | load | FCP | LCP | canvas | JS |
-| --- | --- | --- | --- | --- | --- |
-| none | 0.36 s | 0.24 s | 0.24 s | 786 ms | 403 KB |
-| Fast 3G | 2.2 s | 0.92 s | 0.92 s | 3.7 s | 403 KB |
-| Slow 3G | 8.7 s | 2.3 s | 2.3 s | never | 212 KB |
-
-Two rules keep those numbers:
-
-- Above-the-fold text paints on the first frame. `[data-r="paint"]` runs the same
-  travel, blur and stagger from CSS, so no entry animation can hold the largest
-  paint behind hydration. Plain `[data-r]` still waits for the IntersectionObserver,
-  which is correct below the fold.
-- The live dye waits for a connection that can pay for it. `getSimQuality()` returns
-  `null` for `saveData` or `effectiveType` of `slow-2g` / `2g` / `3g`, and re-reads
-  the connection on `change`; the CSS field covers those seconds. That is 191 KB of
-  `three` not requested on a metered phone.
-
-Below that floor the page is React plus GSAP; there is no cheaper version left
-without rewriting the animation layer.
-
-Dark tokens live in `@theme static` (`src/styles/globals.css`):
-
-```css
-@theme static {
-  --color-ink: #060b1a;
-  --color-deep: #0e1830;
-  --color-mist: #16233d;
-  --color-paper: #eef2ff;
-  --color-mut: #c2cde4;
-  --color-dim: #9eabc4;
-  --color-sky: #8fcbff;        /* type accent */
-  --color-coral: #e2727f;      /* field lattice */
-  --color-live: #4ade80;       /* the status dot */
-  --color-on-solid: #07102a;   /* ink on the one white surface */
-  --color-white: #fff;
-  --color-amber-glow: #8fcbff; /* Bebop's own module */
-}
-```
-
-A token enters that block only together with the rule or utility that consumes it, so the
-list is shorter than it once was (`night`, `fog` and `ice` are gone, and `mut`/`dim` are the
-AA-measured values the sheet actually ships).
+For the reasoning behind the design and its measurements, see
+[`docs/audit.md`](docs/audit.md) and [`docs/css-map.md`](docs/css-map.md).
 
 ## 📄 License
 
-This project is licensed under the [MIT License](./LICENSE).
+[MIT](./LICENSE)
 
 ---
 
-**Built by [Agustin Ciucani](https://github.com/YukaC)** 🚀
+**Built by [Agustín Ciucani](https://github.com/YukaC)** — see you, space cowboy. 🎷
