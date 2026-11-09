@@ -6,7 +6,6 @@ overrides:
   # No direct dependency can pull a patched release, so pin the minimum
   # version that clears the advisory.
   browserslist: 4.28.7
-  js-yaml: 4.3.2
   # next@16.3.6 allows ^2.9.19, so its copy resolves to a stale 2.10.42.
   baseline-browser-mapping: 2.11.0
 
