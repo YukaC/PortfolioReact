@@ -1,5 +1,5 @@
 {
-  "protocol": "audit.md §14.5 — 5 anchos × 3 posiciones de scroll × 3 idiomas, umbral 0.1 %",
+  "protocol": "docs/audit.md §14.5 — 5 anchos × 3 posiciones de scroll × 3 idiomas, umbral 0.1 %",
   "frozen": "prefers-reduced-motion: reduce + todas las animaciones en su estado final",
   "generatedAt": "2026-11-01T18:52:55.391Z",
   "commit": {
