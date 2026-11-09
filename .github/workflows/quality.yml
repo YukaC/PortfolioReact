@@ -96,7 +96,7 @@ jobs:
       - name: next build
         run: pnpm build
       - name: Upload the build for the browser suites
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: next-build
           path: |
@@ -184,7 +184,7 @@ jobs:
           echo "the production server is stopped"
       - name: Traces and screenshots (only when a suite fails)
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: e2e-${{ matrix.profile }}-failure
           path: |
@@ -232,7 +232,7 @@ jobs:
         run: pnpm e2e:a11y --config browser-verify.ci.json --only screenshot
       - name: Upload the screenshots
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: visual-diff
           path: .browser-verify
@@ -316,7 +316,7 @@ jobs:
       # Scroll budgets and lab vitals above do run, with software-renderer numbers.
       - name: Vitals, idle and scroll reports
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: perf-${{ matrix.profile }}
           path: |
@@ -355,7 +355,7 @@ jobs:
           BROWSER_VERIFY: ${{ github.workspace }}/scripts/vendor/browser-verify.mjs
       - name: Report
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: a11y
           path: |
