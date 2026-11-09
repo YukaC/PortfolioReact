@@ -72,6 +72,9 @@ const MARK_JS = 'document.documentElement.classList.add("js")';
 export const rootMetadata = {
   metadataBase: new URL(SITE_URL),
   authors: [{ name: "Agustín Ciucani" }],
+  // Google Search Console ownership. It has to stay for the verification to
+  // stay valid — removing it un-verifies the property.
+  verification: { google: "AVv-nxLNYetrFgTEVn_WDeQcg6hSNhIv2IkTfHru_AA" },
   icons: {
     icon: [
       { url: "/favicon.svg?v=2", type: "image/svg+xml" },
