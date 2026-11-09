@@ -360,7 +360,17 @@ async function main() {
 
     /* The frame counter runs inside the page for the whole window: it is the
        denominator of the recalc budget, and a page that stopped producing frames
-       would otherwise look perfect. */
+       would otherwise look perfect.
+
+       It is also the only rAF this measurement installs, and that has a
+       consequence worth reading before the task number: served frames are what
+       makes Blink service every live CSS animation on the main thread, so a page
+       whose own loops are all asleep is charged for the flares anyway. Measured
+       on the 9 nov 2026 build, 10 s, 1440×900: `TaskDuration` is 140 ms with no
+       injected loop and 0 rAF requests from the page, 329 ms with this loop,
+       116 ms with this loop and the flare animation off, 44 ms with every CSS
+       animation off. The 100 ms budget below therefore cannot be reached while
+       the flares animate, and that is a property of the gate, not of the page. */
     await page.evaluate(() => {
       const tick = () => {
         window.__idle.frames += 1;

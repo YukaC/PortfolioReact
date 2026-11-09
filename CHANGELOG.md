@@ -2,6 +2,61 @@
 
 ## Unreleased
 
+### The page stops asking for frames it does not need
+
+- Three loops ran for the lifetime of every page view whether or not anybody was
+  there: ScrollTrigger's keep-alive `requestAnimationFrame` plus its
+  `setInterval(250)`, the `gsap.ticker` that `mountLenis()` attached its raf to
+  forever, and the technology band's per-frame `translate3d` writer. Serving a
+  main frame every vsync is what made every composited animation on the site —
+  the 36 flares — cost a main-thread pass on each of those frames. The page now
+  makes **0** `requestAnimationFrame` calls per 10 s at rest on both pointers:
+  1244 → 0 on desktop, 719 → 0 on the phone, 1847 → 0 with the band in view.
+- ScrollTrigger was never asked for a pin or for smoothing: its four uses were
+  `scrub: true` reads of the scroll offset, which is two document coordinates and
+  a division. `src/lib/scroll-range.js` resolves them — pure, DOM-free, and
+  unit-tested against the specs the page shipped on (`top 82%`, `bottom 48%`,
+  `bottom bottom`) — and `src/motion/scrollProgress.js` caches the layout box
+  once per layout change, fed by the scroll events the page already produces:
+  Lenis's own `scroll` on the smoothed path, one passive listener on the native
+  one, through the new `subscribeScroll`. The width-only, debounced re-measure
+  policy moved with the geometry it protects; it never writes the scroll offset.
+- The plugin is no longer registered at all, and the nav's fine-pointer state
+  now runs the listener path the coarse branch had already proved: the event
+  carries the settled offset, so no cache goes stale and the 140 ms `scrollEnd`
+  re-check stays.
+- The smoothed layer asks for its frame by moving. Two consecutive settled
+  frames detach it, and the wheel, the scroll keys, a native scroll (scrollbar
+  drag, find-in-page, hash and history restoration), the drawer release and every
+  programmatic `lenis.scrollTo` bring it back through `wakeSmoothScroll()`. The
+  Lenis clock is rebased on attach: Lenis derives its damping delta from the last
+  timestamp it was given, so a layer that slept would otherwise take the whole
+  pause as one delta and land on the target instead of gliding to it.
+- The band drifts on one linear, infinite Web Animations effect per row — 48 px/s
+  on the compositor, with no frame on the main thread — and still leans into the
+  gesture: a scroll starts the smoothing that writes `playbackRate` and the skew,
+  and that loop stops once the band is slower than 1 px/s and no longer leaning.
+  `src/lib/marquee-speed.js` holds both mappings, pinned by `node --test`.
+- Nothing visible changed. A parity probe scrolled a production build to every
+  50 px — 226 positions across 1440×900 and a Pixel 7 — and compared `--tlp`,
+  `--fp`, every `.timeline-item.is-on`, `header.is-scrolled` and the nav
+  `aria-current` against the shipped build: classes identical everywhere, values
+  exact in 213 positions and off by 0.001 (the third decimal) in 13.
+- Two defects the probes caught that no gate could: a range that wrote its
+  progress on mount left `--fp: 0.000` on the footer while its top was still
+  below the fold, where the stylesheet's default `1` is the shipped state (it now
+  reports on change, the way a scrub did); and a marquee wake that re-read the
+  scroll position after it had already moved measured a delta of zero, so an
+  instantaneous jump — a scrollbar drag, a `scrollTo` — produced no lean at all.
+- Idle `TaskDuration` per 10 s: desktop 348 → 140 ms, phone 197 → 38 ms, band in
+  view 824 → 155 ms and 435 → 36 ms. `measure:idle`'s own desktop figure stays
+  above its 100 ms budget because that gate injects its own rAF loop to count
+  frames and Blink then services the flares on the main thread; the attribution
+  is in the script's comment. The flares are out of scope here. Scroll p95
+  (mobile-4x 33.3 ms) and jank (2.78 %) are unchanged, and the stress long-task
+  total fell from 579 to 444 ms.
+- Task notes: `odd/tasks/demand-driven-motion.md`.
+
 ### The portfolio arrives already translated
 
 - The visitor's language configuration decides the language, not a click: the edge

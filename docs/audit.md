@@ -535,6 +535,10 @@ texto sin `role="button"`.
 6. **`ScrollTrigger.refresh()` sin throttle en resize** (`smoothScroll.js:34`) + ResizeObserver en
    `body` (`Navbar.jsx:254`, `useFieldMotion.js:172`): en iOS el colapso de la barra de URL dispara
    `resize` durante el scroll → refresh en pleno gesto. Falta `ignoreMobileResize` y debounce.
+   ***Resuelto (9 nov 2026).*** ScrollTrigger ya no está en el sitio: el re-measure vive en
+   `src/motion/scrollProgress.js` con política width-only más debounce de 200 ms, y
+   `src/lib/scroll-contract.test.js` lo bloquea (un resize que sólo cambia la altura no re-mide, y la
+   ruta de re-measure no escribe nunca la posición del scroll).
 7. **`will-change` permanente** en `.work-row` (`:1140`) para 6 filas que sólo animan en hover.
 8. **Wordmark del footer**: `background-clip: text` con gradiente por letra reescrito en cada frame de
    puntero (`Footer.jsx:147`) sobre un elemento de 1434×275 px → re-raster completo del bloque más
@@ -997,7 +1001,7 @@ Regla de oro: **una fase = un work-unit commit** y el baseline de capturas (§14
 |---|---|
 | El reveal deja de funcionar al desaparecer `useRevealOnEnter` | se arregla en el paso 1 (CSS-only) **antes** de migrar |
 | `Strict Mode` monta dos veces los efectos de las islas (dev) | ya pasa hoy; verificar que `LiquidEther` y `Lenis` limpien bien en `dispose` (lo hacen) |
-| `ScrollTrigger` y contenido RSC que cambia de alto | `ScrollTrigger.refresh()` ya está; agregar `ignoreMobileResize` (§10 P2-6) |
+| `ScrollTrigger` y contenido RSC que cambia de alto | ~~`ScrollTrigger.refresh()` ya está; agregar `ignoreMobileResize` (§10 P2-6)~~ **moot desde el 9 nov 2026**: no hay ScrollTrigger; el re-measure es de `src/motion/scrollProgress.js` (width-only + debounce, §10 P2-6) |
 | Metas duplicadas (`Head` + `metadata`) | A3 borra `next/head` en el mismo commit |
 | `[lang]` capturando rutas inválidas | `dynamicParams = false` + `not-found` |
 | Perder el `~40 líneas` de SEO/GEO | A3 compara el `<head>` renderizado contra el baseline, atributo por atributo |
