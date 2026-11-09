@@ -1,7 +1,13 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { SKEW_PER_PX_PER_S, playbackRateFor, skewFor } from "./marquee-speed.js";
+import {
+  REVERSE_HEADROOM_LOOPS,
+  SKEW_PER_PX_PER_S,
+  playbackRateFor,
+  skewFor,
+  startTimeFor,
+} from "./marquee-speed.js";
 
 /**
  * The technology band's two scroll-driven numbers.
@@ -23,7 +29,9 @@ import { SKEW_PER_PX_PER_S, playbackRateFor, skewFor } from "./marquee-speed.js"
  *   5. the skew never leaves ±ceiling — it is written into `style.transform`, so
  *      an unclamped value is a visibly broken band, not a big one;
  *   6. at rest the skew is the zero string the loop leaves on screen;
- *   7. and it is always the `0.00deg` shape today's code writes, never `0deg`.
+ *   7. and it is always the `0.00deg` shape today's code writes, never `0deg`;
+ *   8. a row starts at the phase the reader last saw;
+ *   9. and far enough from 0 that running backwards never finishes it.
  */
 const SHIPPED = { baseSpeed: 48, speedFromScroll: 0.5 };
 
@@ -61,4 +69,14 @@ test("the skew always carries two decimalled degrees", () => {
 
 test("the tilt is the operator's -0.008 deg per px/s", () => {
   assert.equal(SKEW_PER_PX_PER_S, -0.008);
+});
+
+test("a row starts at the phase the reader last saw", () => {
+  assert.equal((startTimeFor(0.25, 1000) / 1000) % 1, 0.25);
+});
+
+test("a row starts far enough from 0 that a reversed band never finishes", () => {
+  // A negative rate finishes a Web Animation at currentTime 0, even with infinite
+  // iterations, and the row then holds still instead of running backwards.
+  assert.ok(startTimeFor(0, 1000) >= REVERSE_HEADROOM_LOOPS * 1000);
 });

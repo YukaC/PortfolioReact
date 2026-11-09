@@ -48,6 +48,16 @@
   reports on change, the way a scrub did); and a marquee wake that re-read the
   scroll position after it had already moved measured a delta of zero, so an
   instantaneous jump — a scrollbar drag, a `scrollTo` — produced no lean at all.
+- Two more the review caught on the band, both from the loop that no longer runs
+  while it is off screen. Coming back into view after a jump, the first frame
+  measured the whole off-screen travel against the offset the band left at and
+  played the rows at 134× their base rate with the lean pinned at its ceiling;
+  the observer now re-reads the position and zeroes the velocity on entry, and
+  settles rate and lean on exit (peak back to 1×). And a negative playback rate
+  finishes a Web Animation at `currentTime` 0, infinite iterations or not, so a
+  row started a few hundred ms from that edge stopped instead of running
+  backwards on a brisk upward scroll; rows now start `REVERSE_HEADROOM_LOOPS`
+  (1000) loops away from 0, at the same phase.
 - Idle `TaskDuration` per 10 s: desktop 348 → 140 ms, phone 197 → 38 ms, band in
   view 824 → 155 ms and 435 → 36 ms.
 - The idle gate was measuring its own instrument: `measure:idle` injected a

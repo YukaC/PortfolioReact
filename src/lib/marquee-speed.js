@@ -44,3 +44,25 @@ export const playbackRateFor = (velocity, { baseSpeed, speedFromScroll }) =>
  */
 export const skewFor = (velocity, ceiling) =>
   `skewX(${Math.min(ceiling, Math.max(-ceiling, velocity * SKEW_PER_PX_PER_S)).toFixed(2)}deg)`;
+
+/**
+ * Whole loops a row keeps between its start and 0.
+ *
+ * A Web Animation with a negative playback rate finishes when its current time
+ * reaches 0, `iterations: Infinity` notwithstanding, and a finished row holds
+ * still instead of running backwards. A row that starts at `phase * duration`
+ * is a few hundred ms from that edge, so a brisk upward scroll right after it
+ * enters view would freeze it. A thousand loops is hours of reversal at any
+ * rate a scroll can produce.
+ */
+export const REVERSE_HEADROOM_LOOPS = 1000;
+
+/**
+ * The `currentTime` a row starts at: the same point of its travel as `phase`,
+ * `REVERSE_HEADROOM_LOOPS` loops away from 0.
+ *
+ * @param {number} phase fraction of one loop in [0, 1)
+ * @param {number} duration ms of one loop at rate 1
+ * @returns {number} the animation's starting current time
+ */
+export const startTimeFor = (phase, duration) => (REVERSE_HEADROOM_LOOPS + phase) * duration;

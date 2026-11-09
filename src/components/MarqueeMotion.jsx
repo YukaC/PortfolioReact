@@ -6,7 +6,7 @@ import {
   subscribeReducedMotion,
 } from "@/motion/prefersReducedMotion";
 import { getScrollPosition, subscribeScroll } from "@/motion/smoothScroll";
-import { playbackRateFor, skewFor } from "@/lib/marquee-speed";
+import { playbackRateFor, skewFor, startTimeFor } from "@/lib/marquee-speed";
 
 const BASE_SPEED = 48;
 const SPEED_FROM_SCROLL = 0.5;
@@ -144,7 +144,7 @@ const MarqueeMotion = () => {
         },
       );
       animation.playbackRate = rate;
-      if (phase) animation.currentTime = phase * row.duration;
+      animation.currentTime = startTimeFor(phase, row.duration);
       if (!visible) animation.pause();
       row.animation = animation;
     };
