@@ -209,8 +209,9 @@ const MarqueeMotion = () => {
          frame a delta of zero and the band would never see the gesture it was
          woken for — a scrollbar jump or a `scrollTo` would then land with no
          lean at all, which the always-running loop did measure. From a settled
-         loop `lastScroll` is still the position the reader left, so the first
-         frame measures exactly the distance that was travelled. */
+         loop `lastScroll` is still the position the reader left (or the one
+         the band re-entered at, which the observer below re-reads), so the
+         first frame measures exactly the distance that was travelled. */
       lastTime = 0;
       frame = requestAnimationFrame(tick);
     };
@@ -218,15 +219,20 @@ const MarqueeMotion = () => {
     const observer = new IntersectionObserver(([entry]) => {
       visible = entry.isIntersecting;
       if (!visible) {
-        /* Nobody can see the band: no drift to watch and no scroll reaction. The
-           rate goes back to its resting value so the row cannot play fast from
-           the moment it returns until the next scroll event arrives. */
+        /* Nobody can see the band: no drift to watch and no scroll reaction. Rate
+           and lean go back to rest so the band cannot reappear playing fast or
+           tilted by the gesture that carried it off screen. */
         cancelAnimationFrame(frame);
-        frame = 0;
-        applyRate(1);
+        settle();
         rows.forEach((row) => row.animation?.pause());
         return;
       }
+      /* The band comes back from wherever the reader went while it was hidden.
+         That travel happened off screen, so it is not a gesture the band should
+         answer: the first frame measures from here, not from the offset it left
+         at, or a jump back to it would play the rows dozens of times too fast. */
+      lastScroll = getScrollPosition();
+      velocity = 0;
       rows.forEach((row) => row.animation?.play());
     });
 
