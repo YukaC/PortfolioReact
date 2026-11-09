@@ -59,7 +59,6 @@
     "eslint-config-next": "16.4.5",
     "playwright": "^1.64.1",
     "postcss": "8.5.32",
-    "shadcn": "^4.23.0",
     "tailwindcss": "^4.3.4"
   }
 }
