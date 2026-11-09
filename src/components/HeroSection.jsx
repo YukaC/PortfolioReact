@@ -7,9 +7,8 @@ import { translator } from "@/i18n/index.js";
  * HeroSection - the practice statement, carried by type.
  *
  * No card: a status line, the heading, the subtitle, the lead, two CTAs and the
- * two tag rows. The depth cluster on the right is ornament only — it answers the
- * pointer and the scroll in layers, so the page still breathes without a panel
- * cutting the welcome in half.
+ * two tag rows, with nothing beside them: the field behind is the only depth the
+ * welcome needs.
  *
  * The `h1` is the name with the role as its second line, inside the heading: the
  * outline then reads "Agustín Ciucani desarrollador full-stack" as one entry, and
@@ -37,23 +36,26 @@ const HeroSection = ({ locale = "en" }) => {
   return (
     <section
       id="home"
-      className="relative flex min-h-svh w-full items-center pt-[8.125rem] pb-[4.375rem] portrait:min-h-0"
+      className="relative flex min-h-svh w-full items-center pt-[8.125rem] pb-[4.375rem] wide:pb-[3.75rem] portrait:min-h-0"
     >
       {/* `w-full`: `main` centres its children, so without it the section
-          shrank to its content and the column width followed the title's
-          size — 457px at 980px wide. The column keeps the desktop measure
-          (six display sizes, centred) but never drops under 40rem where the
-          shell has the room. A portrait screen gets no forced full height:
-          on a tall viewport it only opened empty bands above and below. */}
+          shrank to its content. The copy spans the shell from the same left
+          edge as Work and About; on a wide screen the lead opens to two balanced
+          lines, the rest of the site keeps the 46ch measure. The two paddings
+          differ by the visible nav pill (130 − 60 = 70px, the pill's bottom
+          edge, not the header box's 96px), so the copy sits with equal air
+          under the pill and above the fold. A portrait screen gets no
+          forced full height: on a tall viewport it only opened empty bands
+          above and below. */}
       <div className="site-shell">
-        <div className="hero-copy relative mx-auto w-[max(min(100%,40rem),calc(var(--text-display)*6))]">
+        <div className="hero-copy">
           {/* `status` is not decoration: it is the class the stylesheet's dot
               and its pulse hang off (`.status i` + `.status i::before`, and the
               reduced-motion reset that silences both). The layout and the type
               stay inline utilities; without the class the `<i>` is an empty box
               and the live indicator disappears. */}
           <span
-            className="status inline-flex items-center gap-2.5 text-[0.8125rem] text-mut"
+            className="status inline-flex items-center gap-2.5 text-[0.8125rem] text-mut wide:text-ui"
             data-r="paint"
           >
             <i aria-hidden="true" />
@@ -69,25 +71,25 @@ const HeroSection = ({ locale = "en" }) => {
             {/* The role is a subtitle, not a second headline: it keeps the `h1`
                 pairing the brief asks for but drops to the lead size in the body
                 face, so the sentence below can carry more weight than it. */}
-            <span className="mt-2 block text-lead font-normal tracking-normal text-dim">
+            <span className="mt-2 block text-lead font-normal tracking-normal text-dim wide:mt-3 wide:text-hero-lead">
               {t("hero.role")}
             </span>
           </h1>
 
           <SplitHeading
             as="h2"
-            className="font-heading text-statement text-paper"
+            className="font-heading text-statement text-paper wide:text-hero-statement wide:leading-[1.08]"
             text={t("hero.title")}
             accent={t("hero.accent")}
             reveal="paint"
             delayMs={320}
           />
 
-          <p className="lead mt-4" data-r="paint" style={{ "--d": "520ms" }}>
+          <p className="lead mt-4 wide:mt-5 wide:max-w-[88ch] wide:text-hero-lead wide:leading-[1.6] wide:text-balance" data-r="paint" style={{ "--d": "520ms" }}>
             {t("hero.lead")}
           </p>
 
-          <div className="relative mt-10">
+          <div className="relative mt-10 wide:mt-6">
             <div>
               <HeroActions />
 
@@ -111,19 +113,6 @@ const HeroSection = ({ locale = "en" }) => {
                 </p>
               </div>
             </div>
-          </div>
-
-          {/* The depth cluster stands in the right gutter, beside the copy
-              column and never over it: anchored inside the CTA block it landed
-              on the lead and the tag rows. It only shows where the gutter can
-              hold it. */}
-          <div
-            className="pointer-events-none absolute bottom-0 left-full ml-[clamp(2rem,4vw,4rem)] hidden h-72 w-72 min-[88rem]:block"
-            aria-hidden="true"
-          >
-            <i className="orn orn-orb" style={{ "--od": "1.6" }} />
-            <i className="orn orn-ring" style={{ "--od": "-0.9" }} />
-            <i className="orn orn-spark" style={{ "--od": "2.6" }} />
           </div>
         </div>
       </div>

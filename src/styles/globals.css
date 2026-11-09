@@ -98,6 +98,13 @@
   --text-statement: clamp(1.625rem, 3.9vw, 3rem);
   --text-statement--line-height: 1.16;
   --text-statement--letter-spacing: -0.03em;
+  /* The hero's steps on a wide screen: the name a size above display, the
+     sentence under it a size above statement, and the reading copy (role and
+     lead) a size above lead, so the welcome spreads across the page instead of
+     stacking tall headings over small text. Only the hero reads them. */
+  --text-hero: clamp(3.75rem, 7.8vw, 7.75rem);
+  --text-hero-statement: clamp(2.25rem, 3.4vw, 3.25rem);
+  --text-hero-lead: clamp(1.1875rem, 1.4vw, 1.375rem);
   --text-work-title: clamp(1.625rem, 3.4vw, 2.5rem);
   --text-work-title--line-height: 1.1;
   --text-work-title--letter-spacing: -0.03em;
@@ -254,7 +261,6 @@
   --duration-slower: 0.6s; /* the rolling label, the logo dash */
   --duration-drift: 0.7s; /* the work row's own travel */
   --duration-draw: 0.9s; /* the mail underline, the section flash */
-  --duration-orn: 1.15s; /* the hero ornament */
   --duration-ping: 2.4s; /* the status pulse */
   --stagger-word: 45ms; /* between the words of a split heading */
   --stagger-phrase: 40ms; /* config STAGGER.phrase */
@@ -856,6 +862,11 @@
     content: "· ";
     margin: 0 0.3125rem 0 0.625rem;
   }
+
+  @variant wide {
+    margin-top: 2.25rem;
+    font-size: var(--text-ui-sm);
+  }
 }
 
 /* Skill chips are the stack's vocabulary, in two sections and on a project
@@ -1324,17 +1335,28 @@
     .field-blob-2 {
       /* literal: field hue, see .field-blob-1 (§14.6). */
       --blob-start: radial-gradient(
-        circle,
-        hsl(222 78% 58% / 0.152) 0%, hsl(222 78% 58% / 0.123) 25%,
-        hsl(222 78% 58% / 0.062) 50%, hsl(222 78% 58% / 0.017) 75%,
+        circle closest-side,
+        hsl(222 78% 58% / 0.243) 0%, hsl(222 78% 58% / 0.197) 25%,
+        hsl(222 78% 58% / 0.099) 50%, hsl(222 78% 58% / 0.027) 75%,
         transparent 100%
       );
       --blob-end: radial-gradient(
-        circle,
-        hsl(210 78% 58% / 0.152) 0%, hsl(210 78% 58% / 0.123) 25%,
-        hsl(210 78% 58% / 0.062) 50%, hsl(210 78% 58% / 0.017) 75%,
+        circle closest-side,
+        hsl(210 78% 58% / 0.243) 0%, hsl(210 78% 58% / 0.197) 25%,
+        hsl(210 78% 58% / 0.099) 50%, hsl(210 78% 58% / 0.027) 75%,
         transparent 100%
       );
+      /* The hero's right half is the field's: the second plume rises to sit
+         behind it (centre ≈ 74vw, 46vh) and its stops carry 1.6× the alpha,
+         so the room the copy leaves reads as a source of light, not a gap.
+         `closest-side` ends the profile on the box's rounded edge: at this
+         alpha a farthest-corner profile is cut by `border-radius` while still
+         visible, and the plume shows a hard rim. The box grows by √2 (48 →
+         68vw) to keep the same radius of light. */
+      width: 68vw;
+      height: 68vw;
+      right: -8vw;
+      top: calc(46vh - 34vw);
     }
 
     .field-blob-3 {
@@ -1961,66 +1983,13 @@
        196px past the viewport once the capped shell sat centred on a 1920px
        screen. */
     width: min(30ch, calc(100% + (100vw - 100%) / 2 - 0.75rem));
-  }
 
-  /* Depth cluster: three floating layers instead of a card. They answer the
-     pointer and the scroll at their own speed (`--od`), which is instance data
-     and a composition of blur + gradients, so it stays here. */
-  .orn {
-    position: absolute;
-    border-radius: 50%;
-    translate: calc(var(--px) * var(--od, 1) * 46px)
-      calc(var(--py) * var(--od, 1) * 46px + var(--scy) * var(--od, 1) * -0.05px);
-    /* `backwards`, not `both`: the entrance fills its opening frame and then
-       leaves the animation stack. `both` kept three hero nodes in the effect
-       stack for the life of the page — the same trap this file already
-       documents for `[data-r="paint"]`. */
-    animation: orn-in var(--duration-orn) var(--ease-out-field) backwards;
-  }
-
-  .orn-orb {
-    width: 7rem;
-    height: 7rem;
-    top: 0;
-    right: 0;
-    /* literal: the orb is a frosted white surface built from a four-stop
-       gradient; none of its alphas is a step of the ladder (§14.4), and the
-       depth shadow is black. */
-    background: linear-gradient(135deg, rgb(255 255 255 / 0.17), rgb(255 255 255 / 0.03));
-    border: 1px solid rgb(255 255 255 / 0.2);
-    backdrop-filter: blur(var(--blur-soft));
-    box-shadow:
-      inset 0 1px 0 rgb(255 255 255 / 0.25),
-      0 20px 40px -18px rgb(0 0 0 / 0.5);
-  }
-
-  .orn-ring {
-    width: 13rem;
-    height: 13rem;
-    bottom: -1rem;
-    left: 0;
-    border: 1px solid color-mix(in srgb, var(--color-sky) 28%, transparent);
-    background: radial-gradient(
-      circle at 30% 30%,
-      color-mix(in srgb, var(--color-sky) 16%, transparent),
-      transparent 65%
-    );
-    animation-delay: calc(var(--duration-orn) * 0.1);
-  }
-
-  .orn-spark {
-    width: 1rem;
-    height: 1rem;
-    top: 44%;
-    left: 36%;
-    background: radial-gradient(
-      circle at 35% 30%,
-      var(--color-white),
-      var(--color-sky) 55%,
-      color-mix(in srgb, var(--color-sky) 20%, transparent)
-    );
-    box-shadow: 0 0 30px 6px color-mix(in srgb, var(--color-sky) 45%, transparent);
-    animation-delay: calc(var(--duration-orn) * 0.2);
+    /* Desktop: the name carries the width of the hero instead of sitting in
+       its left half — about two thirds of a 1440px screen. */
+    @variant wide {
+      margin: 1.5rem 0 1.75rem;
+      font-size: var(--text-hero);
+    }
   }
 
   /* --- marquee ------------------------------------------------------------
@@ -2826,18 +2795,6 @@
   }
 }
 
-@keyframes orn-in {
-  from {
-    opacity: 0;
-    transform: scale(0.5);
-  }
-
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
-}
-
 @layer utilities {
   body {
     caret-color: var(--color-sky);
@@ -2884,10 +2841,6 @@
     backdrop-filter: none;
     background-color: var(--ink-surface);
   }
-
-  .orn-orb {
-    backdrop-filter: none;
-  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -2927,13 +2880,8 @@
 
   .field-blob,
   .field-glow,
-  .orn,
   .footer-mark {
     translate: none;
-  }
-
-  .orn {
-    animation: none;
   }
 
   .status i,

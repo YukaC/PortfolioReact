@@ -2,6 +2,26 @@
 
 ## Unreleased
 
+### The hero spreads across the page
+
+- The copy column starts on the shell's left edge, where Work and About start;
+  `mx-auto` had centred it since the tablet fix.
+- The depth cluster is gone — the three `.orn-*` layers, their entrance
+  keyframes, the `--duration-orn` token and their accessibility resets — so
+  the field behind is the only depth the welcome has.
+- On a wide screen the hero reads its own steps (`--text-hero`,
+  `--text-hero-statement`, `--text-hero-lead`): the name and the sentence sit a
+  size above display and statement, the role and lead a size above lead, and
+  the lead holds two balanced lines in every locale from 1024 to 1920px. The
+  shared tokens, and every other heading, keep their scale; the phone is
+  unchanged.
+- `field-blob-2` rises behind the hero's right half with 1.6× the alpha, and
+  its profile ends on the box's rounded edge (`closest-side`, box 68vw) so the
+  brighter plume shows no rim.
+- The section's paddings differ by the visible nav pill (130 − 60px), so the
+  copy sits with equal air under the pill and above the fold — within 2px at
+  1024×768, 1440×900, 1920×945 and 1920×1000.
+
 ### The page stops asking for frames it does not need
 
 - Three loops ran for the lifetime of every page view whether or not anybody was
