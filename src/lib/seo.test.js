@@ -423,6 +423,7 @@ const SCHEMA_PROPERTIES = new Set([
   "alumniOf",
   "applicationCategory",
   "author",
+  "breadcrumb",
   "codeRepository",
   "dateModified",
   "description",
@@ -454,6 +455,7 @@ const SCHEMA_PROPERTIES = new Set([
 /** schema.org types this graph is allowed to use — all real ones. */
 const SCHEMA_TYPES = new Set([
   "Answer",
+  "BreadcrumbList",
   "ComputerLanguage",
   "EducationalOccupationalProgram",
   "EducationalOrganization",
@@ -927,4 +929,26 @@ test("a project node stays addressable when it is not on the home page", () => {
   assert.equal(node.name, projects[0].title);
   assert.equal(node.description, projects[0].description);
   assert.equal(node.author["@id"], `${SITE_URL}/#person`);
+});
+
+test("a project page carries a breadcrumb from the language's home to the project", () => {
+  const project = projects[0];
+  const graph = siteGraph({
+    locale: "es",
+    ...projectPageDescriptor("es", project),
+    generatedAt: snapshot.generatedAt,
+  });
+  const page = graph["@graph"].find((node) => node["@type"] === "WebPage");
+  const crumbs = graph["@graph"].find((node) => node["@type"] === "BreadcrumbList");
+
+  assert.deepEqual(
+    { page: page.breadcrumb, items: crumbs.itemListElement },
+    {
+      page: { "@id": crumbs["@id"] },
+      items: [
+        { "@type": "ListItem", position: 1, name: SITE_NAME, item: localeUrl("es") },
+        { "@type": "ListItem", position: 2, name: project.title, item: page.url },
+      ],
+    },
+  );
 });

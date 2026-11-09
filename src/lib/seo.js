@@ -668,6 +668,17 @@ export function siteGraph({
 
   if (projectNode) {
     graph.push(projectNode);
+    // Home → project, so a result can show where the page sits in the site.
+    const breadcrumb = {
+      "@type": "BreadcrumbList",
+      "@id": `${url}#breadcrumb`,
+      itemListElement: [
+        { "@type": "ListItem", position: 1, name: SITE_NAME, item: localeUrl(key) },
+        { "@type": "ListItem", position: 2, name: project.title, item: url },
+      ],
+    };
+    graph.push(breadcrumb);
+    page.breadcrumb = { "@id": breadcrumb["@id"] };
   } else if (projects.length > 0) {
     const itemList = {
       "@type": "ItemList",
