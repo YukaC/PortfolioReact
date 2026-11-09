@@ -2,7 +2,7 @@
 /**
  * Baseline visual del protocolo §14.5 — 5 anchos × 3 posiciones × 3 idiomas.
  *
- * `audit.md` §14.5 pide 45 capturas del build actual, y §21.2 convierte eso en un
+ * `docs/audit.md` §14.5 pide 45 capturas del build actual, y §21.2 convierte eso en un
  * gate: cada paso del plan compara contra ese baseline con diff perceptual y
  * umbral **0.1 %**. Hasta T12 ese gate corría pero no comparaba (L13, L15: "no
  * hay baseline visual commiteado"), así que este módulo es el que sí compara:
@@ -330,7 +330,7 @@ export function writeBaseline({ dir, renderer, shots, vitals = null, commit = de
   });
 
   const manifest = {
-    protocol: "audit.md §14.5 — 5 anchos × 3 posiciones de scroll × 3 idiomas, umbral 0.1 %",
+    protocol: "docs/audit.md §14.5 — 5 anchos × 3 posiciones de scroll × 3 idiomas, umbral 0.1 %",
     frozen: "prefers-reduced-motion: reduce + todas las animaciones en su estado final",
     generatedAt: new Date().toISOString(),
     commit,

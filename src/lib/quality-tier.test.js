@@ -13,7 +13,7 @@ import {
 
 /**
  * What this protects: the tier is the only thing standing between a machine
- * without a GPU and a 87 ms frame (audit.md §10 P0-3). A device that reports a
+ * without a GPU and a 87 ms frame (docs/audit.md §10 P0-3). A device that reports a
  * software rasterizer, a coarse pointer, saveData or a phone-width viewport must
  * never start in `full`, and the watchdog must be able to take the field down a
  * step — exactly one step, exactly once per overrun, and never back up: two

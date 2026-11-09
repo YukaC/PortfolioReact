@@ -169,7 +169,7 @@ const WorkRow = ({ project, index, labels, href }) => {
  * and floats a glass preview of that project's cover; on touch the cover rides
  * inline above each row instead.
  *
- * A Server Component (audit.md §16.2): the rows are markup, and they arrive in
+ * A Server Component (docs/audit.md §16.2): the rows are markup, and they arrive in
  * the HTML complete. `WorkFilters` is the island — the tabs, the pointer
  * choreography and the preview — and it receives the rows (and the preview
  * layers) as already-rendered elements, so filtering is the only thing it

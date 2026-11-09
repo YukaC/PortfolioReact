@@ -24,8 +24,8 @@ import {
   WebGLRenderer,
 } from 'three';
 
-// The smoke has three phases (audit.md §18.3, amended by the owner's brief L21
-// and by `odd/tasks/flare-tempo.md` L6, then corrected by L8). The loop runs at
+// The smoke has three phases (docs/audit.md §18.3, amended by the owner's brief
+// and by the tempo lock, then corrected once the phases settled). The loop runs at
 // display rate for as long as the reader does anything; once they have been still
 // for SETTLE_AFTER_MS the plume stops being fed and disperses into nothing over
 // DISPERSAL_DURATION_MS — still at display rate — and only after that does the
@@ -114,7 +114,7 @@ export default function LiquidEther({
   // the reader is trying to scroll, so touch input does not drive the dye unless
   // a design explicitly asks for it. Mouse movement is unaffected.
   touchSmoke = false,
-  // Tier knob from `AppBackground` (audit.md §18.6). A background is not worth
+  // Tier knob from `AppBackground` (docs/audit.md §18.6). A background is not worth
   // three device pixels per CSS pixel, and a sleeping GPU should not be woken
   // for a field that is about to freeze anyway.
   pixelRatio = 1,

@@ -11,7 +11,7 @@ import { fileURLToPath } from "node:url";
  * "still scrolling" guard, sends the scroll to 0 and restores a position
  * recorded on the main thread. A phone reports the URL bar showing or hiding as
  * a HEIGHT-ONLY resize, so answering every resize with it re-anchored the page
- * behind the reader's thumb (odd/tasks/mobile-motion-perf.md L17).
+ * behind the reader's thumb.
  */
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const code = readFileSync(path.join(ROOT, "src/motion/smoothScroll.js"), "utf8").replace(

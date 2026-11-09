@@ -1,5 +1,5 @@
 /**
- * Quality tiers for the WebGL field (audit.md §10 P0-3, §18.6; feature spec S3).
+ * Quality tiers for the WebGL field (docs/audit.md §10 P0-3, §18.6; feature spec S3).
  *
  * The field used to decide whether to mount at all by looking only at
  * `navigator.connection`, and then ran the same simulation on a workstation and
@@ -11,7 +11,7 @@
  *
  * In this run the tiers do not gate the canvas except at the last step: the
  * device gate (`static`) is safe **now** because the coral lattice with
- * cell-aligned flares lives in CSS (audit.md §18.2, §19.3 — the earlier attempt
+ * cell-aligned flares lives in CSS (docs/audit.md §18.2, §19.3 — the earlier attempt
  * at exactly this was reverted in `8164756` for losing the identity), so
  * `static` is the widest answer on purpose: it is the only tier that mounts no
  * canvas and downloads no `three` (§18.6), and everything the field is *known*

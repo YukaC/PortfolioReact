@@ -192,7 +192,7 @@ test("the strike is one slow bell, and reduced motion still drops it", () => {
 
 test("a coarse pointer keeps the flare breath", () => {
   // The breath was stopped on a coarse pointer under a desktop harness that starved
-  // GPU memory to 4 MB. Traced on the phone itself (testinG82.md), the animated
+  // GPU memory to 4 MB. Traced on the phone itself, the animated
   // strikes leave a flick's missing tiles unchanged, as the table above already
   // said for `animation: none`; the grain was the cost. The phone gets the bell.
   const flares = ruleFor(".flare");
@@ -213,8 +213,8 @@ test("the flares stop painting while the reader is flinging", () => {
   // 36 elements on a FIXED viewport-sized layer, each breathing opacity and
   // scale for its whole life: the largest per-frame raster the page asks for,
   // charged exactly when the compositor is behind. Frames that slow are what
-  // leaves a flick showing only the background (odd/tasks/mobile-motion-perf.md
-  // L13: flares off won every paired phone test). Paused, not removed.
+  // leaves a flick showing only the background (flares off won every paired
+  // phone test). Paused, not removed.
   const css = readFileSync(path.join(ROOT, "src/styles/globals.css"), "utf8").replace(
     /\/\*[\s\S]*?\*\//g,
     "",

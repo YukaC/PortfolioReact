@@ -20,7 +20,7 @@ import { accentWordSet, isAccentWord } from "@/lib/heading-accent";
  * the second line continues the first instead of restarting.
  *
  * No hooks: the split is arithmetic on a string, and this is a Server Component
- * now (audit.md §16.2), so the em-dash-free memo it used to carry would only be a
+ * now (docs/audit.md §16.2), so the em-dash-free memo it used to carry would only be a
  * hook a server render cannot call.
  */
 const splitLines = (text) => {

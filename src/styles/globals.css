@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 /* ===========================================================================
-   The stylesheet's contract (audit.md §13.2, §13.3 S3–S6; spec S14)
+   The stylesheet's contract (docs/audit.md §13.2, §13.3 S3–S6; spec S14)
 
    Tailwind owns everything it can express: box, type, colour and the states
    that are variants of them live as utilities in the JSX. This file owns what
@@ -259,7 +259,7 @@
   --stagger-word: 45ms; /* between the words of a split heading */
   --stagger-phrase: 40ms; /* config STAGGER.phrase */
   --stagger-min: 30ms; /* config STAGGER.min, the floor for a sibling beat */
-  /* --- tempo (§19.2, odd/tasks/flare-tempo.md S1–S3, as amended by the
+  /* --- tempo (§19.2, as amended by the
      respiratory rework) ------------------------------------------------
      The lattice breathes in the tempo of the song that gives the field its
      name: `--bpm` is that number and the only place it is written down —
@@ -1280,7 +1280,7 @@
   }
 
   /* The wide layout's glow, with the 110px blur convolved into the stops
-     (audit.md §10 P1-2, §21.3): the sampled profile, its worst-case error and
+     (docs/audit.md §10 P1-2, §21.3): the sampled profile, its worst-case error and
      the arithmetic behind it are in docs/css-map.md §field. */
   @variant wide {
     .field-blob-layer {
@@ -1496,7 +1496,7 @@
     animation: flare var(--breath) var(--ease-in-out-field) var(--delay, 0s) infinite;
 
     /* A coarse pointer keeps the breath: traced on the phone the animated strikes
-       leave a flick's missing tiles unchanged (testinG82.md). The grain was the
+       leave a flick's missing tiles unchanged. The grain was the
        field's cost, not this. */
   }
 
@@ -1772,7 +1772,7 @@
      layer reports a fling (`fling` on `<html>`, written by `smoothScroll.js`),
      a node reveals at once — same observer, same `.is-in`, just no entrance to
      miss. At reading speed nothing changes: the entrance is still watched.
-     Reason for staying in this layer (audit.md §13.2): a state the script owns,
+     Reason for staying in this layer (docs/audit.md §13.2): a state the script owns,
      the third of the four admitted kinds. */
   html.js.fling [data-r]:not([data-r="paint"]) {
     transition: none;
@@ -2622,7 +2622,7 @@
   }
 
   /* The toggle is a native <summary> inside a <details>: with no script the
-     browser's own disclosure is the mobile navigation (audit.md §10 P0-4), and
+     browser's own disclosure is the mobile navigation (docs/audit.md §10 P0-4), and
      `[open]` is then the only state there is — the icon and the label read it
      straight, with nothing to hydrate and nothing to keep in sync. */
   .menu-summary {
@@ -2993,7 +2993,7 @@
 --------------------------------------------------------------------------- */
 
 /* A focusable control that cannot answer a click is worse than an absent one
-   (audit.md §10 P1-7, §20.4-3). The work filters and the copy button are a
+   (docs/audit.md §10 P1-7, §20.4-3). The work filters and the copy button are a
    script's, and each has a static equivalent: the list shows every project by
    default, and the giant `mailto:` already carries the address. */
 html:not(.js) .js-only {

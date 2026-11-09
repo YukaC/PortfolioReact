@@ -20,7 +20,7 @@ import { useSmoothScroll } from "@/hooks/useSmoothScroll";
  * The reveal lives here and not in a component of its own because this island
  * already hydrates for the other three: a page-wide effect that costs nothing
  * extra is the only acceptable place for it, and it is the reason no section has
- * to be a Client Component just to be revealed (audit.md §16.2). The hidden state
+ * to be a Client Component just to be revealed (docs/audit.md §16.2). The hidden state
  * it releases belongs to `globals.css` and to `html.js`, so a document without a
  * script, or a reader who asked for less motion, stays fully visible — pinned by
  * `src/lib/reveal-contract.test.js`.

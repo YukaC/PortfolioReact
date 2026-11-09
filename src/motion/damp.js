@@ -6,7 +6,7 @@
  * fraction is a different real-world time constant on every device: the same
  * 0.07 trails twice as long at 30 fps and almost disappears at 120 fps, which
  * is why the field's lag changed with the hardware instead of with the scroll
- * (audit.md §10 P0-2).
+ * (docs/audit.md §10 P0-2).
  *
  * `damp` reads the same feel as a rate per second, so the settle is identical at
  * any refresh rate. `lambda` is that rate (1/s) and `dt` is the frame delta in

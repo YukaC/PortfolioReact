@@ -15,7 +15,7 @@ import { translator } from "@/i18n/index.js";
  * hidden from assistive tech and stops under reduced motion (the tracks stay
  * laid out, just still).
  *
- * The markup is a Server Component (audit.md §16.2); the loop is the
+ * The markup is a Server Component (docs/audit.md §16.2); the loop is the
  * `MarqueeMotion` island. Without a script the two tracks are simply laid out in
  * order — which is what they already look like under reduced motion.
  */

@@ -1,6 +1,6 @@
 /**
  * Single source of truth — Swordfish II Three.js WebGL silhouette fly-by.
- * Replaces V14 literal MP4 approach. See SPEC.md §G / §V14 (superseded).
+ * Replaces the V14 literal MP4 approach (superseded).
  */
 
 import { SHOTS_TOTAL_MS } from "./bebopShots.js";

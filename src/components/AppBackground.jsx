@@ -28,8 +28,7 @@ const FIELD_INK = "#060b1a";
    same fluidity. A phone gets a smaller grid in absolute pixels (125x270 against a
    desktop's 460x288) and is cheaper for it, so there is nothing for a separate
    profile to buy — the old `0.22 / 8` coarse branch put 86x186 targets behind a
-   390x844 screen and is what made the mobile field look flat. See
-   odd/tasks/archive/mobile-field-parity.md.
+   390x844 screen and is what made the mobile field look flat.
 
    `static` has no entry: it does not mount the canvas at all (§18.6). The
    lattice and its flares are CSS, so a phone loses nothing the field's identity
@@ -74,7 +73,7 @@ function pixelRatioFor(tier) {
  *
  * Frames are the measurement because the tier question is "can this device hold
  * a 24 ms frame", and no user agent string answers that: the same laptop renders
- * in 8 ms on one GPU path and 87 ms in software (audit.md §10 P0-3). Returns its
+ * in 8 ms on one GPU path and 87 ms in software (docs/audit.md §10 P0-3). Returns its
  * own cancel so an unmount never leaves a rAF loop behind.
  */
 function sampleFrames(count, onSample) {
@@ -108,7 +107,7 @@ const FieldBlob = ({ index }) => (
 
 /**
  * The 36 strikes of the identity layer, built once from the pre-generated table
- * (audit.md §18.4, §19.2; odd/tasks/flare-tempo.md S3). They are plain markup:
+ * (docs/audit.md §18.4, §19.2). They are plain markup:
  * integer cell coordinates in `--cx`/`--cy` — the stylesheet turns them into
  * `calc(var(--cx) * 48px + 24px)` so every flare lands on a dot centre, which a
  * viewport percentage cannot do (§19.3) — plus the phase, as a whole slot of the
@@ -129,7 +128,7 @@ const FLARE_ELEMENTS = FIELD_FLARES.map((flare) => (
 ));
 
 /**
- * Bocanada field, in the two layers of audit.md §18.2.
+ * Bocanada field, in the two layers of docs/audit.md §18.2.
  *
  * **Layer 1, the identity**: the coral lattice (`.bocanada-lattice`, one tiled
  * raster) and its 36 flares (`.flare`). Both are CSS, both are always rendered,

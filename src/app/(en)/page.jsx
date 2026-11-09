@@ -5,7 +5,7 @@ import { readProjectsSnapshot } from "@/lib/projects-snapshot";
  * English home: `/`. Also the destination of the proxy's x-default.
  *
  * The page is a Server Component with exactly one job: read the projects
- * snapshot (a committed JSON file — no network, audit.md §17) and hand the
+ * snapshot (a committed JSON file — no network, docs/audit.md §17) and hand the
  * language plus the snapshot's date to the frame. The composition itself lives
  * in the `MotionRoot` island, because the sections read the client locale
  * context. The date is what the JSON-LD publishes as `dateModified` and what the

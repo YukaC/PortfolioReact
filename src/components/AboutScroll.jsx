@@ -23,8 +23,8 @@ const clamp01 = (value) => Math.min(1, Math.max(0, value));
  *   • nothing runs under reduced motion — CSS leaves the rail settled and the
  *     dots lit, which is the state the no-script stylesheet promises;
  *   • a coarse pointer runs the scrub too. It was cut on a software-raster
- *     emulation (p95 50.1 against 33.4 ms); traced on the real phone (moto g82,
- *     testinG82.md) it leaves the missing tiles of a flick within noise;
+ *     emulation (p95 50.1 against 33.4 ms); traced on the real phone (moto g82)
+ *     it leaves the missing tiles of a flick within noise;
  *   • the viewport height is read once per resize, not once per scrub frame;
  *   • a frame that changes nothing writes nothing, so a still page costs no
  *     style invalidation.

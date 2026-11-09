@@ -667,7 +667,7 @@ const Navbar = () => {
           {/* A native disclosure, not a React-only drawer: with no script the
               browser opens and closes it by itself, so the hamburger is a real
               control at 390 px instead of a visible button that does nothing
-              (audit.md §10 P0-4). With a script the `toggle` event mirrors the
+              (docs/audit.md §10 P0-4). With a script the `toggle` event mirrors the
               browser's state into React, which owns the entrance, the exit,
               the scroll lock and the focus hand-off. The two labels live in the
               markup and CSS shows the one that matches `[open]`, so the

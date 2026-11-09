@@ -267,7 +267,7 @@ test("a coarse pointer carries no halo, and nothing toggles it", () => {
 });
 
 test("the touch scroll path never toggles a class on <html>", () => {
-  // Traced on the moto g82 (testinG82.md): each `fling` toggle on <html> re-styles
+  // Traced on the moto g82: each `fling` toggle on <html> re-styles
   // every reveal, every heading word and every flare — 418 elements, ~20 ms on the
   // phone, at the start and at the end of each flick. On a coarse pointer nothing
   // reads the class (the reveal never hides there), so the native path skips it.

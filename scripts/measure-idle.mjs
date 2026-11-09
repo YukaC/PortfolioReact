@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Reposo — audit.md §21.3 / §18.3, spec S11 (suite `perf`, perfil `idle`).
+ * Reposo — docs/audit.md §21.3 / §18.3, spec S11 (suite `perf`, perfil `idle`).
  *
  * "The page is quiet when nobody touches it" is a number, not an impression:
  * ten seconds of repose, measured through CDP, with the canvas instrumented

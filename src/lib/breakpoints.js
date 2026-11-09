@@ -1,5 +1,5 @@
 /**
- * One breakpoint vocabulary (audit.md §14.7 S2d, spec S9).
+ * One breakpoint vocabulary (docs/audit.md §14.7 S2d, spec S9).
  *
  * The widths used to exist four times: Tailwind's defaults, three hand-written
  * media queries in `globals.css`, and a bare `innerWidth <= 900` plus two

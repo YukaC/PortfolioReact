@@ -17,7 +17,7 @@ does **not** move `componentsBytes`; the ceiling is earned with declarations
 The default is a page that already reads. A reveal is decoration, and decoration
 may never be the reason the page looks empty. Hidden is a state a script opts
 into, and the opt-in is the `js` class an inline script puts on `<html>` before
-the first paint (S1, audit.md §20.4-1). So the base stylesheet — what a visitor
+the first paint (S1, docs/audit.md §20.4-1). So the base stylesheet — what a visitor
 without JavaScript gets, and what a script that fails before its observer mounts
 leaves behind — is visible, still and unfiltered.
 
@@ -75,7 +75,7 @@ At reading speed nothing changes.
 The coral lattice is CSS and it is the only lattice there is: one tiled raster,
 tile origin pinned at `0 0`, one 48 px cell, so the centre of a dot is at
 `n * 48 + 24` in every state — `active`, `frozen`, `static`, reduced motion, no
-WebGL (audit.md §18.2, §18.4). The shader used to draw its own `coverGrid` on top
+WebGL (docs/audit.md §18.2, §18.4). The shader used to draw its own `coverGrid` on top
 of this layer, which is why keeping both read as doubled dots: two grids never
 share an origin. The grid left the shader in T6, so there is exactly one, and the
 canvas no longer has to stay awake to keep the field alive.
@@ -96,7 +96,7 @@ three hard steps inside an 8 % window (≈ 0.6 s at 7–11 s cycles), with
 permanently zero between strikes, and 36 independent long cycles put up to six
 at once.
 
-**Cadence, tempo-locked** (`odd/tasks/flare-tempo.md`; owner brief: the flares go
+**Cadence, tempo-locked** (owner brief: the flares go
 at 128 BPM "como respiracion", the tempo of Bocanada). The field used to carry 36
 hand-tuned cycles of 8.7–9.3 s; it now carries one, and it is the song's:
 
@@ -158,7 +158,7 @@ fixed layer, and a fixed layer is only rastered once if nothing in it animates:
 
 - `.flare` keeps its breath on a coarse pointer. It was stopped here first, but the
   4 MB harness below measures GPU-memory starvation the phone does not have: traced
-  on the moto g82 itself (`testinG82.md`), the animated strikes leave a flick's
+  on the moto g82 itself, the animated strikes leave a flick's
   missing tiles unchanged (~105 either way), so the phone runs the bell again;
 - `.field-grain` is `display: none` there, replacing T6's `mix-blend-mode: normal`.
   The blend fix was right and not enough: the source-over tile is still a

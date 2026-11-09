@@ -8,7 +8,7 @@ import {
  * One observer for the whole page: every `[data-r]` node reveals itself the
  * first time it enters the viewport.
  *
- * The rules it has to keep (audit.md §10 P0-1, P1-3; S1/S4):
+ * The rules it has to keep (docs/audit.md §10 P0-1, P1-3; S1/S4):
  *
  *   1. It only ever ADDS `.is-in`. Hidden states belong to the stylesheet and
  *      hang off `html.js`, so a node this effect never reaches must be visible,

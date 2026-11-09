@@ -56,7 +56,7 @@ const DEFAULTS = {
   iter: 3,
 };
 
-/** The budgets the repo already ships (audit.md §21.3); nothing else is judged. */
+/** The budgets the repo already ships (docs/audit.md §21.3); nothing else is judged. */
 const BUDGET = { p95Ms: 24, jankPct: 2, jankMs: 50 };
 
 /** `load` watches the page this long after `load`: fonts, the field and the shader settle. */

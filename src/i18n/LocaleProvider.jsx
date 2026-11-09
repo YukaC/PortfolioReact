@@ -9,7 +9,7 @@ import { COOKIE_NAME, toHtmlLang, normalizeLocale } from "./locale.js";
  *
  * The strings themselves are not a client concern any more — `src/i18n/index.js`
  * gives the server the same dictionary, and the sections are Server Components
- * now (audit.md §16.2). What is left here is what only a browser can do:
+ * now (docs/audit.md §16.2). What is left here is what only a browser can do:
  *
  *   1. hand a Client Component the same strings the server rendered with, so a
  *      drawer, a filter row or a copy button can be translated without a prop

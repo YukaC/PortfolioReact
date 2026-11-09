@@ -46,7 +46,7 @@ function legacyCopy(text) {
  * The address is offered twice without JavaScript — the giant `mailto:` in the
  * server markup is a real link — so this button is `js-only`: without a script it
  * is hidden instead of sitting there as a control that cannot answer
- * (audit.md §10 P1-7). The confirmation is announced through a live region, not
+ * (docs/audit.md §10 P1-7). The confirmation is announced through a live region, not
  * just by the label that rolls.
  *
  * `contact` (the Server Component) keeps the eyebrow, the heading, the lead and

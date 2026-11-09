@@ -14,7 +14,7 @@ const PREVIEW_MARGIN = 40;
 
 /**
  * The filter row, the pointer choreography and the floating preview — the only
- * part of the work list that needs a script (audit.md §16.2).
+ * part of the work list that needs a script (docs/audit.md §16.2).
  *
  * The rows arrive as already-rendered elements (`rows: [{ key, categories,
  * element }]`) and the preview covers as `previewLayers`, both built by the
@@ -24,7 +24,7 @@ const PREVIEW_MARGIN = 40;
  *
  * What it keeps from the version that owned the rows:
  *   • the tabs are `js-only` — without a script the list is already complete, so
- *     a filter row would be a control that cannot answer (audit.md §10 P1-7);
+ *     a filter row would be a control that cannot answer (docs/audit.md §10 P1-7);
  *   • `key={filter}` remounts the `<ul>`, which is what replays the row entrance
  *     for the new set;
  *   • one pointer listener on the list, one rAF, and the preview only reads its

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * `check:css` — the §13.3 S7 guard (audit.md §21.3 "Calidad", spec S11/S14).
+ * `check:css` — the §13.3 S7 guard (docs/audit.md §21.3 "Calidad", spec S11/S14).
  *
  * Four failures, each one a rule the migration is not allowed to break:
  *

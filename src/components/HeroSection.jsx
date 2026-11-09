@@ -25,7 +25,7 @@ import { translator } from "@/i18n/index.js";
  * the same two lists at display size): one `stackline` recipe, two lines, the tech
  * names from the shared constant and the focus words from the dictionary.
  *
- * A Server Component (audit.md §16.2): every word above the fold is copy and
+ * A Server Component (docs/audit.md §16.2): every word above the fold is copy and
  * CSS, and the reveal that used to hide it until hydration is a stylesheet
  * state now. Only the CTAs hydrate — `HeroActions` — because a smooth-scroll
  * handler is the one thing markup cannot do; their motion is the page's own

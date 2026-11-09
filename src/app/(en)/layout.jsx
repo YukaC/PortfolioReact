@@ -7,7 +7,7 @@ import RootShell, { rootMetadata, rootViewport } from "@/app/root-shell";
  * route, and the App Router only lets a *root* layout render `<html>`. English
  * is the untranslated tree, so its document declares `en` statically: no
  * request-time API touches this layout, which is what keeps `/` a prerendered
- * page (audit.md §16.3 A1/A5).
+ * page (docs/audit.md §16.3 A1/A5).
  */
 export const metadata = rootMetadata;
 export const viewport = rootViewport;
