@@ -144,6 +144,7 @@ const pt = {
     triggerAria: "Segure por 1,5 segundos para abrir o easter egg",
     socialLabel: "Redes sociais",
     copyright: "© {year} Agustín Ciucani",
+    privacy: "Privacidade",
   },
   errors: {
     notFound: {
@@ -159,6 +160,30 @@ const pt = {
       retry: "Tentar de novo",
       home: "Voltar ao início",
     },
+  },
+  privacy: {
+    title: "Privacidade",
+    lead: "A versão curta: este site não rastreia você com cookies, não vende nada e não pede seus dados.",
+    sections: [
+      {
+        title: "O que é medido",
+        body: "As visitas são contadas com o Vercel Web Analytics. Ele registra a página aberta, o site que levou até ela e o país, navegador, sistema operacional e tipo de dispositivo, como números agregados e sem cookies. Não identifica você nem segue você para outros sites.",
+      },
+      {
+        title: "O único cookie",
+        body: "Um cookie chamado pf_locale lembra o idioma que o site escolheu para você, por um ano, para que sua próxima visita abra nele. É funcional, não de rastreamento, e você pode apagá-lo no navegador quando quiser.",
+      },
+      {
+        title: "Hospedagem",
+        body: "O site é hospedado na Vercel, que mantém os registros normais do servidor, como o endereço IP e o horário de cada requisição, para operar e proteger o serviço.",
+      },
+      {
+        title: "Se você me escrever",
+        body: "Se você me mandar um e-mail, uso seu endereço e sua mensagem só para responder. Não compartilho nem adiciono você a nenhuma lista.",
+      },
+    ],
+    contact: "Dúvidas sobre algo disso?",
+    updated: "Última atualização: 9 de novembro de 2026",
   },
 };
 

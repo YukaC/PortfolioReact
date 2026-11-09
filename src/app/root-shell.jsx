@@ -1,5 +1,6 @@
 import "lenis/dist/lenis.css";
 import "@/styles/globals.css";
+import { Analytics } from "@vercel/analytics/next";
 import { Fraunces, Manrope, Space_Grotesk } from "next/font/google";
 import { DEFAULT_LOCALE, normalizeLocale } from "@/i18n/locale";
 import { SITE_URL } from "@/data/constants";
@@ -52,6 +53,9 @@ const fraunces = Fraunces({
  * nothing to reconcile. Suppressing it on that one element silences the warning
  * for `<html>`'s attributes only; the rest of the tree is still diffed.
  */
+/** Set by Vercel on every build and at runtime there; absent locally. */
+const ON_VERCEL = process.env.VERCEL === "1";
+
 const MARK_JS = 'document.documentElement.classList.add("js")';
 
 /**
@@ -124,6 +128,11 @@ export default function RootShell({ lang = DEFAULT_LOCALE, children }) {
         >
           {children}
         </div>
+        {/* Vercel Web Analytics: cookieless page views, sent to this origin
+            (`/_vercel/insights`). Only where Vercel serves that endpoint: a
+            local `next dev` or `next start` has no such route, and the 404 of
+            its script would be the console error every e2e suite rejects. */}
+        {ON_VERCEL ? <Analytics /> : null}
       </body>
     </html>
   );

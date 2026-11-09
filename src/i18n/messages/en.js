@@ -145,6 +145,7 @@ const en = {
     triggerAria: "Hold for 1.5 seconds to play the easter egg",
     socialLabel: "Social links",
     copyright: "© {year} Agustín Ciucani",
+    privacy: "Privacy",
   },
   errors: {
     // The two error screens. A wrong address is a track that is not on the
@@ -162,6 +163,30 @@ const en = {
       retry: "Try again",
       home: "Back to the start",
     },
+  },
+  privacy: {
+    title: "Privacy",
+    lead: "The short version: this site does not track you with cookies, does not sell anything and does not ask for your data.",
+    sections: [
+      {
+        title: "What is measured",
+        body: "Visits are counted with Vercel Web Analytics. It records the page that was opened, the site that linked to it, and the country, browser, operating system and type of device, as aggregated numbers and without cookies. It does not identify you and does not follow you to other sites.",
+      },
+      {
+        title: "The one cookie",
+        body: "A cookie called pf_locale remembers the language the site picked for you, for one year, so your next visit opens in it. It is functional, not tracking, and you can delete it from your browser at any time.",
+      },
+      {
+        title: "Hosting",
+        body: "The site is hosted on Vercel, which keeps standard server logs, such as the IP address and the time of a request, to run and protect the service.",
+      },
+      {
+        title: "If you write to me",
+        body: "If you email me, I use your address and your message only to answer you. I do not share them and I do not add you to any list.",
+      },
+    ],
+    contact: "Questions about any of this?",
+    updated: "Last updated: 9 November 2026",
   },
 };
 

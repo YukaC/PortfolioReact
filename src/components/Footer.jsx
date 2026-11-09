@@ -8,6 +8,7 @@ import {
   useSyncExternalStore,
 } from "react";
 import dynamic from "next/dynamic";
+import Link from "next/link";
 import { BUILD_YEAR, currentYear } from "@/lib/copyright-year";
 import { SPECS } from "@/lib/scroll-range";
 import { SOCIAL_LINKS } from "@/data/constants";
@@ -58,7 +59,7 @@ const onServer = () => false;
  * seat, so the easter egg never moved.
  */
 const Footer = () => {
-  const { t } = useT();
+  const { t, locale } = useT();
   const footerRef = useRef(null);
   const markRef = useRef(null);
   // The wordmark's serif is a 45 KB italic; it is only worth a request when the
@@ -313,6 +314,15 @@ const Footer = () => {
 
           <p className="text-right text-sm text-dim max-wide:text-left">
             {t("footer.copyright", { year })}
+            {" · "}
+            {/* Same path as `privacyPath` in `src/lib/seo.js`, spelled here so
+                the footer island does not pull the SEO module into the client. */}
+            <Link
+              href={locale === "en" ? "/privacy" : `/${locale}/privacy`}
+              className="focus-ring transition-colors hover:text-paper"
+            >
+              {t("footer.privacy")}
+            </Link>
           </p>
         </div>
       </div>

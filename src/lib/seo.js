@@ -728,6 +728,52 @@ export function projectPageDescriptor(locale, project) {
   };
 }
 
+/** Site-relative href of a language's privacy page. */
+export function privacyPath(locale) {
+  const key = localeKey(locale);
+  return key === DEFAULT_LOCALE ? "/privacy" : `/${key}/privacy`;
+}
+
+export function privacyUrl(locale) {
+  return `${SITE_URL}${privacyPath(locale)}`;
+}
+
+/** The `<head>` of the privacy page: its own canonical and the three alternates. */
+export function privacyMetadata(locale) {
+  const key = localeKey(locale);
+  const { t } = translator(key);
+  const title = `${t("privacy.title")} — ${SITE_NAME}`;
+  const description = t("privacy.lead");
+  const languages = {};
+  for (const item of SITE_LOCALES) languages[item] = privacyUrl(item);
+  languages["x-default"] = privacyUrl(DEFAULT_LOCALE);
+
+  return {
+    title,
+    description,
+    alternates: { canonical: privacyUrl(key), languages },
+    openGraph: {
+      locale: OG_LOCALE_TAGS[key],
+      siteName: SITE_NAME,
+      title,
+      description,
+      type: "website",
+      url: privacyUrl(key),
+      images: [ogImage(key, ogImageAlt())],
+    },
+  };
+}
+
+export function privacyPageDescriptor(locale) {
+  const { t } = translator(localeKey(locale));
+  return {
+    url: privacyUrl(locale),
+    type: "WebPage",
+    name: `${t("privacy.title")} — ${SITE_NAME}`,
+    description: t("privacy.lead"),
+  };
+}
+
 /** Site-relative href of a language's home, for in-page links. */
 export function homePath(locale) {
   const key = localeKey(locale);
