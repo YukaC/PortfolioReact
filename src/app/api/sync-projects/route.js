@@ -2,7 +2,7 @@
  * §17 — the scheduled refresh endpoint (`cron` at minute 0 of every 6th hour).
  *
  * This was `src/pages/api/sync-projects.js`; it is a Route Handler now, so the
- * Pages Router tree could be deleted outright (audit.md §16.3 A5) and there is
+ * Pages Router tree could be deleted outright (docs/audit.md §16.3 A5) and there is
  * one router in the repo. The contract is the same one, method for method and
  * field for field:
  *

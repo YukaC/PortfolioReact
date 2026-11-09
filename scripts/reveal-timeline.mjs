@@ -2,7 +2,7 @@
 /**
  * ¿El reveal sigue siendo deficiente? — la sonda que contesta con números.
  *
- * `audit.md` P1-3 ("el reveal esconde contenido ya pintado después de hidratar")
+ * `docs/audit.md` P1-3 ("el reveal esconde contenido ya pintado después de hidratar")
  * y P0-1 ("sin JS los títulos son invisibles") se arreglaron con un
  * IntersectionObserver de página y un default invertido en CSS (S1, L3/L4). Lo
  * que nunca se midió es **cuándo** cada sección recibe `.is-in`: si una sección

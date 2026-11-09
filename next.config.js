@@ -30,7 +30,7 @@ const nextConfig = {
     // `<html lang>` belongs to the route), and a `not-found.jsx` is rendered
     // inside a root layout. `global-not-found.jsx` is the documented way to give
     // unmatched URLs a page of the site's own instead of the built-in one
-    // (audit.md §16.1: `pages/404.jsx` → `app/not-found.jsx`).
+    // (docs/audit.md §16.1: `pages/404.jsx` → `app/not-found.jsx`).
     globalNotFound: true,
   },
 

@@ -31,9 +31,9 @@ import {
  * Only `/` is language-negotiated, and only `/` answers with a cookie. `/es`
  * and `/pt` are prerendered documents whose language is in the path: they vary
  * on `Accept-Language` (the region the document may borrow) and on nothing
- * else, so a shared cache can serve them to everybody (audit.md §24 S3).
+ * else, so a shared cache can serve them to everybody (docs/audit.md §24 S3).
  *
- * Since the App Router migration (audit.md §16), `<html lang>` is the *route's*
+ * Since the App Router migration (docs/audit.md §16), `<html lang>` is the *route's*
  * language and no longer a header read: the root layouts are `(en)` and
  * `(intl)/[lang]`, so `/es` is a prerendered document that says `es` in its
  * first byte, and `headers()` in a root layout would have turned every
@@ -117,7 +117,7 @@ export function proxy(request) {
   // Only `/` sets it. `/es` and `/pt` are prerendered documents whose language
   // is in the path, so a cookie is not part of their representation: answering
   // them with `Set-Cookie` made one URL produce a visitor-specific response
-  // (audit.md §24 S3 — one URL per language, deterministic). The cookie is
+  // (docs/audit.md §24 S3 — one URL per language, deterministic). The cookie is
   // written where it is read, and it is read on `/`.
   if (pathname === "/") {
     response.headers.append("Set-Cookie", serializeLocaleCookie(htmlLang));

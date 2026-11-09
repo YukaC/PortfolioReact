@@ -71,7 +71,7 @@ const Footer = () => {
   );
   // Bebop is a script. The tagline is a button only in a document that can run
   // one; server-rendered and scriptless it stays the sentence it looks like, so
-  // it is not a focusable control that cannot answer (audit.md §10 P1-7).
+  // it is not a focusable control that cannot answer (docs/audit.md §10 P1-7).
   const isInteractive = useSyncExternalStore(
     subscribeToNothing,
     onClient,
@@ -141,7 +141,7 @@ const Footer = () => {
       },
     });
 
-    /* The rise runs on every pointer (traced neutral on the phone, testinG82.md);
+    /* The rise runs on every pointer (traced neutral on the phone);
        the letter wave below follows a cursor, so a coarse pointer stops here. */
     if (!hasFinePointer()) return () => rise.kill();
 

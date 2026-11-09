@@ -38,7 +38,7 @@ const fraunces = Fraunces({
  * Every reveal in CSS hangs off that class, so the served HTML is legible on its
  * own and the animation is something JS opts into — the reverse (hiding by
  * default and letting hydration reveal) is what left three headings blank
- * without JS (audit.md §10 P0-1). It sits at the top of `<body>` instead of in
+ * without JS (docs/audit.md §10 P0-1). It sits at the top of `<body>` instead of in
  * `<head>` because the App Router owns the head: a synchronous inline script is
  * still parsed and executed before any markup after it exists, so no reveal can
  * ever match the hidden state in a paint. It is a one-liner with no `eval`, so a

@@ -7,7 +7,7 @@ import { SUPPORTED_LOCALES } from "@/i18n/locale";
  *
  * Both languages come from the one route — `generateStaticParams` is the closed
  * set, `dynamicParams = false` makes anything else a 404 instead of an on-demand
- * render of an unknown locale (audit.md §16.4). The proxy still decides which of
+ * render of an unknown locale (docs/audit.md §16.4). The proxy still decides which of
  * these answers `/`; the URL the reader sees never carries the language.
  *
  * `revalidate` is the snapshot cadence (§17), and `readProjectsSnapshot` reads

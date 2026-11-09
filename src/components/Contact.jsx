@@ -10,7 +10,7 @@ import { translator } from "@/i18n/index.js";
  *
  * The giant mail reads as the action and it is a plain `mailto:` link, so the
  * section works without a script; the copy button shadows it for readers who
- * would rather paste than open a mail client (audit.md §16.2: server + a
+ * would rather paste than open a mail client (docs/audit.md §16.2: server + a
  * `CopyButton` island).
  */
 const Contact = ({ locale = "en" }) => {

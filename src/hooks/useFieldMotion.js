@@ -15,7 +15,7 @@ const clamp01 = (value) => Math.min(1, Math.max(0, value));
  *
  * These were `SCROLL_LERP 0.11`, `TILT_LERP 0.07` and `POINTER_LERP 0.14`
  * multiplied into the remaining distance once per frame, so the trail depended
- * on the refresh rate (audit.md §10 P0-2, P2-5's sibling). Each surviving factor
+ * on the refresh rate (docs/audit.md §10 P0-2, P2-5's sibling). Each surviving factor
  * is now `lambda = -60 · ln(1 - f)` at 60 fps:
  *
  *   scroll  0.11 → gone: the scroll layer owns that value, this file reads it
@@ -39,8 +39,8 @@ const MEASURE_DEBOUNCE_MS = 160;
  * The motion channel, scoped to the elements that read it.
  *
  * Writing the seven custom properties on <html> invalidated style for the whole
- * document every frame, which is the dominant measured cost of the scroll
- * (odd/tasks/archive/scroll-perf-pass.md). Each channel is now written only on its
+ * document every frame, which is the dominant measured cost of the scroll.
+ * Each channel is now written only on its
  * readers, resolved when the loop (re)starts, and skipped when the formatted
  * value did not change.
  *
@@ -54,7 +54,7 @@ const MEASURE_DEBOUNCE_MS = 160;
  *
  * The scroll channels are read from the smooth layer, never re-interpolated
  * here: two lerps in series over one value is what put the field 0.5–0.7 s
- * behind the content it sits under (audit.md §10 P0-2).
+ * behind the content it sits under (docs/audit.md §10 P0-2).
  *
  * The `:root` defaults in globals.css stay: they are the settled state, so a
  * reader that never receives a write — or a reader with no JS at all — is still
@@ -260,7 +260,7 @@ export function useFieldMotion() {
 
     /* A coarse pointer has nothing to point with, and the layers it drives
        (.field-glow, .hero-ornament) are `display: none` there — the listeners
-       were a per-event cost for a channel nobody reads (audit.md §10 P2-5). The
+       were a per-event cost for a channel nobody reads (docs/audit.md §10 P2-5). The
        capability is watched, not sampled once: a tablet that gains a mouse gets
        the channel, and a hybrid that loses it returns to the settled values. */
     const bindPointer = (fine) => {
@@ -305,7 +305,7 @@ export function useFieldMotion() {
     // intro settling, a filter narrowing the list). Watching the layout box
     // costs one observer instead of one forced layout per frame, and the
     // measurement it triggers is coalesced so a resize drag does not re-measure
-    // — or re-bind the channels — sixty times a second (audit.md §10 P2-6).
+    // — or re-bind the channels — sixty times a second (docs/audit.md §10 P2-6).
     const layoutObserver =
       typeof ResizeObserver === "function"
         ? new ResizeObserver(() => scheduleMeasure())

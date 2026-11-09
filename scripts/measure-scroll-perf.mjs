@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Scroll de página completa — audit.md §21.3, spec S11 (suite `perf`).
+ * Scroll de página completa — docs/audit.md §21.3, spec S11 (suite `perf`).
  *
  * Two hard numbers, measured while the page really scrolls to the bottom:
  *

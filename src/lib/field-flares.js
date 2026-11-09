@@ -1,6 +1,6 @@
 /**
- * The identity layer's flare table (audit.md §18.4, §19.2; feature spec S5, and
- * the tempo lock of `odd/tasks/flare-tempo.md` S1–S3).
+ * The identity layer's flare table (docs/audit.md §18.4, §19.2; feature spec S5, and
+ * the tempo lock).
  *
  * The coral lattice is CSS: one tiled raster with a 48 px cell, anchored at the
  * tile origin `0 0`, so every dot centre sits at `n * 48 + 24` from the top-left

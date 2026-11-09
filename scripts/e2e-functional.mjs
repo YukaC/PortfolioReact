@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * E2E funcional — audit.md §21.2, spec S11 (suite `e2e`).
+ * E2E funcional — docs/audit.md §21.2, spec S11 (suite `e2e`).
  *
  * The three served routes are the same composition in three languages
  * (`/`, `/es`, `/pt`), so a contract that only holds in English is a contract

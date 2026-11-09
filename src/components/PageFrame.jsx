@@ -16,7 +16,7 @@ import {
 /**
  * Frame every page shares: metadata, structured data, the shell and the page's
  * own content — all server-rendered, with `MotionRoot` as the one client island
- * around them (audit.md §16.2).
+ * around them (docs/audit.md §16.2).
  *
  * The head and the graph are no longer built here (§24): `src/lib/seo.js` owns
  * them, so the same functions that answer for a project page answer for the
@@ -42,7 +42,7 @@ export { localeUrl };
  * The home `<head>`, per locale.
  *
  * The fourteen metas the site has always shipped, attribute for attribute
- * (audit.md §16.3 A3): title, description, author, canonical, the four
+ * (docs/audit.md §16.3 A3): title, description, author, canonical, the four
  * `hreflang` alternates, the Open Graph block with its `og:image:alt`, and the
  * Twitter card. The author, the coordinates, the icons and `theme-color` are
  * language-independent and live in `src/app/root-shell.jsx`; `metadataBase`
@@ -87,7 +87,7 @@ const PageStructuredData = ({ locale, projects, generatedAt, page }) => {
  * Five sections, one per beat of the page. All five are Server Components: the
  * copy is in the HTML, the reveals are CSS, and each one embeds the single small
  * island it actually needs (`HeroActions`, `MarqueeMotion`, `WorkFilters`,
- * `AboutScroll`, `CopyButton`). That is the shape audit.md §16.2 asks for, and
+ * `AboutScroll`, `CopyButton`). That is the shape docs/audit.md §16.2 asks for, and
  * it is the shape that pays for the migration — the static text stops being
  * client JavaScript.
  *

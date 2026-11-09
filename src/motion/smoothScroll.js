@@ -2,7 +2,7 @@ import Lenis from "lenis";
 import { prefersReducedMotion, subscribeReducedMotion } from "./prefersReducedMotion";
 import { gsap, registerMotion, ScrollTrigger } from "./register";
 
-/* One owner of the smoothed scroll (audit.md §10 P0-2).
+/* One owner of the smoothed scroll (docs/audit.md §10 P0-2).
 
 The instance used to be created with `lerp: 0.07` **and** `duration: 0.55`:
 Lenis ignores `duration` when `lerp` is present, so the pair looked like a
@@ -15,7 +15,7 @@ const SCROLL_LERP = 0.07;
 /* A window resize fires every frame while a window edge is dragged, and on iOS
 it also fires when the URL bar collapses mid-gesture. A `ScrollTrigger.refresh`
 re-measures every trigger, so refreshing per event stutters exactly when the
-reader is moving (audit.md §10 P2-6). The refresh waits for the resize to stop.
+reader is moving (docs/audit.md §10 P2-6). The refresh waits for the resize to stop.
 
 `ignoreMobileResize` is not the answer for the URL bar here: it only gates the
 listener ScrollTrigger registers itself (`gsap/ScrollTrigger.js:395-397`), not
@@ -42,7 +42,7 @@ const FLING_EXIT_PX_PER_S = 900;
    long means it has settled. Without it, a scroll stopped by a locked layer
    would leave the class on with no further event to take it off. 250 ms and not
    a frame: this repo's own phone measurements put p95 frames at 84-109 ms and a
-   long task at 240 ms (odd/tasks/mobile-motion-perf.md L5, L13), so a tighter
+   long task at 240 ms, so a tighter
    gap reads a fling as "settled" exactly when the reader needs the class — and
    a fling that keeps the class a quarter of a second too long costs nothing. */
 const FLING_GAP_MS = 250;
@@ -134,8 +134,7 @@ export function startSmoothScroll() {
     first act is to jump the scroll to 0 and restore a position recorded on the
     main thread (`gsap/ScrollTrigger.js:483-546`). During a gesture that stops
     the native fling and re-anchors the page behind the reader's thumb — the
-    hero → footer → hero jump of the 8 nov recording
-    (odd/tasks/mobile-motion-perf.md L17). `refresh(true)` is the debounced path
+    hero → footer → hero jump of the 8 nov recording. `refresh(true)` is the debounced path
     ScrollTrigger's own listener takes, and it never runs for a height change. */
     if (window.innerWidth === lastWidth) return;
     lastWidth = window.innerWidth;

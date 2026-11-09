@@ -5,7 +5,7 @@ import { createSpringEase } from "./createSpringEase";
  *
  * The springs are the only values that live here. A spring is a sampled
  * curve — it has no `cubic-bezier()` spelling — so it cannot be a CSS token
- * (audit.md §14.4). Everything else is the stylesheet's ramp: every duration
+ * (docs/audit.md §14.4). Everything else is the stylesheet's ramp: every duration
  * and the three curves are read **once, at module scope**, from the
  * `--duration-*` / `--ease-*` / `--stagger-*` tokens `src/styles/globals.css`
  * declares (§14.7 S2c, spec S8). "Make the motion faster" is therefore one

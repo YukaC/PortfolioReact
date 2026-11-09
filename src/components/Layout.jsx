@@ -6,7 +6,7 @@ import { translator } from "@/i18n/index.js";
 /**
  * Page shell: everything that has to sit *around* the sections.
  *
- * A Server Component, like the sections it wraps (audit.md §16.2). What it
+ * A Server Component, like the sections it wraps (docs/audit.md §16.2). What it
  * renders is structure and one string, so the only thing that crosses to the
  * client from here is the markup the islands stand in: `AppBackground`,
  * `Navbar` and `Footer` are the three islands that are always on screen and

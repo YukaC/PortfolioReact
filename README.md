@@ -94,10 +94,12 @@ pnpm e2e:runtime -- --url http://127.0.0.1:3100    # or point it at another one
 
 ### Visual baseline
 
-`pnpm visual:baseline` captures the 45 screenshots of `audit.md` §14.5 into
+`pnpm visual:baseline` captures the 45 screenshots of `docs/audit.md` §14.5 into
 `visual/baseline/<viewport>/<scroll>/<lang>.png` and records the build, the renderer and the
-vitals in `visual/baseline/manifest.json`. The committed set was captured on the machine with
-the GPU (ANGLE, Radeon RX 570), which is where `pnpm visual:diff` can gate it: the same 45 are
+vitals in `visual/baseline/manifest.json`. The PNGs are stored in Git LFS (`.gitattributes`),
+so a fresh clone needs `git lfs install` once before the baseline lands on disk — without it
+the files are 130-byte pointers and `pnpm visual:diff` finds no baseline. The committed set
+was captured on the machine with the GPU (ANGLE, Radeon RX 570), which is where `pnpm visual:diff` can gate it: the same 45 are
 re-shot and a row fails when it is missing or over the 0.1 % pixel threshold. CI uploads its
 own captures as an artifact but does not gate them — a SwiftShader capture differs from that
 baseline by 98-99 %, so the pixel comparison there would measure the renderer. CI does run
@@ -203,7 +205,7 @@ detected tag (one year, `SameSite=Lax`) on `/` — the only route whose language
 negotiated, and therefore the only one that answers with a cookie — sets
 `Vary: Accept-Language` and sends the decision to the render as `x-pf-locale` /
 `x-pf-html-lang`. `/es` and `/pt` carry their language in the path, so their response is
-the same for everybody and a shared cache can keep it (audit.md §24 S3).
+the same for everybody and a shared cache can keep it (docs/audit.md §24 S3).
 
 A static HTML file cannot know a region, so `<html lang>` ships as `es` and
 `LocaleProvider` refines it to `es-AR` / `pt-BR` from that cookie after mount — the
@@ -216,7 +218,7 @@ The decisions live in one pure module (`src/i18n/locale.js`) shared by the edge 
 the document shell and React; the dictionaries are in `src/i18n/messages/` and fall back to
 English key by key, because translation lag is expected and a blank string is not. Project
 cards translate per field from the `i18n` block that already owns the slug in
-`src/data/projects.js`. Task notes: `odd/tasks/archive/auto-locale.md`.
+`src/data/projects.js`.
 
 ## 📁 Project Structure
 
@@ -316,8 +318,7 @@ Text stands directly on the field and carries a dark halo; glass (`.glass`) is
 used only where a surface has a job — the scrolled nav pill, the work preview
 and its tag. One ramp feeds both motion layers: `src/motion/config.js` keeps the
 GSAP springs and reads every duration, stagger and curve from the
-`--duration-*` / `--stagger-*` / `--ease-*` tokens in `globals.css`. Task notes:
-`odd/tasks/archive/glass-motion-rebrand.md`.
+`--duration-*` / `--stagger-*` / `--ease-*` tokens in `globals.css`.
 
 ### Field quality on a phone
 
@@ -337,13 +338,11 @@ scroll) and cost the smoke its detail. The canvas itself runs at `pixelRatio = 1
 (`LiquidEther.jsx`), so a DPR-3 phone is not paying three times the pixels either.
 Two consequences worth knowing before touching the constants: the dye's *fluidity* is the
 render-target grid, not the pointer, and the touch drag is part of the design — `touchstart` /
-`touchmove` drive the same field the desktop pointer does. Task notes:
-`odd/tasks/archive/mobile-field-parity.md`.
+`touchmove` drive the same field the desktop pointer does.
 
 ### What a 3G phone pays
 
-Measured at 390x844, DPR 3, CPU 4x throttle, on three network profiles
-(`odd/tasks/archive/mobile-load-budget.md`):
+Measured at 390x844, DPR 3, CPU 4x throttle, on three network profiles:
 
 | network | load | FCP | LCP | canvas | JS |
 | --- | --- | --- | --- | --- | --- |

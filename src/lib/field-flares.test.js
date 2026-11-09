@@ -6,9 +6,8 @@ import { fileURLToPath } from "node:url";
 import { CELL_PX, DOT_INSET_PX, FIELD_FLARES } from "./field-flares.js";
 
 /**
- * The identity layer's acceptance criteria, as numbers (audit.md §18.4, §18.8,
- * §19.2, §19.4; feature spec S5, T12's cadence rework, and the tempo lock of
- * `odd/tasks/flare-tempo.md` S1–S4).
+ * The identity layer's acceptance criteria, as numbers (docs/audit.md §18.4, §18.8,
+ * §19.2, §19.4; feature spec S5, T12's cadence rework, and the tempo lock).
  *
  * No DOM, no browser, no clock: the table is a literal, the curve is read out of
  * `@keyframes` as text, and the simulation below is a pure function of the two.

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * E2E sin JS — audit.md §20 / spec S11 (suite `e2e/no-js`).
+ * E2E sin JS — docs/audit.md §20 / spec S11 (suite `e2e/no-js`).
  *
  * The visitor with JavaScript disabled is the cheapest end-to-end way to prove
  * that the hard rules of §20.4 hold, because every one of them is a property of
