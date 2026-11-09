@@ -21,12 +21,22 @@
  *
  * and, unchanged:
  *
- *   2. recalc     `RecalcStyleCount` ≤ 1.5 × animation frames: one style
- *                  invalidation per frame is the budget of P1-1, and 1.5 leaves
- *                  room for the channels a single frame legitimately writes;
- *   3. task       `TaskDuration` ≤ 100 ms in the whole window: repose may not
- *                  spend a tenth of a second of main thread;
- *   4. flares     the CSS flares are still animating (the identity is not the
+ *   2. frames     the page asks for no animation frame of its own. The counter
+ *                  wraps `requestAnimationFrame` in an init script, so it
+ *                  observes instead of asking: it sees the request, it never
+ *                  makes one. This is the gate that names the property — until 9
+ *                  nov 2026 two libraries held a frame every vsync and this
+ *                  instrument could not see a single one of them;
+ *   3. recalc     `RecalcStyleCount`, in the unit that matches the frames the
+ *                  page asked for: per frame when it asked for some (≤ 1.5, the
+ *                  budget of P1-1), and as an absolute count when it asked for
+ *                  none — dividing by zero frames is what used to make a page
+ *                  that never stopped recalculating look perfect;
+ *   4. task       `TaskDuration` has a ceiling, not a target. Its floor is the
+ *                  36 CSS flares: 116 ms with their animation ablated, 136–170 ms
+ *                  with them running and the page asking for nothing. The budget
+ *                  exists to catch a regression against that floor;
+ *   5. flares     the CSS flares are still animating (the identity is not the
  *                  smoke): a running `flare` animation and at least one flare
  *                  whose opacity moved during the window.
  *
@@ -74,7 +84,17 @@ const BUDGET = {
      download and `requestIdleCallback` both have to land first. */
   canvasMs: 25_000,
   recalcPerFrame: Number(process.env.IDLE_RECALC_PER_FRAME ?? 1.5),
-  taskMs: Number(process.env.IDLE_TASK_MS ?? 100),
+  /* The absolute form, for a window in which the page asked for no frame at all:
+     200–230 recalcs per 10 s is what the shipped page costs, and the ceiling
+     leaves room for the drift without excusing the 602 a per-vsync loop caused. */
+  recalcAbsolute: Number(process.env.IDLE_RECALC_ABSOLUTE ?? 300),
+  /* Requests, not served frames: the page's own. A couple are tolerated for a
+     late hydration or a resize the browser reports on its own. */
+  rafRequests: Number(process.env.IDLE_RAF_REQUESTS ?? 2),
+  /* 250 ms, not 100: the floor is the flare animations, measured at 116 ms with
+     their animation ablated. This ceiling still catches the 336–355 ms a page
+     that requests a frame every vsync spends. */
+  taskMs: Number(process.env.IDLE_TASK_MS ?? 250),
   draws: 0,
 };
 
@@ -204,7 +224,18 @@ async function ensureServer(args) {
  * browser's own calls instead of inferred from a screenshot.
  */
 const INSTRUMENT = () => {
-  window.__idle = { draws: 0, frames: 0, drawTimes: [] };
+  window.__idle = { draws: 0, rafRequests: 0, drawTimes: [] };
+
+  /* The frame counter wraps the request instead of joining it. Counting served
+     frames needs a loop, and a loop of the instrument's own is served frames the
+     page did not ask for — which Blink then charges to the page by servicing
+     every live CSS animation on the main thread. Wrapping measures the property
+     the gate is about (does the page ask at all?) and costs nothing by itself. */
+  const requestFrame = window.requestAnimationFrame.bind(window);
+  window.requestAnimationFrame = function countedRequestFrame(callback) {
+    window.__idle.rafRequests += 1;
+    return requestFrame(callback);
+  };
 
   const count = (proto) => {
     if (!proto) return;
@@ -356,31 +387,15 @@ async function main() {
     const before = await metricsOf();
     const drawsBefore = await readDraws(page);
     const presentsBefore = await page.evaluate(READ_PRESENTS, 60);
-    const framesBefore = await page.evaluate(() => window.__idle.frames);
+    const rafBefore = await page.evaluate(() => window.__idle.rafRequests);
 
-    /* The frame counter runs inside the page for the whole window: it is the
-       denominator of the recalc budget, and a page that stopped producing frames
-       would otherwise look perfect.
-
-       It is also the only rAF this measurement installs, and that has a
-       consequence worth reading before the task number: served frames are what
-       makes Blink service every live CSS animation on the main thread, so a page
-       whose own loops are all asleep is charged for the flares anyway. Measured
-       on the 9 nov 2026 build, 10 s, 1440×900: `TaskDuration` is 140 ms with no
-       injected loop and 0 rAF requests from the page, 329 ms with this loop,
-       116 ms with this loop and the flare animation off, 44 ms with every CSS
-       animation off. The 100 ms budget below therefore cannot be reached while
-       the flares animate, and that is a property of the gate, not of the page. */
-    await page.evaluate(() => {
-      const tick = () => {
-        window.__idle.frames += 1;
-        requestAnimationFrame(tick);
-      };
-      requestAnimationFrame(tick);
-    });
+    /* Nothing is injected here on purpose. The window measures the page as it is:
+       the instrument already wrapped `requestAnimationFrame`, so whatever the page
+       asks for is counted, and asking for a frame on its behalf is the one thing
+       this measurement must not do. */
     await page.waitForTimeout(args.windowMs);
 
-    const frames = (await page.evaluate(() => window.__idle.frames)) - framesBefore;
+    const rafRequests = (await page.evaluate(() => window.__idle.rafRequests)) - rafBefore;
     const after = await metricsOf();
     const drawsAfter = await readDraws(page);
     const presents = (await page.evaluate(READ_PRESENTS, 60)) - presentsBefore;
@@ -391,15 +406,15 @@ async function main() {
     const taskMs = Math.round(((after.TaskDuration ?? 0) - (before.TaskDuration ?? 0)) * 1000);
     const scriptMs = Math.round(((after.ScriptDuration ?? 0) - (before.ScriptDuration ?? 0)) * 1000);
     const draws = drawsAfter - drawsBefore;
-    const ratio = frames > 0 ? Number((recalc / frames).toFixed(2)) : Number.POSITIVE_INFINITY;
+    const perFrame = rafRequests > 0 ? Number((recalc / rafRequests).toFixed(2)) : null;
     const moved = flaresBefore.opacities.filter(
       (opacity, index) => Math.abs(opacity - (flaresAfter.opacities[index] ?? opacity)) > 0.01,
     ).length;
 
     report.metrics = {
-      frames,
+      rafRequests,
       recalc,
-      recalcPerFrame: ratio,
+      recalcPerFrame: perFrame,
       layout,
       taskMs,
       scriptMs,
@@ -424,15 +439,25 @@ async function main() {
     );
 
     record(
+      "idle/frames",
+      rafRequests <= BUDGET.rafRequests,
+      rafRequests <= BUDGET.rafRequests
+        ? `${rafRequests} requestAnimationFrame request(s) in ${args.windowMs} ms (budget ≤ ${BUDGET.rafRequests}) — the page asks for no frame of its own`
+        : `${rafRequests} requestAnimationFrame request(s) in ${args.windowMs} ms (budget ≤ ${BUDGET.rafRequests}) — a loop is running at rest`,
+    );
+
+    record(
       "idle/recalc",
-      frames > 0 && ratio <= BUDGET.recalcPerFrame,
-      `${recalc} RecalcStyleCount / ${frames} frames = ${ratio} per frame (budget ≤ ${BUDGET.recalcPerFrame})`,
+      perFrame === null ? recalc <= BUDGET.recalcAbsolute : perFrame <= BUDGET.recalcPerFrame,
+      perFrame === null
+        ? `${recalc} RecalcStyleCount in ${args.windowMs} ms with 0 frames requested (budget ≤ ${BUDGET.recalcAbsolute} absolute)`
+        : `${recalc} RecalcStyleCount / ${rafRequests} requested frames = ${perFrame} per frame (budget ≤ ${BUDGET.recalcPerFrame})`,
     );
 
     record(
       "idle/task",
       taskMs <= BUDGET.taskMs,
-      `TaskDuration ${taskMs} ms (budget ≤ ${BUDGET.taskMs} ms) · script ${scriptMs} ms · layout ${layout}`,
+      `TaskDuration ${taskMs} ms (budget ≤ ${BUDGET.taskMs} ms, floor is the flare animations) · script ${scriptMs} ms · layout ${layout}`,
     );
 
     record(
