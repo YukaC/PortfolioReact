@@ -13,11 +13,18 @@ overrides:
   # to the 0.6.x line. Only three-stdlib (via @react-three/drei) is affected.
   "three-stdlib>fflate": 0.6.11
 
+  # GHSA-g3hv-75wg-m249: minimatch below 11.0.1 lets a crafted glob amplify
+  # globparts (ReDoS). ESLint 10's config array and typescript-eslint's
+  # estimator are the only two parents that resolve the 10.x line, so the pin
+  # is scoped to them; the 3.x line the eslint plugins use is not affected.
+  "@eslint/config-array>minimatch": 11.0.1
+  "@typescript-eslint/typescript-estree>minimatch": 11.0.1
+  "eslint>minimatch": 11.0.1
+
   # Scoped: the tree holds two independent brace-expansion major lines and
-  # minimatch 3 vs 10 are not API-compatible with each other's expansion.
+  # minimatch 3 vs 11 are not API-compatible with each other's expansion.
   # A flat override would force 5.x into minimatch 3 and break it.
   "minimatch@3>brace-expansion": 1.1.21
-  "minimatch@10>brace-expansion": 5.0.12
 
 peerDependencyRules:
   allowAny:
