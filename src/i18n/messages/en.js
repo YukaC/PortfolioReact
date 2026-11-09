@@ -146,6 +146,23 @@ const en = {
     socialLabel: "Social links",
     copyright: "© {year} Agustín Ciucani",
   },
+  errors: {
+    // The two error screens. A wrong address is a track that is not on the
+    // record; a server failure is a wrong note — same set, same voice.
+    notFound: {
+      title: "This track isn't\non the record.",
+      accent: "on the record.",
+      lead: "The page you followed doesn't exist, or it moved. The projects, the about section and the contact are all back on the main stage.",
+      home: "Back to the start",
+    },
+    server: {
+      title: "The band hit\na wrong note.",
+      accent: "a wrong note.",
+      lead: "Something broke on my side. Try again, and if it keeps happening, write to me.",
+      retry: "Try again",
+      home: "Back to the start",
+    },
+  },
 };
 
 export default en;

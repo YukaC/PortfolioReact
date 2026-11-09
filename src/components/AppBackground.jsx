@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import dynamic from "next/dynamic";
-import { FIELD_FLARES } from "@/lib/field-flares";
+import FieldIdentity from "@/components/FieldIdentity";
 import {
   WATCHDOG_FRAMES,
   readTierEnv,
@@ -104,28 +104,6 @@ const FieldBlob = ({ index }) => (
     <span className="field-blob-layer field-blob-end" />
   </div>
 );
-
-/**
- * The 36 strikes of the identity layer, built once from the pre-generated table
- * (docs/audit.md §18.4, §19.2). They are plain markup:
- * integer cell coordinates in `--cx`/`--cy` — the stylesheet turns them into
- * `calc(var(--cx) * 48px + 24px)` so every flare lands on a dot centre, which a
- * viewport percentage cannot do (§19.3) — plus the phase, as a whole slot of the
- * breath (`calc(<slot> * var(--grid))`). The cycle is not here at all: it is
- * `--breath` in the stylesheet, one value for the whole field. Nothing here is
- * computed at runtime and nothing here needs hydration.
- */
-const FLARE_ELEMENTS = FIELD_FLARES.map((flare) => (
-  <i
-    key={`${flare.cx}x${flare.cy}`}
-    className="flare"
-    style={{
-      "--cx": String(flare.cx),
-      "--cy": String(flare.cy),
-      "--delay": `calc(${flare.slot} * var(--grid))`,
-    }}
-  />
-));
 
 /**
  * Bocanada field, in the two layers of docs/audit.md §18.2.
@@ -285,8 +263,7 @@ const AppBackground = () => {
       {/* Over the canvas, because the dots are the top of the field: the shader
           stopped drawing its own grid in the same change, so this is the only
           lattice in every state (§18.2). */}
-      <div className="bocanada-lattice" />
-      <div className="bocanada-flares">{FLARE_ELEMENTS}</div>
+      <FieldIdentity />
       <div className="field-glow" />
       <div className="field-grain" />
     </div>

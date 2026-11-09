@@ -145,6 +145,21 @@ const pt = {
     socialLabel: "Redes sociais",
     copyright: "© {year} Agustín Ciucani",
   },
+  errors: {
+    notFound: {
+      title: "Essa faixa não está\nno disco.",
+      accent: "no disco.",
+      lead: "A página que você procurou não existe, ou mudou de lugar. Os projetos, o sobre mim e o contato continuam no palco principal.",
+      home: "Voltar ao início",
+    },
+    server: {
+      title: "A banda errou\numa nota.",
+      accent: "uma nota.",
+      lead: "Algo quebrou do meu lado. Tente de novo e, se continuar, me escreva.",
+      retry: "Tentar de novo",
+      home: "Voltar ao início",
+    },
+  },
 };
 
 export default pt;
