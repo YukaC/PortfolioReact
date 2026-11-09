@@ -1,5 +1,5 @@
 import { prefersReducedMotion } from "@/motion/prefersReducedMotion";
-import { getLenis } from "@/motion/smoothScroll";
+import { getLenis, wakeSmoothScroll } from "@/motion/smoothScroll";
 
 /** The floating pill's height plus its margin: a section scrolled to at its own top
     lands its heading under the pill. Same offset on both scroll paths. */
@@ -20,6 +20,10 @@ export function scrollToSectionByHash(href) {
   const lenis = getLenis();
 
   if (lenis && !isReduced) {
+    /* The layer's frame is demand-driven: it is detached while the page is still,
+       so `scrollTo` on its own would queue a target with nothing to advance it and
+       the CTA would do nothing until the next wheel. The wake comes first. */
+    wakeSmoothScroll();
     lenis.scrollTo(section, { offset: -HEADER_OFFSET_PX });
   } else {
     /* There is no layer on a coarse pointer, so the offset has to be applied here:

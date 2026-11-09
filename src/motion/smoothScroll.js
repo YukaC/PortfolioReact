@@ -55,8 +55,26 @@ const coarsePointer = () => {
   }
 };
 
+/* The layer's frame is asked for by the movement, not by the page being open.
+
+`lenis.raf(time)` is the only thing that advances the smoothed value, and Lenis
+mounts with `autoRaf: false`: the frame has to be requested. It used to be
+requested once, for the lifetime of the page, so the browser served a main frame
+every vsync whether the page moved or not — and every composited animation on the
+site (the flares) costs a main-thread pass per served frame. Now the ticker is
+attached by a wake source and detached once the layer has arrived.
+
+Settling is decided after the frame ran: `isScrolling` false and the smoothed
+value within half a pixel of where it is going, twice in a row, is settled. Two
+ticks and not one because the last frame of a glide lands on the target —
+nothing has confirmed yet that no further frame is coming. */
+const SETTLE_TICKS = 2;
+const SETTLE_EPSILON_PX = 0.5;
+
 let lenisInstance = null;
 let tickerCallback = null;
+let tickerAttached = false;
+let settledTicks = 0;
 /* The native path's cache: the offset the last scroll event reported. Kept here so
    no reader has to ask the document again inside a handler (`getScrollPosition`). */
 let nativeScrollY = 0;
@@ -206,6 +224,88 @@ function mountNative() {
   syncScrollSource();
 }
 
+const isSettled = (lenis) =>
+  !lenis.isScrolling && Math.abs(lenis.targetScroll - lenis.animatedScroll) < SETTLE_EPSILON_PX;
+
+function attachTicker() {
+  if (tickerAttached || !tickerCallback) return;
+  tickerAttached = true;
+  settledTicks = 0;
+  /* Lenis derives its damping delta from the time it was last given, so a layer
+     that has been detached for a second would come back with that whole pause in
+     one delta (`1 - exp(-lerp * 60 * delta)` is 1) and land on the target instead
+     of gliding to it. Zeroing the clock makes the wake frame a no-op and the
+     frame after it a normal one. */
+  if (lenisInstance) lenisInstance.time = 0;
+  /* Off while the layer rides this clock: the adjusted lag exists to protect a
+     tween from a long frame, and a long frame is exactly what the smoothed value
+     has to keep up with. */
+  gsap.ticker.lagSmoothing(0);
+  gsap.ticker.wake();
+  gsap.ticker.add(tickerCallback);
+}
+
+function detachTicker() {
+  if (tickerAttached) {
+    tickerAttached = false;
+    settledTicks = 0;
+    if (tickerCallback) gsap.ticker.remove(tickerCallback);
+    /* `gsap.ticker.sleep()` belongs here as the second half of the fix if the
+       empty ticker still asks for frames: one line, and GSAP wakes itself again
+       for a new tween. Not added until the frame probe says it is needed. */
+  }
+  gsap.ticker.lagSmoothing(500, 33);
+}
+
+/**
+ * Starts the smoothed layer's frame, so the next gesture glides instead of
+ * landing. A no-op with no layer mounted.
+ */
+export function wakeSmoothScroll() {
+  if (typeof window === "undefined" || !lenisInstance) return;
+  attachTicker();
+}
+
+/* The keys the browser scrolls with. A modified combination is a shortcut and not
+   a scroll, and a key the page already handled moved the page without this layer. */
+const SCROLL_KEYS = new Set([
+  " ",
+  "PageUp",
+  "PageDown",
+  "Home",
+  "End",
+  "ArrowUp",
+  "ArrowDown",
+  "ArrowLeft",
+  "ArrowRight",
+]);
+
+const onWheel = () => wakeSmoothScroll();
+
+const onScrollKey = (event) => {
+  if (event.defaultPrevented || event.ctrlKey || event.metaKey || event.altKey) return;
+  if (!SCROLL_KEYS.has(event.key)) return;
+  wakeSmoothScroll();
+};
+
+/* The scrolls nothing glides: a scrollbar drag, find-in-page, and the position a
+   hash or a history entry restores. This one only wakes — Lenis's own native
+   listener answers the event and its next frame reports the position — so the
+   ranges are not fed twice for one scroll. */
+const onNativeScroll = () => wakeSmoothScroll();
+
+function mountWakeSources() {
+  window.addEventListener("wheel", onWheel, { passive: true });
+  window.addEventListener("keydown", onScrollKey);
+  window.addEventListener("scroll", onNativeScroll, { passive: true });
+}
+
+function removeWakeSources() {
+  window.removeEventListener("wheel", onWheel);
+  window.removeEventListener("keydown", onScrollKey);
+  window.removeEventListener("scroll", onNativeScroll);
+}
+
 function mountLenis() {
   if (lenisInstance) return;
 
@@ -222,22 +322,28 @@ function mountLenis() {
   lastFlingPosition = lenis.scroll;
   lastFlingTime = 0;
 
+  lenisInstance = lenis;
+
   tickerCallback = (time) => {
     lenis.raf(time * 1000);
+    /* One count per frame, computed here and acted on once at the end of the
+       callback: this listener decides nothing else, so a wake that arrives while
+       a detach is being decided cannot half-apply it. */
+    settledTicks = isSettled(lenis) ? settledTicks + 1 : 0;
+    if (settledTicks >= SETTLE_TICKS) detachTicker();
   };
-  gsap.ticker.add(tickerCallback);
-  gsap.ticker.lagSmoothing(0);
 
-  lenisInstance = lenis;
+  /* Attached at mount so the first gesture finds the frame already running: a
+     wake that arrives with nothing to attach would cost the first wheel. */
+  attachTicker();
+  mountWakeSources();
   syncScrollSource();
 }
 
 function stopSmoothScroll() {
-  if (tickerCallback) {
-    gsap.ticker.remove(tickerCallback);
-    tickerCallback = null;
-  }
-  gsap.ticker.lagSmoothing(500, 33);
+  removeWakeSources();
+  detachTicker();
+  tickerCallback = null;
 
   if (nativeListener) {
     window.removeEventListener("scroll", nativeListener);
@@ -332,5 +438,7 @@ export function lockSmoothScroll() {
 }
 
 export function unlockSmoothScroll() {
+  // The drawer's release is a scroll nobody asked for through a wheel or a key.
+  wakeSmoothScroll();
   lenisInstance?.start();
 }

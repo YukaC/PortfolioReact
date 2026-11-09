@@ -66,6 +66,18 @@ test("the fling class cannot outlive the movement", () => {
   );
 });
 
+test("a programmatic scroll wakes the layer before it asks it to move", () => {
+  // The layer's frame is attached by the movement, so `lenis.scrollTo` called on a
+  // page that is still queues a target nothing advances: the CTA scrolls to
+  // nothing until the reader wheels. The wake has to come first.
+  const source = strip(read("src/utils/scroll-to-section.js"));
+  const wake = source.indexOf("wakeSmoothScroll()");
+  assert.ok(
+    wake >= 0 && wake < source.indexOf("lenis.scrollTo("),
+    "scrollToSectionByHash must wake the smoothed layer before it scrolls it",
+  );
+});
+
 test("the open drawer locks the page on every pointer, Lenis or not", () => {
   // A coarse pointer never mounts Lenis, so `lockSmoothScroll()` stops nothing there:
   // the lock is the `overflow: hidden` the drawer puts on <html> and <body> while it
