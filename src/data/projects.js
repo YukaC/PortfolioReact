@@ -16,6 +16,7 @@ export const MAX_PINNED_PROJECTS = 6;
  * @property {string} [outcome]
  * @property {string} [imgSrc]
  * @property {string} [alt]
+ * @property {string} [siteUrl]
  * @property {string[]} [tags]
  * @property {boolean} [isFeatured]
  * @property {Partial<Record<"es"|"pt", { title?: string, description?: string, problem?: string, outcome?: string }>>} [i18n]
@@ -130,6 +131,7 @@ export const PROJECT_OVERRIDES = {
     outcome: "Rebuilt as a static React app with embedded data and spring motion.",
     imgSrc: "/peliscasa.webp",
     alt: "Pelis en Casa movie catalog screenshot",
+    siteUrl: "https://peliscasa.vercel.app/",
     tags: ["React", "Vite", "Motion"],
     isFeatured: true,
     i18n: {
